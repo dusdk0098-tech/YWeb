@@ -87,7 +87,7 @@ function App() {
   if (loading)
     return (
       <main className="login">
-        <h1>PEDIT</h1>
+        <h1>Y웹</h1>
         <p>연결 중…</p>
       </main>
     );
@@ -105,7 +105,7 @@ function App() {
     <div className="shell">
       <aside className="sidebar">
         <a className="brand" href="#">
-          PEDIT<span>현장 업무의 한곳</span>
+          Y웹<span>현장 업무의 한곳</span>
         </a>
         <span className="badge">개발용 · 독립 검증 미완료</span>
         <label className="site-switch">

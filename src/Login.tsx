@@ -31,7 +31,7 @@ export function Login({
   return (
     <main className="login">
       <div className="login-intro">
-        <span className="brand">PEDIT</span>
+        <span className="brand">Y웹</span>
         <p className="eyebrow">A CLEARER WAY TO WORK</p>
         <h1>
           현장의 기록,

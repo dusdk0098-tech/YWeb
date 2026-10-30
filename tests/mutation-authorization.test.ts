@@ -96,7 +96,7 @@ test("all shared mutation callsites declare an explicit synchronous authorizatio
   }
   assert.equal(
     count,
-    152, // Phase69 adds education upload + attach-state guarded mutations.
+    153, // Phase69 education upload + attach-state; SC 현장 설정 PUT.
     "Re-inventory changed mutation routes; this is a callsite count, not route coverage percentage.",
   );
 });

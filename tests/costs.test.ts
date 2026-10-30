@@ -146,6 +146,21 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
     db.prepare("SELECT COUNT(*) n FROM cost_events").get()!.n,
     before,
   );
+  const settings = {
+    writtenDate: "2026-02-27", projectName: "<합성> 공사", contractor: "합성건설", location: "", representative: "",
+    client: "", projectStart: "2026-01-01", projectEnd: "2026-12-31", summarySameAsProject: true, summaryStart: "",
+    summaryEnd: "", contractAmountWon: "1000000000", coverProgress: "12.5", cumulativeProgress: "100",
+    safetyBudgetWon: "30000000", author: "작성", reviewer: "확인",
+  };
+  const putSettings = (body: object) =>
+    m.agent.put(`${base}/${id}/settings`).set("Origin", origin).set("x-csrf-token", m.csrf).set("idempotency-key", randomUUID()).send(body);
+  for (const bad of [{ projectEnd: "2025-12-31" }, { projectEnd: "" }, { safetyBudgetWon: "1.5" }, { coverProgress: "101" }, { writtenDate: "2026-02-30" }])
+    assert.equal((await putSettings({ version: p.version, settings: { ...settings, ...bad } })).status, 400, JSON.stringify(bad));
+  r = await putSettings({ version: p.version, settings });
+  assert.equal(r.status, 200, r.text);
+  p = r.body;
+  assert.equal(p.settings.summaryStart, "2026-01-01"); // same-as-project copied on the server
+  assert.equal((await putSettings({ version: p.version - 1, settings })).status, 409);
   const close = await post(`/${id}/close`, {
     version: p.version,
     reason: "record close",
@@ -156,6 +171,9 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
   assert.equal(print.status, 200);
   assert.ok(print.text.includes("&lt;script&gt;"));
   assert.ok(!print.text.includes("<script>"));
+  assert.ok(print.text.includes("&lt;합성&gt; 공사") && print.text.includes("30000000"));
+  assert.equal((await putSettings({ version: p.version, settings })).status, 409);
+  assert.throws(() => db.prepare("UPDATE cost_period_settings SET body='{}' WHERE period_id=?").run(id));
   const carry = await post(`/${id}/carry`, { version: p.version });
   assert.equal(carry.status, 200, carry.text);
   assert.equal(carry.body.month, "2026-03");
@@ -164,6 +182,7 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
     ["0.5", "0.5"],
   );
   assert.equal(carry.body.totals.total.opening, "1");
+  assert.deepEqual(carry.body.settings, { ...p.settings, writtenDate: "2026-03-31" });
   assert.equal(
     (
       await post(`/${id}/reopen`, {

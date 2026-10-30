@@ -37,6 +37,8 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
   let expected=before.replace("<MeetingEditor\n", "<MeetingEditor\n            user={user}\n            onDirtyChange={setAttendanceDirty}\n            onBusyChange={setAttendanceBusy}\n");
   // Phase67 adds one help entry/branch and replaces a stale display-only badge.
   // Preserve all remaining App state, existing callbacks and navigation guards.
+  // Y웹 rename changes only the visible brand text.
+  expected = expected.replace("<h1>PEDIT</h1>", "<h1>Y웹</h1>").replace("PEDIT<span>", "Y웹<span>");
   expected = expected.replace('LOCAL FOUNDATION · 0.23', '개발용 · 독립 검증 미완료')
     .replace('["home", "현장 홈"],', '["home", "현장 홈"],\n            ["help", "사용 도움말"],')
     .replace('        ) : tab === "home" ? (', `        ) : tab === "help" ? (

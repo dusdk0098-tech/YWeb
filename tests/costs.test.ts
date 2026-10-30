@@ -1,3 +1,4 @@
+import { percentText } from "../server/cost-dashboard.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -175,6 +176,13 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
   p = r.body;
   assert.equal(p.settings.summaryStart, "2026-01-01"); // same-as-project copied on the server
   assert.equal((await putSettings({ version: p.version - 1, settings })).status, 409);
+  assert.deepEqual([percentText(1n, 3n), percentText(2n, 3n), percentText(5n, 4n), percentText(1n, 0n)], ["33.3", "66.6", "125.0", null]);
+  const dash = (await m.agent.get(`/api/sites/${site}/cost-dashboard`)).body;
+  assert.deepEqual(
+    [dash.months.map((x: { current: string }) => x.current), dash.latest.total.cumulative, dash.latest.usedPercent, dash.latest.monthsLeft, dash.latest.byCategory[0].usedPercent],
+    [["1"], "1", "0.0", "29999999.0", "0.0"],
+  );
+  assert.equal((await ed.agent.get(`/api/sites/${site}/cost-dashboard`)).status, 403);
   const close = await post(`/${id}/close`, {
     version: p.version,
     reason: "record close",

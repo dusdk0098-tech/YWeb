@@ -47,6 +47,7 @@ import { registerEquipmentDue } from "./equipment-due.js";
 import { registerStockMinimums } from "./stock-minimum-routes.js";
 import { registerStock } from "./stock.js";
 import { registerCostPeriods } from "./cost-periods.js";
+import { registerCostDashboard } from "./cost-dashboard.js";
 import { registerCostExpenses } from "./cost-expenses.js";
 import { registerDailyMonthlyReports } from "./daily-monthly-routes.js";
 import { registerDailyJournals } from "./daily-journals.js";
@@ -219,6 +220,7 @@ export async function createApp(db: Db, config: AppConfig) {
   registerStockMinimums(app, db, { access, mutate });
   registerCostBaselines(app, db, { access, mutate });
   registerCostPeriods(app, db, { access, mutate });
+  registerCostDashboard(app, db, { access, mutate });
   registerCostExpenses(app, db, { access, mutate });
   registerCostPresets(app, db, { access, mutate });
   registerCostBatch(app, db, { access, mutate });

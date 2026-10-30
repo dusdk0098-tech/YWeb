@@ -1,6 +1,7 @@
 import type { CostExpenseSelection } from "./CostSelectedExpense";
 import { CostSearch } from "./CostSearch";
 import { CostLabor } from "./CostLabor";
+import { CostDashboard } from "./CostDashboard";
 import { useEffect, useState } from "react";
 import { api, type Site } from "./api";
 import type { Page } from "./attendance-types";
@@ -46,6 +47,7 @@ export function CostPanel({
     [error, setError] = useState("");
   const [selectedExpense,setSelectedExpense]=useState<CostExpenseSelection|undefined>(undefined);
   const [labor, setLabor] = useState(false);
+  const [dashboard, setDashboard] = useState(false);
   const [search, setSearch] = useState(false),
     [searchBusy, setSearchBusy] = useState(false);
   const guard = useDraftGuard(
@@ -118,6 +120,7 @@ export function CostPanel({
         }}
       />
     );
+  if (dashboard) return <CostDashboard site={site} onClose={() => setDashboard(false)} />;
   if (labor) return <CostLabor site={site} onClose={() => setLabor(false)} />;
   if (search)
     return (
@@ -137,6 +140,17 @@ export function CostPanel({
     <section>
       <h2>관리자 수기 비용 원장</h2>
       <p>{costWarning}</p>
+      <button
+        disabled={busy}
+        onClick={() => {
+          if (guard.canLeave()) {
+            setCreating(false);
+            setDashboard(true);
+          }
+        }}
+      >
+        월마감 대시보드
+      </button>
       <button
         disabled={busy}
         onClick={() => {

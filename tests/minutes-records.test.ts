@@ -51,6 +51,9 @@ test("minutes followups are independent reports/other-manager confirmations with
  const verify={version:follow.version,note:"Human confirmation record",reportHash:follow.reportHash,reason:"Synthetic confirm",confirmHumanRecord:true};
  assert.equal((await f.send("post",path+"/verify",verify)).status,403);assert.equal((await f.reviewSend(path+"/verify",{...verify,reportHash:"0".repeat(64)})).status,409);
  r=await f.reviewSend(path+"/verify",verify);assert.equal(r.status,200);follow=r.body;assert.equal(follow.status,"verified");
+ const board=async(q:string)=>(await f.agent.get(f.base+"/minutes-followups"+q)).body.items.length;
+ assert.deepEqual([await board(""),await board("?open=1"),await board("?mine=1"),await board("?mine=1&open=1")],[1,0,1,0]);
+ assert.equal((await f.agent.get(f.base+"/minutes-followups?mine=yes")).status,400);
  assert.equal((await f.send("post",path+"/report",{version:follow.version,text:"Cannot change verified",claimedLocalDate:"2026-10-28",reason:"Synthetic",confirmHumanReport:true})).status,409);
  r=await f.reviewSend(path+"/reopen",{version:follow.version,reason:"Synthetic reopen"});assert.equal(r.status,200);follow=r.body;assert.equal(follow.report,null);assert.equal(follow.verification,null);
  r=await f.reviewSend(path+"/assign",{version:follow.version,assigneeId:f.reviewer,due:"2026-11-03",reason:"Synthetic reassignment"});assert.equal(r.status,200);follow=r.body;

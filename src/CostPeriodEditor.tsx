@@ -1,3 +1,4 @@
+import { CostCategoryDetail } from "./CostCategoryDetail";
 import { CostOutputControl } from "./CostOutputControl";
 import { CostEvidence } from "./CostEvidence";
 import type { CostEvidence as EvidenceContext } from "./cost-evidence-types";
@@ -60,6 +61,7 @@ export function CostPeriodEditor({
   );
   const [presets,setPresets]=useState(false),[presetSource,setPresetSource]=useState<ReturnType<typeof costPresetDraft>|null>(null),[selectedExpense,setSelectedExpense]=useState<CostExpenseSelection|undefined>(initialExpenseSelection);
   const [baselines,setBaselines]=useState(false);
+  const [detail,setDetail]=useState(false);
   const [evidence,setEvidence]=useState(false);
   const [stockExpense,setStockExpense]=useState<string|null>(null);
   const [batch, setBatch] = useState(false),
@@ -177,6 +179,7 @@ export function CostPeriodEditor({
     api<CostPeriod>(base).then(setRecord).catch(e=>setError(e.message)).finally(()=>setBusy(false));
   }}/>;
   if(presets)return <CostInputPresets siteId={site.id} onClose={()=>setPresets(false)} onDirtyChange={setBatchDirty} onBusyChange={setBatchBusy} onApply={open?(preset)=>{if(!confirm(`설명 ${preset.body.defaults.description} / 수량 ${preset.body.defaults.quantity} / 단가 ${preset.body.defaults.unitPriceWon}을 미저장 새 지출에 적용할까요? 지출일과 비용 항목은 비워지며 직접 선택해야 합니다. 원장은 저장하지 않습니다.`))return;const applied=costPresetDraft(preset);setForm(applied.form);setPresetSource(applied);setEditing(null);setReason("");setPresets(false);}:undefined}/>;
+  if(detail)return <CostCategoryDetail base={base} period={record} onClose={()=>setDetail(false)}/>;
   if(baselines)return <section><button disabled={batchDirty||batchBusy} onClick={()=>setBaselines(false)}>비용 원장으로 돌아가기</button><CostBaselines key={record.id} base={base} period={record} onDirtyChange={setBatchDirty} onBusyChange={setBatchBusy}/></section>;
   if(stockExpense)return <CostStockPanel key={`${site.id}:${record.id}:${stockExpense}`} site={site} periodId={record.id} expenseId={stockExpense} onDirtyChange={setBatchDirty} onBusyChange={setBatchBusy} onClose={()=>{setStockExpense(null);setTick(v=>v+1);}}/>;
   if (splits)
@@ -262,6 +265,7 @@ export function CostPeriodEditor({
           목록에서 다시 여세요.
         </p>
       )}
+      <button disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setDetail(true);}}}>항목별 상세</button>
       <p>초기/이월 근거: {record.opening_note}</p>
       {record.source_close_id && (
         <p>이월 기준 마감본 ID: {record.source_close_id}</p>

@@ -6,6 +6,18 @@ import type { Page } from "./attendance-types";
 import { useDraftGuard } from "./useDraftGuard";
 import { CostPeriodEditor } from "./CostPeriodEditor";
 import { costWarning, type CostPeriod } from "./cost-types";
+// Same labels and order as the original PEDIT-SC app (src/config.js categoryNames).
+const scCategoryLabels = [
+  "1. 안전보건관리자 임금 등",
+  "2. 안전시설비 등",
+  "3. 보호구 등",
+  "4. 안전보건진단비 등",
+  "5. 안전보건교육비 등",
+  "6. 근로자 건강장해예방비 등",
+  "7. 건설재해예방전문지도기관 기술지도비",
+  "8. 본사 전담조직 근로자 임금 등",
+  "9. 위험성평가 등에 따른 소요비용",
+];
 export function CostPanel({
   site,
   onDirtyChange,
@@ -196,6 +208,15 @@ export function CostPanel({
               )}
             </div>
           ))}
+          <button
+            onClick={() =>
+              setCategories(
+                scCategoryLabels.map((label) => ({ label, plan: "0", opening: "0" })),
+              )
+            }
+          >
+            기존 SC 9개 항목으로 채우기
+          </button>
           <button
             disabled={categories.length >= 20}
             onClick={() =>

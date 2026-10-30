@@ -3,6 +3,7 @@ import { stockUnchangedAcknowledgment, assertCostStockAcknowledgment } from "./c
 import { normalizedExpense, validForPeriod } from "./cost-expense-input.js";
 import { assertSplitRestore } from "./cost-split-model.js";
 import type { Express } from "express";
+import { z } from "zod";
 import type { Db } from "./db.js";
 import { HttpError, type SiteOperations } from "./site-operations.js";
 import { inspectionPage } from "./inspection-validation.js";
@@ -22,8 +23,11 @@ export function registerCostExpenses(
         String(req.params.siteId),
         String(req.params.id),
       ),
-      q = inspectionPage.parse(req.query),
-      all = costExpenses(db, row.id);
+      q = inspectionPage.extend({ categoryId: z.string().max(100).optional() }).parse(req.query),
+      // categoryId: SC 항목별 상세 — that category's active rows only.
+      all = costExpenses(db, row.id).filter(
+        (e) => !q.categoryId || (e.category_id === q.categoryId && e.status === "active"),
+      );
     res.json({
       items: all.slice(q.offset, q.offset + 50),
       hasMore: all.length > q.offset + 50,

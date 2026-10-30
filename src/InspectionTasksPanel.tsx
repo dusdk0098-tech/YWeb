@@ -1,0 +1,28 @@
+import {useEffect,useState} from "react";
+import {api,type Site,type User} from "./api";
+import {InspectionTaskEditor} from "./InspectionTaskEditor";
+import {InspectionEditor} from "./InspectionEditor";
+import type {TaskResult} from "./inspection-task-types";
+import type {Inspection,InspectionTemplate} from "./inspection-types";
+import {inspectionStages,type TaskRegisterPage} from "./inspection-workflow-types";
+export function InspectionTasksPanel({site,user,initialTemplate,onDirtyChange,onBusyChange,onClose}:{site:Site;user:User;initialTemplate?:InspectionTemplate;onDirtyChange:(v:boolean)=>void;onBusyChange:(v:boolean)=>void;onClose:()=>void}){
+ const [asOfDate,setAsOfDate]=useState(new Date().toLocaleDateString("en-CA")),[from,setFrom]=useState(""),[to,setTo]=useState(""),[keyword,setKeyword]=useState(""),[stage,setStage]=useState("all"),[work,setWork]=useState("all"),[due,setDue]=useState("all"),[assignedMine,setAssignedMine]=useState(false),[offset,setOffset]=useState(0),[tick,setTick]=useState(0);
+ const [page,setPage]=useState<TaskRegisterPage>({items:[],total:0,hasMore:false,asOfDate,candidateCount:0}),[open,setOpen]=useState<TaskResult|null|undefined>(initialTemplate?null:undefined),[inspection,setInspection]=useState<Inspection|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState("");
+ useEffect(()=>{let live=true;setError("");setLoading(true);const params=new URLSearchParams({asOfDate,offset:String(offset),keyword,stage,work,due,...(from?{from}:{}),...(to?{to}:{}),...(assignedMine?{assigneeId:user.id}:{})});api<TaskRegisterPage>(`/sites/${site.id}/inspection-task-register?${params}`).then(v=>{if(live)setPage(v);}).catch(e=>{if(live){setError(e.message);setPage({items:[],total:0,hasMore:false,asOfDate,candidateCount:0});}}).finally(()=>{if(live)setLoading(false);});return()=>{live=false;};},[site.id,user.id,asOfDate,offset,keyword,stage,work,due,from,to,assignedMine,tick]);
+ const closeEditor=()=>{setOpen(undefined);setInspection(null);setTick(t=>t+1);};
+ async function view(id:string){if(busy)return;setBusy(true);onBusyChange(true);setError("");try{setOpen(await api<TaskResult>(`/sites/${site.id}/inspection-tasks/${id}`));}catch(e){setError((e as Error).message);}finally{setBusy(false);onBusyChange(false);}}
+ const common={site,user,onDirtyChange,onBusyChange,onClose:closeEditor};
+ if(inspection)return <InspectionEditor key={inspection.id} {...common} initial={inspection}/>;
+ if(open!==undefined)return <InspectionTaskEditor key={open?.record.id||"new-task"} {...common} initial={open} initialTemplate={initialTemplate} onInspection={setInspection}/>;
+ return <section className="panel"><h2>점검 일정 대장 · 내 일정 기반 업무</h2><button disabled={busy} onClick={onClose}>양식·전체 점검 기록으로</button><p>직접 작성 점검은 전체 점검 기록의 내 작성/검토가능 필터에서 찾습니다. 원 배정 계정과 반려 후 현재 작성자는 다를 수 있습니다.</p>
+ <fieldset disabled={busy}><label>예정일 비교 기준일<input required type="date" value={asOfDate} onChange={e=>{setAsOfDate(e.target.value);setOffset(0);}}/></label><p>현재 상태를 이 날짜와 비교합니다. 과거 당시 상태 재현·실제 미수행·위법 판정이 아닙니다. 수락/취소는 경과대상에서 제외하고100단계 초과는 판정보류합니다.</p>
+ <label>예정일 시작<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setOffset(0);}}/></label><label>예정일 끝<input type="date" value={to} onChange={e=>{setTo(e.target.value);setOffset(0);}}/></label><label>양식 제목·장소·안내 문자 검색<input maxLength={200} value={keyword} onChange={e=>{setKeyword(e.target.value);setOffset(0);}}/></label>
+ <label><input type="checkbox" checked={assignedMine} onChange={e=>{setAssignedMine(e.target.checked);setOffset(0);}}/>원 배정 계정이 나인 일정만</label>
+ <label>현재 연결 단계<select value={stage} onChange={e=>{setStage(e.target.value);setOffset(0);}}><option value="all">전체</option>{Object.entries(inspectionStages).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
+ <label>내 현재 일정 업무<select value={work} onChange={e=>{setWork(e.target.value);setOffset(0);}}><option value="all">현장 전체</option><option value="my_start">내 시작 대기</option><option value="my_drafts">내 작성 중</option><option value="my_submitted">내 제출·검토 대기</option>{site.role==="manager"&&<option value="reviewable">내 검토가능 (본인 제출 제외)</option>}</select></label>
+ <label>예정일 비교<select value={due} onChange={e=>{setDue(e.target.value);setOffset(0);}}><option value="all">전체</option><option value="elapsed">예정일 경과·미수락</option><option value="not_elapsed">경과대상 아님</option><option value="unknown">판정보류</option></select></label>
+ {site.role==="manager"&&<button onClick={()=>setOpen(null)}>새 점검 일정</button>}</fieldset>
+ <p>현재 조건 {loading?"조회 중":error?"집계 불가":page.total}개 ·50개 페이지·페이지 사이 변경 가능. 후보1000건 초과 시 일부 집계하지 않으므로 예정일/원배정/문자 조건을 좁히세요. 자동 반복/알림/발송 없음.</p>{error&&<p role="alert">{error}</p>}
+ {loading?<p>조회 중</p>:page.items.map(t=><article key={t.id}><h3>{t.title}</h3><p>{t.plannedDate} · {t.location} · {inspectionStages[t.stage]}</p><p>원 배정 {t.assigneeName} ({t.assigneeId}) · 현재 작성 {t.currentOwnerName||"없음/판정보류"} ({t.currentOwnerId||"없음"})</p><p>{((t.stage==="planned"&&!t.assigneeEligible)||(t.stage==="draft"&&t.currentOwnerEligible===false))&&"현재 작성 권한 확인 필요 · 자동 재배정 없음 · "}{t.elapsed===null?"예정일 경과 판정보류":t.elapsed?"예정일 경과·현재 미수락":"예정일 경과대상 아님"}{t.use.useStopped?" · 양식 신규사용 중지 (기존 일정 계속 가능)":""}</p><button disabled={busy} onClick={()=>void view(t.id)}>일정·연결 점검 열기</button></article>)}
+ {!loading&&!error&&!page.items.length&&<p>현재 조건의 일정 없음</p>}<button disabled={busy||loading||!offset} onClick={()=>setOffset(o=>Math.max(0,o-50))}>이전50</button><button disabled={busy||loading||!page.hasMore} onClick={()=>setOffset(o=>o+50)}>다음50</button></section>;
+}

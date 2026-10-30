@@ -1,0 +1,62 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import argon2 from "argon2";
+import request from "supertest";
+import { journalHash } from "../server/daily-journal-sources.js";
+import { openDatabase } from "../server/db.js";
+import { createApp } from "../server/app.js";
+import { normalizePresetDefaults,presetValues } from "../server/cost-preset-model.js";
+test("preset defaults allow only three supported normalized fields and no date/category/tax assumptions",()=>{
+ assert.deepEqual(normalizePresetDefaults({description:"  Synthetic  ",quantity:"1.500000",unitPriceWon:"2"}),{description:"Synthetic",quantity:"1.5",unitPriceWon:"2"});
+ assert.equal(presetValues.safeParse({name:"n",defaults:{description:"d",quantity:"1",unitPriceWon:"2",categoryId:randomUUID()}}).success,false);
+ for(const value of [{quantity:"-1",unitPriceWon:"1"},{quantity:"1",unitPriceWon:"1.1"},{quantity:"1.0000001",unitPriceWon:"1"}])assert.throws(()=>normalizePresetDefaults({description:"d",...value}));
+});
+test("preset select never writes ledger; exact current source creates immutable initial provenance and stale versions require reselect",async()=>{
+ const db=openDatabase(":memory:");
+ try {
+  const user=randomUUID(),site=randomUUID(),password="synthetic-preset-password",origin="http://127.0.0.1:3000";
+  db.prepare("INSERT INTO users VALUES(?,?,?,?)").run(user,"preset@example.test","Synthetic",await argon2.hash(password));db.prepare("INSERT INTO sites(id,name) VALUES(?,?)").run(site,"Synthetic site");db.prepare("INSERT INTO memberships VALUES(?,?,?)").run(site,user,"manager");
+  const app=await createApp(db,{origin,secret:"synthetic-preset-session-".repeat(3)}),agent=request.agent(app);let r=await agent.get("/api/session");r=await agent.post("/api/login").set("Origin",origin).set("x-csrf-token",r.body.csrf).send({email:"preset@example.test",password});assert.equal(r.status,200);const csrf=r.body.csrf;
+  const call=(path:string,body:object,key=randomUUID(),method="post")=>{const req=method==="put"?agent.put(path):agent.post(path);return req.set("Origin",origin).set("x-csrf-token",csrf).set("idempotency-key",key).send(body);},base=`/api/sites/${site}`;
+  r=await call(base+"/cost-input-presets",{name:"Reusable text",defaults:{description:"Synthetic default",quantity:"1.000000",unitPriceWon:"2"}});assert.equal(r.status,200);const first=r.body,ref={id:first.body.id,version:first.body.version,hash:first.hash};
+  assert.equal((await agent.get(base+"/cost-input-presets/"+ref.id)).status,200);assert.equal(db.prepare("SELECT count(*) n FROM cost_expenses").get()?.n,0);
+  r=await call(base+"/cost-periods",{month:"2026-10",openingNote:"Synthetic",categories:[{label:"Chosen by user",plan:"100",opening:"0"}]});assert.equal(r.status,200);let p=r.body;
+  const legacyExpense={categoryId:p.categories[0].id,spendDate:"2026-10-28",description:"Manual legacy",quantity:"1",unitPriceWon:"2"},legacyVersion=p.version,legacyKey=randomUUID();
+  r=await call(`${base}/cost-periods/${p.id}/expenses`,{version:legacyVersion,expense:legacyExpense},legacyKey);assert.equal(r.status,200);const legacyId=r.body.expense.id;p=r.body.period;
+  const stored=db.prepare("SELECT request FROM idempotency WHERE user_id=? AND scope=? AND key=?").get(user,`cost:expense:create:${site}:${p.id}`,legacyKey);
+  assert.equal(stored?.request,JSON.stringify({version:legacyVersion,expense:{...legacyExpense,amount:"2"}}));assert.equal((await agent.get(`${base}/cost-periods/${p.id}/expenses/${legacyId}/preset-source`)).body.source,null);
+  const expense={categoryId:p.categories[0].id,spendDate:"2026-10-28",description:"Edited before save",quantity:"1",unitPriceWon:"2"},command={version:p.version,expense,presetSource:ref},key=randomUUID();
+  assert.equal((await call(`${base}/cost-periods/${p.id}/expenses`,{...command,presetSource:{...ref,hash:"0".repeat(64)}})).status,409);
+  db.exec("CREATE TRIGGER synthetic_preset_source_failure BEFORE INSERT ON cost_expense_preset_sources BEGIN SELECT RAISE(ABORT,'synthetic rollback'); END;");
+  assert.equal((await call(`${base}/cost-periods/${p.id}/expenses`,command)).status,500);assert.equal(db.prepare("SELECT count(*) n FROM cost_expenses").get()?.n,1);assert.equal(db.prepare("SELECT version FROM cost_periods WHERE id=?").get(p.id)?.version,p.version);db.exec("DROP TRIGGER synthetic_preset_source_failure");
+  r=await call(`${base}/cost-periods/${p.id}/expenses`,command,key);assert.equal(r.status,200);const saved=r.body.expense;p=r.body.period;
+  const sourcePath=`${base}/cost-periods/${p.id}/expenses/${saved.id}/preset-source`;
+  const source=(await agent.get(sourcePath)).body.source;assert.equal(source.body.editedAtCreation,true);assert.equal(source.body.preset.hash,first.hash);const fixed=JSON.stringify(source.body);
+  r=await call(`${base}/cost-input-presets/${ref.id}/revise`,{name:"Revised",defaults:{description:"New default",quantity:"3",unitPriceWon:"4"},source:ref,reason:"Explicit revision"});assert.equal(r.status,200);const second=r.body,nextRef={id:second.body.id,version:second.body.version,hash:second.hash};
+  assert.equal((await call(`${base}/cost-periods/${p.id}/expenses`,{version:p.version,expense,presetSource:ref})).status,409);
+  assert.equal((await call(`${base}/cost-periods/${p.id}/expenses`,command,key)).body.expense.id,saved.id);
+  r=await call(`${base}/cost-periods/${p.id}/expenses/${saved.id}`,{version:p.version,reason:"Later ordinary edit",expense:{...expense,description:"Later changed"}},randomUUID(),"put");assert.equal(r.status,200);p=r.body.period;
+  assert.equal(JSON.stringify((await agent.get(sourcePath)).body.source.body),fixed);
+  assert.equal((await agent.get(sourcePath)).body.source.currentPreset,false);
+  const searched=(await agent.get(`${base}/cost-expense-search?text=Later%20changed`)).body.items[0];assert.equal(searched.id,saved.id);assert.equal(searched.periodId,p.id);
+  r=await call(`${base}/cost-periods/${p.id}/expenses/${saved.id}/cancel`,{version:p.version,reason:"Explicit cancellation"});assert.equal(r.status,200);p=r.body.period;
+  const current=(await agent.get(`${base}/cost-periods/${p.id}/expenses/${searched.id}`)).body;assert.equal(current.id,saved.id);assert.equal(current.status,"cancelled");assert.notEqual(current.version,searched.version);assert.equal(JSON.stringify((await agent.get(sourcePath)).body.source.body),fixed);
+  assert.equal((await agent.get(`${base}/cost-periods/${p.id}/expenses/${randomUUID()}`)).status,404);
+  r=await call(`${base}/cost-input-presets/${nextRef.id}/retire`,{source:nextRef,reason:"No longer used",confirm:true});assert.equal(r.status,200);assert.equal(r.body.body.status,"retired");
+  assert.equal((await call(`${base}/cost-periods/${p.id}/expenses`,{version:p.version,expense,presetSource:nextRef})).status,409);
+  assert.equal(db.prepare("SELECT count(*) n FROM cost_expenses").get()?.n,2);
+  let last=first;
+  db.exec("BEGIN");
+  for(let i=0;i<998;i++){const id=randomUUID(),body={...first.body,id,rootId:id,parentId:null,parentHash:null,version:1};const hash=journalHash(body);db.prepare("INSERT INTO cost_input_presets VALUES(?,?,?,?,?,?,?,?,?)").run(id,site,id,null,1,"active",JSON.stringify(body),hash,body.at);last={body,hash};}
+  db.exec("COMMIT");
+  assert.equal(db.prepare("SELECT count(*) n FROM cost_input_presets WHERE status='active'").get()?.n,1000);
+  assert.equal((await call(base+"/cost-input-presets",{name:"Over cap",defaults:{description:"d",quantity:"1",unitPriceWon:"1"}})).status,409);
+  const retirement=await call(`${base}/cost-input-presets/${last.body.id}/retire`,{source:{id:last.body.id,version:1,hash:last.hash},reason:"Reserved retirement",confirm:true});assert.equal(retirement.status,200);
+  assert.equal((await agent.get(base+"/cost-input-presets?status=all")).body.items.length,50);
+  db.prepare("UPDATE memberships SET role='editor' WHERE site_id=? AND user_id=?").run(site,user);
+  assert.equal((await agent.get(base+"/cost-input-presets")).status,403);
+  assert.throws(()=>db.prepare("UPDATE cost_input_presets SET body='{}' WHERE id=?").run(ref.id),/immutable/);
+  assert.throws(()=>db.prepare("UPDATE cost_expense_preset_sources SET body='{}' WHERE expense_id=?").run(saved.id),/immutable/);
+ }finally{db.close();}
+});

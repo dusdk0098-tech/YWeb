@@ -1,0 +1,4 @@
+import { z } from 'zod';
+import { packetKinds,type PlanPacket } from './work-plan-packet-values.js';
+export const planPacketSchema=z.object({schemaVersion:z.literal(1),equipmentId:z.uuid().nullable(),rows:z.array(z.object({kind:z.enum(Object.keys(packetKinds) as [keyof typeof packetKinds,...(keyof typeof packetKinds)[]]),state:z.enum(['linked','missing','not_applicable']).nullable(),fileId:z.uuid().nullable(),note:z.string().trim().max(1000)}).strict().refine(r=>r.state==='linked'||r.fileId===null,'파일 참조 구분에서만 파일을 선택하세요.')).max(12).refine(rows=>new Set(rows.map(r=>r.kind)).size===rows.length,'서류 분류를 중복 입력하지 마세요.')}).strict();
+export function completePacket(packet:PlanPacket){return !!packet.equipmentId&&packet.rows.length>0&&packet.rows.every(r=>r.state!==null&&!!r.note&&(r.state!=='linked'||!!r.fileId));}

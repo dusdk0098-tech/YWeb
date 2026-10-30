@@ -1,0 +1,11 @@
+import {useEffect,useState} from "react";
+import {api} from "./api";
+import {useDraftGuard} from "./useDraftGuard";
+import {InspectionUseNotice,type InspectionUseState} from "./InspectionUseNotice";
+export function InspectionUsePanel({siteId,templateId,canStop,disabled,onDirtyChange,onBusyChange}:{siteId:string;templateId:string;canStop:boolean;disabled:boolean;onDirtyChange:(v:boolean)=>void;onBusyChange:(v:boolean)=>void}){
+ const [state,setState]=useState<InspectionUseState|null>(null),[reason,setReason]=useState(""),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(""),[tick,setTick]=useState(0);
+ const path=`/sites/${siteId}/inspection-templates/${templateId}`,dirty=!!reason||confirmed,guard=useDraftGuard(dirty,busy,onDirtyChange,onBusyChange);
+ useEffect(()=>{let live=true;setState(null);setError("");api<InspectionUseState>(path+"/use-status").then(v=>{if(live)setState(v);}).catch(e=>{if(live)setError(e.message);});return()=>{live=false;};},[path,tick]);
+ async function stop(){if(!state||!confirmed||!reason.trim()||busy||disabled)return;const value={version:state.version,sourceHash:state.sourceHash,reason:reason.trim(),confirmNoUndo:true},endpoint=path+"/stop-use";setBusy(true);setError("");try{setState(await api<InspectionUseState>(endpoint,"POST",value,guard.key(endpoint,value)));setReason("");setConfirmed(false);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+ return <section>{error&&<p role="alert">현재 양식 상태 조회/변경 실패: {error}</p>}{state?<InspectionUseNotice state={state}/>:<p>현재 상태 확인 전 · 사용가능으로 추정하지 않습니다.</p>}<button disabled={disabled||busy||dirty} onClick={()=>setTick(t=>t+1)}>현재 양식 상태 다시 조회</button>{canStop&&state?.sourceHash&&!state.useStopped&&<form onSubmit={e=>{e.preventDefault();void stop();}}><fieldset disabled={busy||disabled}><label>해제 없는 신규사용 중지 사유<textarea required maxLength={1000} value={reason} onChange={e=>{setReason(e.target.value);setConfirmed(false);}}/></label><p>사유는 현장 조회자에게 보입니다. 새 양식 개정/게시/선택은 자동 실행하지 않습니다.</p><label><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>해제 불가·기존 일정/점검 계속 진행·과거 기록 불변을 확인했습니다.</label><button disabled={!confirmed||!reason.trim()}>신규사용 중지</button></fieldset></form>}</section>;
+}

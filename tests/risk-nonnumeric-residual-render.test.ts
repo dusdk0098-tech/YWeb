@@ -1,0 +1,9 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {createElement} from 'react';import {renderToStaticMarkup} from 'react-dom/server';import {RiskNonNumericResidualValues,emptyResidualAnswers} from '../src/RiskNonNumericResidualValues.js';import {residualValueLabel} from '../src/RiskResidualValues.js';import type {ResidualContext,ResidualSnapshot} from '../server/risk-residuals.js';
+test('nonnumeric residual SSR labels exact original question and proposal-only unresolved semantics',()=>{
+ const context={facts:{criteria:{body:{method:'narrative',questions:Object.fromEntries(['scenario','exposedGroup','exposurePath','harm','currentControls','additionalMeasures'].map(k=>[k,{prompt:'Own <'+k+'>',guidance:'Guidance'}]))}},hazard:{}}} as unknown as ResidualContext;
+ const props={context,outcome:'',setOutcome:()=>{},answers:emptyResidualAnswers(),setAnswers:()=>{},decision:'further_review',setDecision:()=>{},followupNotes:'',setFollowupNotes:()=>{}};
+ const html=renderToStaticMarkup(createElement(RiskNonNumericResidualValues,props));assert.ok(html.includes('Own &lt;exposurePath&gt;'));assert.ok(html.includes('미배정/미실행'));assert.ok(html.includes('미확정 그대로 기록'));assert.ok(html.includes('원 평가의 명시 정정'));assert.doesNotMatch(html,/>가능성|>중대성/);
+ const checklist={facts:{criteria:{body:{method:'checklist',items:[{id:'i',prompt:'Own item',guidance:'Exact guidance'}]}},hazard:{checklistItemId:'i'}}} as unknown as ResidualContext;
+ const text=renderToStaticMarkup(createElement(RiskNonNumericResidualValues,{...props,context:checklist}));assert.ok(text.includes('Exact guidance'));assert.ok(text.includes('해당없음 (근거 필수)'));assert.ok(text.includes('부적합 · 미해결 판단'));
+ const label=residualValueLabel({method:'narrative',result:{bandLabel:'Further review',score:null,criterionAcceptable:null}} as unknown as ResidualSnapshot);assert.ok(label.includes('전체 허용 판정 없음'));
+});

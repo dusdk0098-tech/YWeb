@@ -1,0 +1,7 @@
+// Frozen pre-attachment renderer for schema1 byte comparison.
+import { escapeHtml as e } from "../../server/print.js";
+import type { MinutesSnapshot } from "../../server/minutes-model.js";
+export function printLegacyFinalMinutes(snapshot:{body:MinutesSnapshot;hash:string}){
+ const s=snapshot.body,b=s.body,section=(title:string,text:string)=>`<section><h2>${e(title)}</h2><p>${e(text)||"—"}</p></section>`;
+ return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(b.title)} · 회의록</title><link rel="stylesheet" href="/print.css"></head><body><aside>관리자가 기록을 확정한 회의록 · 전자서명/법적 적합성 증명 아님</aside><main><h1>${e(b.title)}</h1><p>${e(s.site.name)} · ${e(b.type)} · ${e(b.date)} ${e(b.time)} · ${e(b.location)}</p><p>작성 계정(확정 당시): ${e(s.author.name)} (${e(s.author.id)}) · 버전 ${s.version}</p>${section("참석자 · 입력 기록",b.attendees)}${section("안건",b.agenda)}${section("논의",b.discussion)}${section("결정",b.decisions)}<section><h2>확정 당시 후속 항목 · 수기 상태</h2>${b.actions.map((a,i)=>`<article><h3>${i+1}. ${e(a.task)}</h3><p>담당 입력: ${e(a.owner)} · 기한 ${e(a.due)} · 당시 수기 상태 ${e(a.status)}</p></article>`).join("")||"<p>없음</p>"}</section><p>현재 별도 추적의 보고/확인 상태는 이 원문에 합치지 않습니다. 참석 입력은 실제 본인·참여·서명·교육 이수를 증명하지 않습니다.</p><footer><p>기록 확정: ${e(s.finalizedBy.name)} (${e(s.finalizedBy.id)}) · ${e(s.finalizedAt)}</p><p>정정 사유 ${e(s.revisionReason||"최초 기록")} · 이전 확정본 ${e(s.parentId||"없음")}</p><p>SHA-256 ${e(snapshot.hash)} · 내용 비교용, 전자서명 아님</p></footer></main></body></html>`;
+}

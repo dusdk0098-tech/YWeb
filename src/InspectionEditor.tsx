@@ -1,0 +1,411 @@
+import { InspectionTaskSource } from "./InspectionTaskSource";
+import { InspectionHazardLinks } from "./InspectionHazardLinks";
+import { HazardEditor } from "./HazardEditor";
+import type { HazardRecord } from "./hazard-types";
+import { InspectionHistory } from "./InspectionHistory";
+import { useEffect, useRef, useState } from "react";
+import { api, type Site, type User } from "./api";
+import {
+  inspectionStatus,
+  resultLabel,
+  type Inspection,
+  type InspectionTemplate,
+  type InspectionBody,
+} from "./inspection-types";
+import { useDraftGuard } from "./useDraftGuard";
+export function InspectionEditor({
+  site,
+  user,
+  initial,
+  template,
+  onClose,
+  onDirtyChange,
+  onBusyChange,
+}: {
+  site: Site;
+  user: User;
+  initial: Inspection | null;
+  template?: InspectionTemplate;
+  onClose: () => void;
+  onDirtyChange: (v: boolean) => void;
+  onBusyChange: (v: boolean) => void;
+}) {
+  const [record, setRecord] = useState(initial),
+    [form, setForm] = useState<InspectionBody>(
+      initial?.body || {
+        date: new Date().toLocaleDateString("en-CA"),
+        location: "",
+        performedBy: "",
+        answers: template!.body.items.map((i) => ({
+          itemId: i.id,
+          result: "pending",
+          comment: "",
+        })),
+      },
+    ),
+    [reason, setReason] = useState(""),
+    [authorId, setAuthorId] = useState(initial?.owner_id || user.id),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [authors, setAuthors] = useState<{ id: string; name: string }[]>([]);
+  const [linkedReport, setLinkedReport] = useState<HazardRecord | null>(null);
+  const baseline = useRef(JSON.stringify(form)),
+    formDirty = JSON.stringify(form) !== baseline.current,
+    dirty = formDirty || !!reason || authorId !== (record?.owner_id || user.id),
+    guard = useDraftGuard(dirty, busy, onDirtyChange, onBusyChange);
+  const t = record?.template_snapshot || template!.published_snapshot!,
+    editable =
+      site.role !== "viewer" &&
+      (!record || (record.status === "draft" && record.owner_id === user.id));
+  useEffect(() => {
+    if (site.role !== "manager") return;
+    let active = true;
+    api<{ id: string; name: string }[]>(`/sites/${site.id}/inspections/authors`)
+      .then((r) => {
+        if (active) setAuthors(r);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [site.id, site.role]);
+  function adopt(next: Inspection) {
+    setRecord(next);
+    setForm(next.body);
+    baseline.current = JSON.stringify(next.body);
+    setReason("");
+    setAuthorId(next.owner_id);
+  }
+  async function run(action: "save" | "submit" | "accept" | "return") {
+    if (busy) return;
+    if (action !== "save" && formDirty) {
+      setError("변경 내용을 먼저 저장하세요.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    const path = `/sites/${site.id}/inspections${record ? "/" + record.id : ""}${action === "save" ? "" : "/" + action}`,
+      value =
+        action === "save"
+          ? record
+            ? { version: record.version, body: form }
+            : { templateId: template!.id, body: form,templateVersion:template!.version,...(template!.selectionHash?{templateHash:template!.selectionHash}:{}) }
+          : action === "submit"
+            ? { version: record!.version }
+            : {
+                version: record!.version,
+                reason,
+                ...(action === "return" ? { authorId } : {}),
+              };
+    try {
+      if (action === "accept" || action === "return") {
+        const result = await api<{
+          record: Inspection;
+          next: Inspection | null;
+        }>(path, "POST", value, guard.key(path, value));
+        adopt(result.next || result.record);
+      } else
+        adopt(
+          await api<Inspection>(
+            path,
+            action === "save" && record ? "PUT" : "POST",
+            value,
+            guard.key(path, value),
+          ),
+        );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function reload(id: string) {
+    if (!guard.canLeave()) return;
+    setBusy(true);
+    setError("");
+    try {
+      adopt(await api<Inspection>(`/sites/${site.id}/inspections/${id}`));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (linkedReport)
+    return (
+      <HazardEditor
+        key={linkedReport.id}
+        site={site}
+        user={user}
+        initial={linkedReport}
+        closeLabel="원 점검으로 돌아가기"
+        onDirtyChange={onDirtyChange}
+        onBusyChange={onBusyChange}
+        onClose={() => setLinkedReport(null)}
+      />
+    );
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <h1>
+          {t.body.title} ·{" "}
+          {record ? inspectionStatus[record.status] : "새 점검"}
+        </h1>
+        <button
+          disabled={busy}
+          className="secondary"
+          onClick={() => guard.canLeave() && onClose()}
+        >
+          점검 목록으로
+        </button>
+      </div>
+      <p>
+        양식 {t.id} · 게시 버전 {t.version} · {t.body.instructions}
+      </p>
+      <p className="notice">
+        계정이 직접 입력한 점검 기록입니다. 본인 확인·법정 점검 증명·안전 인증이
+        아니며, 부적합 결과가 자동으로 조치 완료 처리되지 않습니다.
+      </p>
+      {record && (
+        <p>
+          기록 {record.id} · v{record.version} · 작성 계정 {record.owner_id} ·
+          이전 기록 {record.parent_id || "없음"}
+        </p>
+      )}
+      {record?.submitted_snapshot && (
+        <p>
+          원 제출 계정: {record.submitted_snapshot.submitter.name} (
+          {record.submitted_snapshot.submitter.id}) ·{" "}
+          {record.submitted_snapshot.submittedAt}
+        </p>
+      )}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      <fieldset disabled={!editable || busy}>
+        <label>
+          점검일
+          <input
+            type="date"
+            value={form.date}
+            onChange={(e) => setForm({ ...form, date: e.target.value })}
+          />
+        </label>
+        <label>
+          장소
+          <input
+            maxLength={300}
+            value={form.location}
+            onChange={(e) => setForm({ ...form, location: e.target.value })}
+          />
+        </label>
+        <label>
+          점검자 표시 (직접 입력 · 신원 검증 아님)
+          <input
+            maxLength={100}
+            value={form.performedBy}
+            onChange={(e) => setForm({ ...form, performedBy: e.target.value })}
+          />
+        </label>
+        {t.body.items.map((item, index) => {
+          const a = form.answers.find((a) => a.itemId === item.id)!;
+          return (
+            <div className="panel" key={item.id}>
+              <h2>
+                {index + 1}. {item.text}
+              </h2>
+              <label>
+                결과
+                <select
+                  value={a.result}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      answers: form.answers.map((v) =>
+                        v.itemId === item.id
+                          ? { ...v, result: e.target.value as typeof a.result }
+                          : v,
+                      ),
+                    })
+                  }
+                >
+                  {Object.entries(resultLabel).map(([v, l]) => (
+                    <option value={v} key={v}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                설명 (부적합/해당 없음은 필수)
+                <textarea
+                  maxLength={2000}
+                  value={a.comment}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      answers: form.answers.map((v) =>
+                        v.itemId === item.id
+                          ? { ...v, comment: e.target.value }
+                          : v,
+                      ),
+                    })
+                  }
+                />
+              </label>
+            </div>
+          );
+        })}
+      </fieldset>
+      <div className="actions">
+        {editable && (
+          <button disabled={busy} onClick={() => run("save")}>
+            점검 초안 저장
+          </button>
+        )}
+        {editable && record && (
+          <button
+            disabled={busy || formDirty}
+            onClick={() =>
+              window.confirm(
+                "저장된 점검 내용을 변경 불가능한 원문으로 제출할까요?",
+              ) && run("submit")
+            }
+          >
+            점검 제출
+          </button>
+        )}
+        {record && (
+          <>
+            <button
+              disabled={busy}
+              className="secondary"
+              onClick={() => reload(record.id)}
+            >
+              최신본 다시 열기
+            </button>
+            <a
+              href={`/api/sites/${site.id}/inspections/${record.id}/print`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              저장본 인쇄 / PDF
+            </a>
+          </>
+        )}
+      </div>
+      {record?.review && (
+        <div className="notice">
+          <h2>관리자 기록 검토</h2>
+          <p>
+            {record.review.actor.name} ({record.review.actor.id}) ·{" "}
+            {record.review.at}
+          </p>
+          <p>{record.review.reason}</p>
+          {record.review.successorId && (
+            <button
+              disabled={busy}
+              onClick={() => reload(record.review!.successorId!)}
+            >
+              후속 점검 초안 열기
+            </button>
+          )}
+        </div>
+      )}
+      {record?.status === "submitted" && site.role === "manager" && (
+        <section className="panel">
+          <h2>관리자 검토</h2>
+          <p>
+            잠정 업무 정책: 원 제출 계정이 아닌 현장 관리자가 검토합니다.
+            제출자가 관리자이면 다른 관리자 1명이 필요합니다. 현장 설정에서 기존
+            계정을 관리자로 지정하세요. 법적 의무를 뜻하지 않습니다.
+          </p>
+          {record.owner_id === user.id ? (
+            <p className="notice">
+              본인 제출 기록은 직접 수락/반려할 수 없습니다.
+            </p>
+          ) : (
+            <fieldset disabled={busy}>
+              <label>
+                검토 사유
+                <textarea
+                  maxLength={1000}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+              </label>
+              <label>
+                반려 시 후속 초안 작성 계정 (관리자가 명시적으로 지정)
+                <select
+                  value={authorId}
+                  onChange={(e) => setAuthorId(e.target.value)}
+                >
+                  <option value="">선택</option>
+                  {!authors.some((a) => a.id === authorId) && authorId && (
+                    <option value={authorId}>
+                      기존 작성자 권한 없음 · 다른 계정 선택 필요
+                    </option>
+                  )}
+                  {authors.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} ({a.id})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p>
+                반려는 원문을 보존하고 모든 답변을 미입력으로 초기화한 후속
+                초안을 한 번 생성합니다. 이전 작성자의 권한이 없으면 현재 현장
+                편집자/관리자를 지정하세요.
+              </p>
+              <button disabled={!reason.trim()} onClick={() => run("accept")}>
+                기록 검토 수락
+              </button>
+              <button
+                disabled={
+                  !reason.trim() || !authors.some((a) => a.id === authorId)
+                }
+                onClick={() =>
+                  window.confirm(
+                    "원본을 반려하고 지정한 계정의 후속 초안을 생성할까요?",
+                  ) && run("return")
+                }
+              >
+                반려 + 후속 초안 생성
+              </button>
+            </fieldset>
+          )}
+        </section>
+      )}
+      {record && <InspectionTaskSource siteId={site.id} id={record.id} />}
+      {record && (
+        <InspectionHistory
+          key={record.id}
+          siteId={site.id}
+          id={record.id}
+          version={record.version}
+        />
+      )}
+      {record && (
+        <InspectionHazardLinks
+          key={record.id}
+          site={site}
+          record={record}
+          busy={busy}
+          onBusyChange={setBusy}
+          onOpen={async (id) => {
+            if (!guard.canLeave()) return;
+            const next = await api<HazardRecord>(
+              `/sites/${site.id}/hazards/${id}`,
+            );
+            setLinkedReport(next);
+          }}
+        />
+      )}
+    </section>
+  );
+}

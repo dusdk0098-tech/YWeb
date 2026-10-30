@@ -1,0 +1,3 @@
+import type {inspectionUse} from "../server/inspection-use";
+export type InspectionUseState=ReturnType<typeof inspectionUse>;
+export function InspectionUseNotice({state}:{state:InspectionUseState}){return <aside><h3>현재 양식 신규사용 상태</h3><p>ID {state.templateId} · v{state.version} · {state.sourceHash||"미게시"}</p><p>{state.useStopped?"신규 일정/직접 새 점검 생성 중지":"신규사용 중지 기록 없음"}</p>{state.stop&&<p>{state.stop.reason} · {state.stop.actor.name} · {state.stop.at}</p>}{state.successor&&<p>후속 양식 {state.successor.id} · {state.successor.status==="published"?"게시됨":"초안"} · 자동 대체 없음</p>}<p>중지는 해제할 수 없습니다. 이미 양식을 고정한 일정의 시작·제출·반려 후속·검토는 계속됩니다. 과거 원문/인쇄는 바뀌지 않습니다. 실제 안전·법적 준수 판정이 아닙니다.</p></aside>;}

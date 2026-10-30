@@ -1,0 +1,8 @@
+import { managerWorkflowLines } from "./manager-overview-text.js";
+import type { ManagerOverview } from "./manager-overview.js";
+import { escapeHtml as e } from "./print.js";
+export const overviewWarning =
+  "조회 시점의 기록 상태입니다. 기준일은 일정/후속 예정일 비교와 일지 날짜 선택에 사용하며 과거 시점 상태를 재현하지 않습니다. 신고 상태는 실제 위험·해결 여부, 일정은 실제 점검 완료, 일지 없음은 미작업·미준수를 뜻하지 않습니다.";
+export function printManagerOverview(r: ManagerOverview) {
+  return `<!doctype html><html lang="ko"><meta charset="utf-8"><title>관리 현장 기록 현황</title><link rel="stylesheet" href="/print.css"><body><h1>관리 현장 기록 현황</h1><p>비교/일지 기준일 ${e(r.asOfDate)} · 조회 ${e(r.generatedAt)} · 현장 ${r.offset + 1}부터 ${r.sites.length}개 / ${r.totalSites}개</p><p>${e(overviewWarning)}</p><p>비용 조회 월 ${e(r.costMonth || "미선택")}</p><p>현재 페이지 현장만 포함합니다. 다른 페이지와 합계 또는 역사적 확정 보고서가 아닙니다. 지문 ${e(r.fingerprint)}</p><table><thead><tr><th>현장</th><th>신고 기록 (제출/배정/검토요청/종결)</th><th>미시작 일정 (기준일 전/당일/후)</th><th>기준일 일지 기록</th></tr></thead><tbody>${r.sites.map((s) => `<tr><td>${e(s.name)}</td><td>${s.hazards.reported} / ${s.hazards.assigned} / ${s.hazards.reviewRequested} / ${s.hazards.closed}</td><td>${s.tasks.beforeDate} / ${s.tasks.onDate} / ${s.tasks.afterDate}</td><td>${s.journal.rootExists ? `보관 버전 ${s.journal.archivedVersions}개 · 최초 초안 ${s.journal.initialDraft ? "있음" : "없음"} · 정정 초안 ${s.journal.correctionDraft ? "있음" : "없음"}` : "일지 기록 없음 (실제 작업 여부 불명)"}</td></tr>`).join("")}</tbody></table>${r.sites.map(s=>`<section><h2>${e(s.name)} · 추가 업무/선택 월 비용</h2>${managerWorkflowLines(s).map(line=>`<p>${e(line)}</p>`).join("")}</section>`).join("")}<p>문서 대기는 내 검토 가능 업무와 다릅니다. 이전 문서의 미해결 후속을 포함하며 실제 이행/안전 판단이 아닙니다. 비용은 선택 월·현장별 원 단위 기록이며 현장 간 합산하지 않습니다.</p><p>${r.hasMore ? "다음 페이지 현장이 더 있습니다." : "이 조회 범위의 마지막 페이지입니다."}</p></body></html>`;
+}

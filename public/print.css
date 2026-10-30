@@ -1,0 +1,59 @@
+body {
+  font-family: system-ui, "Noto Sans KR", sans-serif;
+  color: #162126;
+  margin: 2rem auto;
+  max-width: 190mm;
+  line-height: 1.7;
+}
+main {
+  padding: 1rem;
+}
+header {
+  border-bottom: 2px solid #162126;
+}
+h1 {
+  font-size: 24pt;
+  overflow-wrap: anywhere;
+}
+h2 {
+  font-size: 14pt;
+  border-bottom: 1px solid #aaa;
+  margin-top: 1.5rem;
+  break-after: avoid;
+}
+p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  orphans: 3;
+  widows: 3;
+}
+article {
+  break-inside: avoid;
+}
+footer {
+  margin-top: 2rem;
+  font-size: 9pt;
+}
+aside {
+  background: #e9f1ed;
+  padding: 1rem;
+}
+h3 {
+  overflow-wrap: anywhere;
+}
+@page {
+  size: A4;
+  margin: 16mm;
+}
+@media print {
+  body {
+    margin: 0;
+    max-width: none;
+  }
+  aside {
+    display: none;
+  }
+  main {
+    padding: 0;
+  }
+}

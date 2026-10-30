@@ -1,0 +1,6 @@
+import { escapeHtml as e } from "./print.js";
+import type { WorkStopRecord, WorkStopEvent } from "./work-stop-model.js";
+export function printWorkStop(row: WorkStopRecord, events: WorkStopEvent[]) {
+  const original = row.original;
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>작업중지 요청·수기 기록</title><link rel="stylesheet" href="/print.css"></head><body><aside>실제 작업중지·재개 명령/허가/안전 인증/외부 알림이 아닙니다. 현장의 실제 대응 절차를 별도로 따르세요.</aside><main><h1>작업중지 요청·수기 기록</h1><p>${e(original.site.name)} · ${e(row.id)} · v${row.version} · ${e(row.status)}</p><h2>변경하지 않는 원 요청</h2><p>${e(original.body.work)} · ${e(original.body.location)}</p><p>${e(original.body.reason)}</p><p>요청자 ${e(original.requester.name)} (${e(original.requester.id)}) · 관찰 입력 시각 ${e(original.body.observedLocal)}</p><p>접수 audit UTC ${e(original.requestedAt)} · 원본 SHA256 ${e(row.original_hash)}</p><h2>전체 기록 이력</h2>${events.map((v) => `<article><h3>v${v.version} · ${e(v.event)}</h3><p>${e(v.actor_name)} (${e(v.actor_id)}) · audit UTC ${e(v.at)}</p><p>${e(v.note)}</p><pre>${e(v.snapshot)}</pre></article>`).join("")}<footer>현장 입력 시각은 공통 로컬 시계 규약으로 수기 입력하며 timezone/실제 경과시간을 추론하지 않습니다. 이력은 기록 주장이지 현장 행위의 진위 보증이 아닙니다. 첨부·전자서명·긴급 전송 없음.</footer></main></body></html>`;
+}

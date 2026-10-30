@@ -74,7 +74,7 @@ test("manager literal cross-month cost search labels owning month and spend date
     page.getByText(/귀속 월 2026-12.*지출일 2026-10-01/),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "이 지출의 귀속 원장 열기", exact: true })
+    .getByRole("button", { name: "이 지출 ID와 귀속 원장 열기", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: /2026-12 비용 원장/ }),

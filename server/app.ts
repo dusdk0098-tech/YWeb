@@ -9,7 +9,7 @@ import { registerDailyMonthlyRecords } from "./daily-monthly-record-routes.js";
 import { registerDailyJournalRegister } from "./daily-journal-register.js";
 import { registerWorkPlanAttachments, isWorkPlanUpload } from "./work-plan-attachment-routes.js";
 import { registerMinutesAttachments, isMinutesUpload } from "./minutes-attachment-routes.js";
-import { boundedUploadReader } from "./bounded-upload.js";
+import { boundedUploadReader, boundedRejectedUploadDrainer } from "./bounded-upload.js";
 import { registerInspectionWorkflow } from "./inspection-workflow-routes.js";
 import { registerEducationTransfer } from "./education-transfer-routes.js";
 import { registerCatalogUse } from "./education-catalog-use-routes.js";
@@ -488,8 +488,14 @@ export async function createApp(db: Db, config: AppConfig) {
   app.use("/api", (_req, res) =>
     res.status(404).json({ error: "API를 찾을 수 없습니다." }),
   );
+  const discardRejectedUpload = boundedRejectedUploadDrainer();
   app.use(
-    (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    async (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+      if (error instanceof HttpError && error.status === 413 &&
+        (isHazardUpload(_req.method, _req.path) || isMinutesUpload(_req.method, _req.path) ||
+          isWorkPlanUpload(_req.method, _req.path) || isCostEvidenceUpload(_req.method, _req.path) ||
+          isEducationUpload(_req.method, _req.path)))
+        await discardRejectedUpload(_req);
       if (error instanceof z.ZodError)
         return res.status(400).json({
           error: "입력값을 확인해 주세요.",

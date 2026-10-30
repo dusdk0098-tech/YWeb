@@ -59,7 +59,7 @@ test("own education journal manual minutes and immutable record archive", async 
     .getByRole("button", { name: "교육 초안 저장", exact: true })
     .click();
   await page
-    .getByLabel("명부 후보 (자동 참석 아님)", { exact: true })
+    .getByRole("combobox", { name: "명부 후보 (자동 참석 아님)", exact: true })
     .selectOption(worker.id);
   await page
     .getByRole("button", { name: "미입력 대상으로 추가", exact: true })
@@ -67,7 +67,9 @@ test("own education journal manual minutes and immutable record archive", async 
   await page
     .getByRole("button", { name: "이 대상 참여 수정", exact: true })
     .click();
-  await page.getByLabel("참여 상태", { exact: true }).selectOption("attended");
+  await page
+    .getByRole("combobox", { name: "참여 상태", exact: true })
+    .selectOption("attended");
   await page.getByLabel("개인 수기 참여시간 (분)", { exact: true }).fill("45");
   page.once("dialog", (d) => d.dismiss());
   await page

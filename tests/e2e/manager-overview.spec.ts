@@ -32,7 +32,7 @@ test("manager overview uses explicit date and selected current manager site", as
     .getByLabel("현황 비교 및 일지 기준일", { exact: true })
     .fill("2026-10-28");
   await page
-    .getByLabel("관리 현장 조회 범위", { exact: true })
+    .getByRole("combobox", { name: "관리 현장 조회 범위", exact: true })
     .selectOption(site.id);
   await expect(
     page.getByRole("heading", { name: site.name, exact: true }),

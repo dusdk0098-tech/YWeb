@@ -80,13 +80,13 @@ test("own template publish, inspection submit and independent return", async ({
       .getByRole("button", { name: "양식 / 새 점검", exact: true })
       .click();
     await staff
-      .getByRole("button", { name: "이 버전으로 새 점검", exact: true })
+      .getByRole("button", { name: "이 버전으로 직접 새 점검", exact: true })
       .click();
     await staff.getByLabel("장소", { exact: true }).fill("작업구역");
     await staff
       .getByLabel("점검자 표시 (직접 입력 · 신원 검증 아님)", { exact: true })
       .fill("수기 표시");
-    await staff.getByLabel("결과", { exact: true }).selectOption("fail");
+    await staff.getByRole("combobox", { name: "결과", exact: true }).selectOption("fail");
     await staff
       .getByLabel("설명 (부적합/해당 없음은 필수)", { exact: true })
       .fill("정리 필요");
@@ -109,7 +109,7 @@ test("own template publish, inspection submit and independent return", async ({
     await page
       .getByRole("button", { name: "반려 + 후속 초안 생성", exact: true })
       .click();
-    await expect(page.getByLabel("결과", { exact: true })).toHaveValue(
+    await expect(page.getByRole("combobox", { name: "결과", exact: true })).toHaveValue(
       "pending",
     );
     await expect(

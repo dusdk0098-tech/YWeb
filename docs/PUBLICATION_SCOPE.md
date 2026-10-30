@@ -6,4 +6,4 @@ Phase79 앱0.79.0/DB56·backup56의 실행가능 공개 소스입니다. 원본�
 
 제외: 실제DB/백업/계정/세션/비밀/.env/실제첨부/개인문서, 사용자교육·위험대책 원자료/교육91 실제본문·출력/privateZIP·스프레드시트/이미지, 내부대화/사용자절대경로/원로그/전체 docs/review, 비공개증거복원 scripts/restore_review_evidence.py(앱·시험에 불필요), node_modules/dist/캐시/실행산출물/과거ZIP/Library메타데이터.
 
-원 HANDOFF/DEVELOPMENT_LOG/설계·coverage·역사문서는 공개 안내/검증 요약으로 대체합니다. 정식LICENSE는 미선택이며 발급하지 않습니다. 실행코드·lock·합성시험 bytes는 변경하지 않습니다. 전체 개발기능 포함이 운영데이터·내부이력 공개를 뜻하지 않습니다. 비밀패턴/알려진private문자열 제외검사는 개인정보·권리 문제 부재의 보증이 아닙니다.
+원 HANDOFF/DEVELOPMENT_LOG/설계·coverage·역사문서는 공개 안내/검증 요약으로 대체합니다. 정식LICENSE는 미선택이며 발급하지 않습니다. 최초 공개 정리 시 실행코드·lock·합성시험 bytes를 유지했습니다. 후속 Windows 수정본은 [PC 검증 기록](PC_VALIDATION.md)의 코드·시험·문서 변경을 포함하며 소스 SHA manifest를 갱신했습니다. 전체 개발기능 포함이 운영데이터·내부이력 공개를 뜻하지 않습니다. 비밀패턴/알려진private문자열 제외검사는 개인정보·권리 문제 부재의 보증이 아닙니다.

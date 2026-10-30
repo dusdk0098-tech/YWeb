@@ -62,9 +62,11 @@ test("print routes keep maximum valid headings and cost columns within A4 width"
       answers: [{ itemId: published.body.items[0].id, result: "pass", comment: "PRINT-END-INSPECTION" }],
     },
   });
+  // The bare /cost-periods/:id/print route was removed; current-ledger print goes through output prepare.
+  const costOutput = await (await page.request.get(`${base}/cost-periods/${cost.id}/output/prepare`)).json();
   const reports: Record<string, unknown> = {};
   const documents = [
-    { name: "cost", url: `${base}/cost-periods/${cost.id}/print`, texts: [category, planAmount, openingAmount, "555555555555555.555555"] },
+    { name: "cost", url: `${base}/cost-periods/${cost.id}/output/print?expectedFingerprint=${costOutput.fingerprint}`, texts: [category, planAmount, openingAmount, "555555555555555.555555"] },
     { name: "work-plan", url: `${base}/work-plans/${plan.id}/print`, texts: [planTitle, "PRINT-END-WORKPLAN"] },
     { name: "inspection", url: `${base}/inspections/${inspection.id}/print`, texts: [inspectionHeading, "PRINT-END-INSPECTION"] },
   ];

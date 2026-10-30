@@ -51,13 +51,13 @@ export function Minutes({
           <h1>회의록</h1>
           <p>회의의 결정을 다음 행동으로 이어갑니다.</p>
         </div>
-        <button className="secondary" onClick={() => setBoard(true)}>
-          후속조치 보드
-        </button>
         {site.role !== "viewer" && (
           <button onClick={() => open(null)}>+ 새 회의록</button>
         )}
       </div>
+      <button className="secondary" onClick={() => setBoard(true)}>
+        후속조치 보드
+      </button>
       <section className="panel">
         {error && (
           <p className="error" role="alert">

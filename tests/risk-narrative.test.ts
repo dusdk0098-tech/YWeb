@@ -1,3 +1,4 @@
+import { migrateCostLabor } from "../server/cost-labor-schema.js";
 import { migrateCostSettings } from "../server/cost-settings-schema.js";
 import { migrateDailyInspectionReferences } from "../server/daily-inspection-migration.js";
 import { migrateWorkPlanHazardReferences } from "../server/work-plan-hazard-reference-migration.js";
@@ -137,7 +138,7 @@ test("narrative criteria replacement clears answers explicitly; planned records 
     const { migrateTbmRiskReferences } = await import("../server/tbm-risk-schema.js"); migrateTbmRiskReferences(f.db);
     const { migrateMinutesRecords } = await import("../server/minutes-schema.js"); migrateMinutesRecords(f.db);
     const { migrateCostStock } = await import("../server/cost-stock-schema.js"); migrateCostStock(f.db);
-    const { migrateWorkPlanReview } = await import("../server/work-plan-review-schema.js"); migrateWorkPlanReview(f.db); migratePpeReturns(f.db); migrateCostBaselines(f.db); migrateCatalogUse(f.db); migrateInspectionWorkflow(f.db); migrateMinutesAttachments(f.db); migrateMinutesPdf(f.db); migrateWorkPlanAttachments(f.db); migrateDailyMonthlyRecords(f.db); migrateRiskResidualHumanMethods(f.db); migrateStockMinimums(f.db); migrateCostPresets(f.db); migrateCostEvidence(f.db); migrateEducationAttachments(f.db); migrateWorkPlanForms(f.db); migrateWorkPlanPackets(f.db); migrateWorkPlanDesignations(f.db); migrateWorkPlanPlateReports(f.db); migrateWorkPlanLifting(f.db); migrateWorkPlanHazardReferences(f.db); migrateDailyInspectionReferences(f.db); migrateCostSettings(f.db);
+    const { migrateWorkPlanReview } = await import("../server/work-plan-review-schema.js"); migrateWorkPlanReview(f.db); migratePpeReturns(f.db); migrateCostBaselines(f.db); migrateCatalogUse(f.db); migrateInspectionWorkflow(f.db); migrateMinutesAttachments(f.db); migrateMinutesPdf(f.db); migrateWorkPlanAttachments(f.db); migrateDailyMonthlyRecords(f.db); migrateRiskResidualHumanMethods(f.db); migrateStockMinimums(f.db); migrateCostPresets(f.db); migrateCostEvidence(f.db); migrateEducationAttachments(f.db); migrateWorkPlanForms(f.db); migrateWorkPlanPackets(f.db); migrateWorkPlanDesignations(f.db); migrateWorkPlanPlateReports(f.db); migrateWorkPlanLifting(f.db); migrateWorkPlanHazardReferences(f.db); migrateDailyInspectionReferences(f.db); migrateCostSettings(f.db); migrateCostLabor(f.db);
     assert.deepEqual(f.db.prepare("SELECT id,body,criteria_snapshot,submission,submission_hash FROM risk_assessments ORDER BY id").all(), before);
     const file = join(dir, "source.sqlite"); await backup(f.db, file); await createBackup(file, join(dir, "bundle"));
     const restored = await restoreBackup(join(dir, "bundle"), join(dir, "restored"));

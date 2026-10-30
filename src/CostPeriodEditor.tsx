@@ -15,6 +15,7 @@ import { api, type Site } from "./api";
 import type { Page } from "./attendance-types";
 import { useDraftGuard } from "./useDraftGuard";
 import { costWarning, type CostPeriod, type CostExpense } from "./cost-types";
+import { laborKinds } from "../server/cost-labor-kinds";
 import { CostHistory } from "./CostHistory";
 type ExpenseForm = {
   categoryId: string;
@@ -64,6 +65,7 @@ export function CostPeriodEditor({
   const [baselines,setBaselines]=useState(false);
   const [detail,setDetail]=useState(false);
   const [settings,setSettings]=useState(false);
+  const [laborKind,setLaborKind]=useState("");
   const [evidence,setEvidence]=useState(false);
   const [stockExpense,setStockExpense]=useState<string|null>(null);
   const [batch, setBatch] = useState(false),
@@ -156,6 +158,7 @@ export function CostPeriodEditor({
     setBudget(null);
     setReason("");
     setEditing(row);
+    setLaborKind(row ? record.laborKinds[row.id] ?? "" : "");
     setPresetSource(null);
     setForm(
       row
@@ -545,6 +548,15 @@ export function CostPeriodEditor({
               }
             />
           </label>
+          <label>
+            인건비 구분 (인건비 항목일 때)
+            <select value={laborKind} onChange={(e) => setLaborKind(e.target.value)}>
+              <option value="">없음</option>
+              {laborKinds.map((k) => (
+                <option key={k}>{k}</option>
+              ))}
+            </select>
+          </label>
           <p>
             신규 행은 변경 사유를 사용하지 않습니다. 위 사유를 비운 뒤
             저장하세요. 행 금액은 서버가 정확히 계산합니다. 쉼표, 지수, 음수,
@@ -559,6 +571,7 @@ export function CostPeriodEditor({
                   version: record.version,
                   ...(editing ? { reason } : {}),
                   expense: form,
+                  laborKind: laborKind || null,
                   ...(!editing && presetSource ? {presetSource:presetSource.source} : {}),
                 },
                 editing ? "PUT" : "POST",
@@ -591,6 +604,7 @@ export function CostPeriodEditor({
               {row.spend_date} · {row.quantity} × {row.unit_price_won}원 ={" "}
               {row.amount}원 ·{" "}
               {row.status === "active" ? "유효" : "취소 (합계 제외)"}
+              {record.laborKinds[row.id] && ` · 인건비 ${record.laborKinds[row.id]}`}
             </p>
             <button
               disabled={busy}

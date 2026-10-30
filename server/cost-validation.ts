@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { date, revision } from "./validation.js";
 import { journalMonth } from "./daily-monthly-report.js";
+import { laborKinds } from "./cost-labor-kinds.js";
+export { laborKinds };
 const numeric = z.string().min(1).max(32),
   reason = z.string().trim().min(1).max(1000);
 export const costCreate = z
@@ -43,8 +45,10 @@ export const expenseInput = z
     unitPriceWon: numeric,
   })
   .strict();
-export const expenseCreate = costVersion.extend({ expense: expenseInput });
-export const expenseEdit = costReason.extend({ expense: expenseInput });
+// 인건비 구분: omitted = unchanged, null = clear.
+const laborKind = z.enum(laborKinds).nullable().optional();
+export const expenseCreate = costVersion.extend({ expense: expenseInput, laborKind });
+export const expenseEdit = costReason.extend({ expense: expenseInput, laborKind });
 // SC 현장 설정 (original PEDIT-SC settings form). Empty string = not entered yet.
 const settingText = z.string().trim().max(200),
   settingDate = z.union([z.literal(""), date]),

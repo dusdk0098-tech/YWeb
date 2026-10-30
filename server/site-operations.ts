@@ -11,6 +11,14 @@ export class HttpError extends Error {
   }
 }
 
+// The one rule for "may write on this site" (assignees, authors); access() applies the same rule to the caller.
+export function canWriteSite(db: Db, site: string, user: string) {
+  return !!db.prepare("SELECT 1 FROM memberships WHERE site_id=? AND user_id=? AND role IN ('manager','editor')").get(site, user);
+}
+// Receipts only need to outlive client retries; keep the newest ones (rowid = insert order, no schema change).
+export function pruneIdempotency(db: Db, keep = 10_000) {
+  db.prepare("DELETE FROM idempotency WHERE rowid <= (SELECT rowid FROM idempotency ORDER BY rowid DESC LIMIT 1 OFFSET ?)").run(keep);
+}
 export function siteOperations(db: Db) {
   function access(req: Request, write = false, manager = false) {
     const row = db
@@ -68,7 +76,7 @@ export function siteOperations(db: Db) {
         return JSON.parse(existing.response);
       }
       const output = action();
-      db.prepare(
+      const { lastInsertRowid } = db.prepare(
         "INSERT INTO idempotency(user_id,scope,key,request,response) VALUES(?,?,?,?,?)",
       ).run(
         req.session.userId!,
@@ -77,6 +85,7 @@ export function siteOperations(db: Db) {
         serialized,
         JSON.stringify(output),
       );
+      if (Number(lastInsertRowid) % 100 === 0) pruneIdempotency(db);
       return output;
     });
     res.json(result);

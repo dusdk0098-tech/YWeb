@@ -13,6 +13,7 @@ import {mkdtemp,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {backup,DatabaseSync} from 'node:sqlite';
+import { tooLargeStatus } from "./fixtures/too-large.js";
 const body={title:'Synthetic PDF originals',type:'안전보건협의체',date:'2026-10-28',time:'09:00',location:'Synthetic',attendees:'Synthetic',agenda:'Text',discussion:'Text',decisions:'Text',actions:[]};
 const pdf=Buffer.from('%PDF-2.0\nSynthetic nonparsed original. Not a structurally valid PDF.'),png=Buffer.from([137,80,78,71,13,10,26,10,0]);
 async function fixture(){const f=await methodFixture(),csrf=(await f.agent.get('/api/session')).body.csrf;
@@ -24,7 +25,7 @@ test('meeting PDF original has same retained quota, replay, download-only header
  assert.deepEqual((await f.upload(m.id,m.version,pdf,'<synthetic>.PDF','application/pdf',key)).body,response);m=r.body.record;
  assert.equal((await f.upload(m.id,m.version,Buffer.from('%PDF-2.0'),'bad.pdf')).status,400);
  assert.equal((await f.upload(m.id,m.version,pdf,'wrong.png')).status,400);
- assert.equal((await f.upload(m.id,m.version,Buffer.alloc(5*1024*1024+1),'big.pdf')).status,413);
+ assert.equal((await tooLargeStatus(f.upload(m.id,m.version,Buffer.alloc(5*1024*1024+1),'big.pdf'))),413);
  r=await f.upload(m.id,m.version,png,'old.png','image/png');assert.equal(r.status,200);m=r.body.record;
  assert.deepEqual(attachmentUsage(f.db,f.site,m.id,'minutes'),{reportCount:2,siteCount:2,siteBytes:pdf.length+png.length,totalBytes:pdf.length+png.length});
  r=await f.send('post',`/minutes/${m.id}/attachments/${first.id}/state`,{version:m.version,attached:false,reason:'Retain original but remove from current list'});assert.equal(r.status,200);m=r.body.record;

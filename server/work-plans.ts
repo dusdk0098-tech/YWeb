@@ -1,10 +1,11 @@
 import { validatePacketReferences, resetPacketBodyJson } from "./work-plan-packet.js";
 import { fixedWorkPlanAttachments } from "./work-plan-attachment-model.js";
 import { preventPendingPlanRevision } from "./work-plan-review-model.js";
+import { finalizeWorkPlan } from "./work-plan-review.js";
 import type { Express, Request } from "express";
 import { randomUUID } from "node:crypto";
 import { audit, type Db } from "./db.js";
-import { HttpError, type SiteOperations } from "./site-operations.js";
+import { HttpError, canWriteSite, type SiteOperations } from "./site-operations.js";
 import { inspectionPage } from "./inspection-validation.js";
 import { account } from "./inspection-model.js";
 import {
@@ -12,14 +13,12 @@ import {
   workPlanEdit,
   workPlanVersion,
   workPlanRevision,
-  completePlan,
 } from "./work-plan-validation.js";
 import {
   getWorkPlan,
   fullWorkPlan,
   workPlanRecord,
   type WorkPlanRow,
-  type WorkPlanSnapshot,
 } from "./work-plan-model.js";
 import { capturePlanSources, planSourceFacts } from "./work-plan-sources.js";
 import { journalHash } from "./daily-journal-sources.js";
@@ -32,11 +31,7 @@ export function registerWorkPlans(
   const base = "/api/sites/:siteId/work-plans";
   function eligible(site: string, user: string) {
     if (
-      !db
-        .prepare(
-          "SELECT 1 FROM memberships WHERE site_id=? AND user_id=? AND role IN('manager','editor')",
-        )
-        .get(site, user)
+      !canWriteSite(db, site, user)
     )
       throw new HttpError(400, "현재 이 현장의 작성 가능한 계정을 지정하세요.");
   }
@@ -211,54 +206,7 @@ export function registerWorkPlans(
         const row = getWorkPlan(db, site, id);
         expected(row, v.version);
         eligible(site, row.author_id);
-        const record = workPlanRecord(row);
-        if (!completePlan(record.body))
-          throw new HttpError(
-            400,
-            "보관하려면 위치/작업설명/비상절차와1개 이상 단계의 작업·절차·주의사항을 입력하세요.",
-          );
-        validatePacketReferences(db,id,record.body);
-        const source = record.source_capture;
-        if (
-          !source ||
-          source.facts.siteId !== site ||
-          journalHash(source.facts) !== source.fingerprint ||
-          journalHash(planSourceFacts(db, site, record.body)) !==
-            source.fingerprint
-        )
-          throw new HttpError(
-            409,
-            "선택 참조가 없거나 변경되었습니다. 작성자가 명부·장비 선택을 확인하고 참조 정보를 다시 취합하세요.",
-          );
-        const now = new Date().toISOString(),
-          snapshot: WorkPlanSnapshot = {
-            id,
-            version: row.version + 1,
-            site: {
-              id: site,
-              name: (
-                db.prepare("SELECT name FROM sites WHERE id=?").get(site) as {
-                  name: string;
-                }
-              ).name,
-            },
-            author: account(db, row.author_id),
-            parentId: row.parent_id,
-            revisionReason: row.revision_reason,
-            body: record.body,
-            source,
-            archivedBy: account(db, req.session.userId!),
-            archivedAt: now,
-            attachmentManifest:fixedWorkPlanAttachments(db,id),
-          };
-        db.prepare(
-          "UPDATE work_plans SET status='archived',version=version+1,updated_at=? WHERE id=?",
-        ).run(now, id);
-        db.prepare("INSERT INTO work_plan_snapshots VALUES(?,?,?)").run(
-          id,
-          JSON.stringify(snapshot),
-          journalHash(snapshot),
-        );
+        finalizeWorkPlan(db, row, account(db, row.author_id), account(db, req.session.userId!), new Date().toISOString(), false);
         return event(
           req,
           getWorkPlan(db, site, id),

@@ -3,12 +3,11 @@ import { stockUnchangedAcknowledgment, assertCostStockAcknowledgment } from "./c
 import { normalizedExpense, validForPeriod } from "./cost-expense-input.js";
 import { assertSplitRestore } from "./cost-split-model.js";
 import type { Express } from "express";
-import { randomUUID } from "node:crypto";
 import type { Db } from "./db.js";
 import { HttpError, type SiteOperations } from "./site-operations.js";
 import { inspectionPage } from "./inspection-validation.js";
 import { expenseCreate, expenseEdit, costReason } from "./cost-validation.js";
-import { getCostPeriod, getExpense, costExpenses } from "./cost-model.js";
+import { getCostPeriod, getExpense, costExpenses, insertExpense } from "./cost-model.js";
 import { expectedCost, bumpCost, costEvent } from "./cost-write.js";
 export function registerCostExpenses(
   app: Express,
@@ -56,28 +55,8 @@ export function registerCostExpenses(
         expectedCost(row, v.version);
         validForPeriod(row, expense);
         const selectedPreset = v.presetSource ? exactActivePreset(db,site,v.presetSource) : null;
-        if (costExpenses(db, id).length >= 1000)
-          throw new HttpError(
-            409,
-            "보존 지출1,000행 한도입니다. 취소행도 포함하며 삭제로 회수하지 않습니다.",
-          );
-        const nextId = randomUUID(),
-          now = new Date().toISOString();
-        db.prepare(
-          "INSERT INTO cost_expenses VALUES(?,?,?,?,?,?,?,?,'active',1,?,?,?)",
-        ).run(
-          nextId,
-          id,
-          expense.categoryId,
-          expense.spendDate,
-          expense.description,
-          expense.quantity,
-          expense.unitPriceWon,
-          expense.amount,
-          req.session.userId!,
-          now,
-          now,
-        );
+        const now = new Date().toISOString(),
+          nextId = insertExpense(db, id, expense, req.session.userId!, now);
         if(selectedPreset)saveExpensePresetSource(db,site,getExpense(db,id,nextId),selectedPreset,now);
         const saved = getExpense(db, id, nextId),
           period = costEvent(

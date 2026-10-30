@@ -196,7 +196,7 @@ test("synthetic quiesced backup restores private bytes and financial snapshots, 
       403,
     );
     assert.equal(
-      (await recovered.agent.get(`${base}/cost-periods/${period}/print`))
+      (await recovered.agent.get(`${base}/cost-periods/${period}/output/prepare`))
         .status,
       200,
     );

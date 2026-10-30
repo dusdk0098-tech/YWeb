@@ -1,4 +1,6 @@
 import type { IncomingMessage } from "node:http";
+import { createHash } from "node:crypto";
+import type { Response } from "express";
 import { HttpError } from "./site-operations.js";
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 // One reader per app. Limits bytes retained in memory; does NOT decode or scan files.
@@ -72,4 +74,18 @@ export function boundedUploadReader(timeoutMs = 30_000) {
       if (req.aborted || req.destroyed) aborted();
     });
   };
+}
+// Original is unscanned: verify stored size/hash, then serve only as a download, never inline.
+export function sendAttachment(res: Response, file: Record<string, unknown>, stored: Uint8Array) {
+  const bytes = Buffer.from(stored);
+  if (bytes.length !== Number(file.size) || createHash("sha256").update(bytes).digest("hex") !== file.sha256)
+    throw new HttpError(409, "보존 원본 크기/해시가 일치하지 않습니다.");
+  res.set({
+    "Content-Type": "application/octet-stream",
+    "Content-Disposition": `attachment; filename="attachment-${file.id}.bin"; filename*=UTF-8''${encodeURIComponent(String(file.filename)).replace(/['()*]/g, (c) => "%" + c.charCodeAt(0).toString(16))}`,
+    "X-Content-Type-Options": "nosniff",
+    "Cache-Control": "no-store",
+    "X-Attachment-Scan": "UNSCANNED",
+  });
+  res.send(bytes);
 }

@@ -9,7 +9,7 @@ import { account } from "./inspection-model.js";
 import { journalHash } from "./daily-journal-sources.js";
 import { rawAttachmentMetadata, checkRawImageHeader, checkRawPdfHeader, recheckUploadSession } from "./raw-attachment.js";
 import { attachmentUsage, enforceAttachmentQuota } from "./attachment-quota.js";
-import type { boundedUploadReader } from "./bounded-upload.js";
+import { sendAttachment, type boundedUploadReader } from "./bounded-upload.js";
 import { currentCostEvidence, evidenceVersion, fixedCostEvidence, serializeCostEvidence, type EvidenceLink } from "./cost-evidence-model.js";
 import { printCostEvidence } from "./cost-evidence-print.js";
 const version = z.number().int().positive(), evidenceRevision = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER - 1);
@@ -68,12 +68,7 @@ export function registerCostEvidence(app: Express, db: Db, { access, mutate }: S
     const row = period(req), file = db.prepare("SELECT * FROM cost_evidence_files WHERE id=? AND period_id=? AND site_id=?")
       .get(String(req.params.attachmentId), row.id, row.site_id) as { id: string; filename: string; size: number; sha256: string; bytes: Uint8Array } | undefined;
     if (!file) throw new HttpError(404, "이 월의 보존 원본을 찾을 수 없습니다.");
-    const bytes = Buffer.from(file.bytes);
-    if (bytes.length !== file.size || createHash("sha256").update(bytes).digest("hex") !== file.sha256) throw new HttpError(409, "보존 원본 크기/해시가 일치하지 않습니다.");
-    res.set({ "Content-Type": "application/octet-stream",
-      "Content-Disposition": `attachment; filename="attachment-${file.id}.bin"; filename*=UTF-8''${encodeURIComponent(file.filename).replace(/['()*]/g, c => "%" + c.charCodeAt(0).toString(16))}`,
-      "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store", "X-Attachment-Scan": "UNSCANNED" });
-    res.send(bytes);
+    sendAttachment(res, file, file.bytes);
   });
   app.post(base + "/files", async (req, res, next) => {
     try {

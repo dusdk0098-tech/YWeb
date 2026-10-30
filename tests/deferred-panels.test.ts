@@ -16,8 +16,8 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
   const before = readFileSync(
       new URL("./fixtures/phase31-main.tsx.txt", import.meta.url),
       "utf8",
-    ),
-    after = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8"),
+    ).replace(/\r\n/g, "\n"), // Windows checkout (autocrlf) must not change the fixture.
+    after = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8").replace(/\r\n/g, "\n"),
     printer = ts.createPrinter();
   function bodies(text: string) {
     const file = ts.createSourceFile(

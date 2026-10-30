@@ -14,7 +14,10 @@ NS=c.NS['s']
 def zipbytes(entries):
     out=io.BytesIO()
     with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as z:
-        for name,data in entries:z.writestr(name,data)
+        for name,data in entries:
+            # Windows zipfile rewrites '\\' to '/' on write; keep the raw unsafe name.
+            if '\\' in name:zi=zipfile.ZipInfo(name);zi.filename=name;z.writestr(zi,data)
+            else:z.writestr(name,data)
     return out.getvalue()
 def entries():
     cells=[]

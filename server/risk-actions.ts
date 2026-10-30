@@ -2,7 +2,7 @@ import type { Express, Request } from "express";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { audit, type Db } from "./db.js";
-import { HttpError, type SiteOperations } from "./site-operations.js";
+import { HttpError, canWriteSite, type SiteOperations } from "./site-operations.js";
 import { date, revision } from "./validation.js";
 import { companyPage } from "./companies.js";
 import { account } from "./inspection-model.js";
@@ -134,11 +134,7 @@ export function registerRiskActions(
   }
   function eligible(site: string, id: string) {
     if (
-      !db
-        .prepare(
-          "SELECT 1 FROM memberships WHERE site_id=? AND user_id=? AND role IN ('manager','editor')",
-        )
-        .get(site, id)
+      !canWriteSite(db, site, id)
     )
       throw new HttpError(400, "현재 작성 가능한 현장 계정만 배정하세요.");
   }

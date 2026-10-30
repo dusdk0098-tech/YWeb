@@ -223,6 +223,7 @@ export function registerStock(
 
         if(db.prepare("SELECT 1 FROM cost_stock_receipts WHERE movement_id=? OR reversal_movement_id=?").get(target,target)) throw new HttpError(409,"비용 출처 연결 이동입니다. 연결 입고 화면의 명시 전량 역분개를 사용하세요. 비용은 자동 취소하지 않습니다.");
         if(db.prepare("SELECT 1 FROM ppe_return_entries WHERE movement_id=?").get(target)) throw new HttpError(409,"전용 보호구 반납 원장에서만 정정합니다.");
+        if(db.prepare("SELECT 1 FROM ppe_correction_links WHERE movement_id=?").get(target)) throw new HttpError(409,"보호구 정정 메모가 참조하는 조정입니다. 역분개하지 않습니다.");
         if (original.kind === "reversal" || state.reversed.has(target))
           throw new HttpError(
             409,

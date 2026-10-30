@@ -430,43 +430,4 @@ export function registerCostPeriods(
       throw new HttpError(409, "마감본 해시가 일치하지 않습니다.");
     res.type("html").send(printCostPeriod(snapshot, stored.hash));
   });
-  app.get(base + "/:id/print", (req, res) => {
-    access(req, true, true);
-    const row = getCostPeriod(
-        db,
-        String(req.params.siteId),
-        String(req.params.id),
-      ),
-      view = costPeriodView(db, row);
-    if (row.current_close_id) {
-      const stored = db
-        .prepare(
-          "SELECT body,hash FROM cost_closures WHERE id=? AND period_id=?",
-        )
-        .get(row.current_close_id, row.id) as { body: string; hash: string };
-      if (!stored) throw new HttpError(409, "마감본을 찾을 수 없습니다.");
-      const snapshot = JSON.parse(stored.body) as CostSnapshot;
-      if (journalHash(snapshot) !== stored.hash)
-        throw new HttpError(409, "마감본 해시가 일치하지 않습니다.");
-      res.type("html").send(printCostPeriod(snapshot, stored.hash));
-    } else
-      res.type("html").send(
-        printCostPeriod(
-          {
-            site: {
-              id: row.site_id,
-              name: (
-                db
-                  .prepare("SELECT name FROM sites WHERE id=?")
-                  .get(row.site_id) as { name: string }
-              ).name,
-            },
-            period: { ...row, categories: view.categories },
-            totals: view.totals,
-            expenses: costExpenses(db, row.id),
-          },
-          null,
-        ),
-      );
-  });
 }

@@ -2,7 +2,7 @@ import { registerDailyInspectionCandidates,resetDailyInspectionBody,captureDaily
 import type { Express, Request } from "express";
 import { randomUUID } from "node:crypto";
 import { audit, type Db } from "./db.js";
-import { HttpError, type SiteOperations } from "./site-operations.js";
+import { HttpError, canWriteSite, type SiteOperations } from "./site-operations.js";
 import { date } from "./validation.js";
 import { inspectionPage } from "./inspection-validation.js";
 import { account, checkVersion } from "./inspection-model.js";
@@ -34,11 +34,7 @@ export function registerDailyJournals(
   const base = "/api/sites/:siteId/daily-journals";
   function eligible(site: string, id: string) {
     if (
-      !db
-        .prepare(
-          "SELECT 1 FROM memberships WHERE site_id=? AND user_id=? AND role IN ('manager','editor')",
-        )
-        .get(site, id)
+      !canWriteSite(db, site, id)
     )
       throw new HttpError(400, "작성자는 현재 현장 작성자/관리자여야 합니다.");
   }

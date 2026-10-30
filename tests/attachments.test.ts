@@ -181,6 +181,13 @@ test("raw originals are bounded private retained records with immutable submissi
     assert.match(down.headers["content-disposition"], /^attachment;/);
     assert.equal(down.headers["x-attachment-scan"], "UNSCANNED");
     assert.deepEqual(down.body, png);
+    // Simulated storage damage: the download must refuse bytes that no longer match the stored hash.
+    const guard = String(db.prepare("SELECT sql FROM sqlite_master WHERE name='hazard_attachment_original_immutable'").get()?.sql);
+    db.exec("DROP TRIGGER hazard_attachment_original_immutable");
+    db.prepare("UPDATE hazard_attachments SET bytes=? WHERE id=?").run(Buffer.from(png).reverse(), attachment.id);
+    assert.equal((await v.agent.get(base + `/${attachment.id}/download`)).status, 409);
+    db.prepare("UPDATE hazard_attachments SET bytes=? WHERE id=?").run(png, attachment.id);
+    db.exec(guard);
     assert.equal((await x.agent.get(base)).status, 403);
     let changed = await post(o, base + `/${attachment.id}/state`, {
       version: 2,

@@ -9,6 +9,7 @@ import { attachmentUsage, enforceAttachmentQuota } from "../server/attachment-qu
 import { EducationAttachments } from "../src/EducationAttachments.js";
 import { EducationEditor } from "../src/EducationEditor.js";
 import { boundedEducationManifest } from "../server/education-attachment-model.js";
+import { tooLargeStatus } from "./fixtures/too-large.js";
 test('education originals legacy payload, retained detach, fixed sidecar and revision no inheritance',async()=>{
  const f=await educationAttachmentFixture();try{
   const initial=await f.current(),key=randomUUID();let r=await f.upload(pdf,'<own>.pdf','application/pdf',key,initial.version);assert.equal(r.status,200,r.text);const file=r.body.attachments[0],v=r.body.record.version;assert.equal(v,initial.version+1);assert.deepEqual(r.body.record.body,initial.body);assert.deepEqual(r.body.record.participants,[]);
@@ -30,7 +31,7 @@ test('education originals legacy payload, retained detach, fixed sidecar and rev
 });
 test('education attachment guards format stale role other-manager and atomic archive failure',async()=>{
  const f=await educationAttachmentFixture();try{
-  assert.equal((await f.upload(Buffer.from('not PDF'))).status,400);assert.equal((await f.upload(Buffer.alloc(5*1024*1024+1))).status,413);
+  assert.equal((await f.upload(Buffer.from('not PDF'))).status,400);assert.equal((await tooLargeStatus(f.upload(Buffer.alloc(5*1024*1024+1)))),413);
   assert.equal((await f.upload(pdf,'wrong.png')).status,400);assert.equal((await f.upload(png,'own.png','image/png')).status,200);assert.equal((await f.upload(pdf,'stale.pdf','application/pdf',randomUUID(),1)).status,409);
   f.db.prepare("UPDATE memberships SET role='viewer' WHERE site_id=? AND user_id=?").run(f.site,f.manager);assert.equal((await f.upload()).status,403);
   f.db.prepare("UPDATE memberships SET role='manager' WHERE site_id=? AND user_id=?").run(f.site,f.manager);

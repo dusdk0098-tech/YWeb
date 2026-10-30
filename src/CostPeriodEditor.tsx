@@ -305,9 +305,6 @@ export function CostPeriodEditor({
         반올림 없는 원 단위 표시 · 유효 {record.totals.activeCount}행 / 취소{" "}
         {record.totals.cancelledCount}행
       </p>
-      <a href={"/api" + base + "/print"} target="_blank" rel="noreferrer">
-        {open ? "현재 작성본" : "현재 마감본"} 인쇄
-      </a>
       <button disabled={busy} onClick={() => { if(guard.canLeave()) {setForm(null);setBudget(null);setReason("");setEvidence(true);} }}>미검사 원본·동일 월 지출 연결</button>
       <button disabled={busy} onClick={() => setHistory((v) => !v)}>
         변경 이력 · 과거 마감본

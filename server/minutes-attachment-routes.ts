@@ -10,7 +10,7 @@ import { HttpError, type SiteOperations } from "./site-operations.js";
 
 import { minutesAttachments } from "./minutes-attachment-model.js";
 
-import type { boundedUploadReader } from "./bounded-upload.js";
+import { sendAttachment, type boundedUploadReader } from "./bounded-upload.js";
 const versionSchema = z.coerce
   .number()
   .int()
@@ -83,20 +83,10 @@ export function registerMinutesAttachments(
   app.get(base + "/:attachmentId/download", (req, res) => {
     report(req);
     const meta = attachment(req);
-    // Original is unscanned. Never serve it as an image or inline content.
     const row = db
       .prepare("SELECT bytes FROM minutes_attachments WHERE id=?")
       .get(String(meta.id)) as { bytes: Uint8Array };
-    res.set({
-      "Content-Type": "application/octet-stream",
-      "Content-Disposition": `attachment; filename="attachment-${meta.id}.bin"; filename*=UTF-8''${encodeURIComponent(String(meta.filename)).replace(/['()*]/g, (c) => "%" + c.charCodeAt(0).toString(16))}`,
-      "X-Content-Type-Options": "nosniff",
-      "Cache-Control": "no-store",
-      "X-Attachment-Scan": "UNSCANNED",
-    });
-    const bytes=Buffer.from(row.bytes);
-    if(bytes.length!==Number(meta.size)||createHash("sha256").update(bytes).digest("hex")!==meta.sha256)throw new HttpError(409,"보존 원본 크기/해시가 일치하지 않습니다.");
-    res.send(bytes);
+    sendAttachment(res, meta, row.bytes);
   });
   app.post(base, async (req, res, next) => {
     try {

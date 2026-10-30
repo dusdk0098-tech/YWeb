@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Db } from "./db.js";
 import { HttpError } from "./site-operations.js";
 import {
@@ -61,6 +62,14 @@ export function costExpenses(db: Db, id: string) {
       "원장 보존 행이1,000건을 넘어 처리할 수 없습니다.",
     );
   return rows;
+}
+// Every new expense row goes through here so the retained-row cap cannot be skipped.
+export function insertExpense(db: Db, periodId: string, e: { categoryId: string; spendDate: string; description: string; quantity: string; unitPriceWon: string; amount: string }, actorId: string, now: string) {
+  if (Number(db.prepare("SELECT count(*) n FROM cost_expenses WHERE period_id=?").get(periodId)?.n) >= 1000)
+    throw new HttpError(409, "보존 지출1,000행 한도입니다. 취소행도 포함하며 삭제로 회수하지 않습니다.");
+  const id = randomUUID();
+  db.prepare("INSERT INTO cost_expenses VALUES(?,?,?,?,?,?,?,?,'active',1,?,?,?)").run(id, periodId, e.categoryId, e.spendDate, e.description, e.quantity, e.unitPriceWon, e.amount, actorId, now, now);
+  return id;
 }
 export function getExpense(db: Db, period: string, id: string) {
   const row = db

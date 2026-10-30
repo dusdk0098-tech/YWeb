@@ -119,15 +119,17 @@ export async function createApp(db: Db, config: AppConfig) {
       },
     }),
   );
+  const isUpload = (method: string, path: string) =>
+    isHazardUpload(method, path) || isMinutesUpload(method, path) || isWorkPlanUpload(method, path) || isCostEvidenceUpload(method, path) || isEducationUpload(method, path);
   app.use("/api", (_req, res, next) => {
     res.set("Cache-Control", "no-store");
-    if ((isHazardUpload(_req.method, _req.originalUrl.split("?")[0]) || isMinutesUpload(_req.method, _req.originalUrl.split("?")[0]) || isWorkPlanUpload(_req.method, _req.originalUrl.split("?")[0]) || isCostEvidenceUpload(_req.method, _req.originalUrl.split("?")[0]) || isEducationUpload(_req.method, _req.originalUrl.split("?")[0])))
+    if (isUpload(_req.method, _req.originalUrl.split("?")[0]))
       res.set("Connection", "close");
     next();
   });
   const jsonBody = express.json({ limit: "256kb" });
   app.use((req, res, next) =>
-    (isHazardUpload(req.method, req.path) || isMinutesUpload(req.method, req.path) || isWorkPlanUpload(req.method, req.path) || isCostEvidenceUpload(req.method, req.path) || isEducationUpload(req.method, req.path)) ? next() : jsonBody(req, res, next),
+    isUpload(req.method, req.path) ? next() : jsonBody(req, res, next),
   );
   app.use(
     session({

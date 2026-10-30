@@ -2,7 +2,7 @@ import type { Express,Request } from "express";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { audit,type Db } from "./db.js";
-import { HttpError,type SiteOperations } from "./site-operations.js";
+import { HttpError, canWriteSite,type SiteOperations } from "./site-operations.js";
 import { date,revision } from "./validation.js";
 import { companyPage } from "./companies.js";
 import { account } from "./inspection-model.js";
@@ -11,7 +11,7 @@ const reason=z.string().trim().min(1).max(1000),prose=z.string().trim().min(1).m
 export function registerMinutesFollowups(app:Express,db:Db,{access,mutate}:SiteOperations){
  const base="/api/sites/:siteId/minutes-followups";
  const get=(req:Request)=>minutesFollowupRow(db,String(req.params.siteId),String(req.params.id));
- function eligible(site:string,id:string){if(!db.prepare("SELECT 1 FROM memberships WHERE site_id=? AND user_id=? AND role IN('manager','editor')").get(site,id))throw new HttpError(400,"현재 현장의 manager/editor 계정을 배정하세요.");}
+ function eligible(site:string,id:string){if(!canWriteSite(db, site, id))throw new HttpError(400,"현재 현장의 manager/editor 계정을 배정하세요.");}
  function manager(req:Request){access(req,true,true);get(req);}
  function assigned(req:Request){access(req,true);if(get(req).assignee_id!==req.session.userId)throw new HttpError(403,"현재 배정 계정만 보고할 수 있습니다.");}
  function verifier(req:Request){manager(req);const old=get(req),report=old.report?JSON.parse(old.report) as MinutesFollowupReport:null;if(old.assignee_id===req.session.userId||report?.actor.id===req.session.userId)throw new HttpError(403,"보고/배정 계정과 다른 관리자가 확인해야 합니다.");}

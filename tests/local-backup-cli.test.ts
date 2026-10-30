@@ -29,8 +29,10 @@ test("local backup CLI exports, verifies and lists only manifest metadata withou
     const exported = cli(["export", "--source", source, "--destination", bundle, "--writers-stopped"]);
     assert.equal(exported.status, 0, exported.stderr);
     assert.equal(JSON.parse(exported.stdout).verified, true);
-    assert.equal((await stat(bundle)).mode & 0o777, 0o700);
-    assert.equal((await stat(join(bundle, "database.sqlite"))).mode & 0o777, 0o600);
+    if (process.platform !== "win32") { // Windows has no POSIX permission bits.
+      assert.equal((await stat(bundle)).mode & 0o777, 0o700);
+      assert.equal((await stat(join(bundle, "database.sqlite"))).mode & 0o777, 0o600);
+    }
     assert.deepEqual(await hashBackupFile(source), before);
     const copied = new DatabaseSync(join(bundle, "database.sqlite"), { readOnly: true });
     try {
@@ -106,8 +108,10 @@ test("CLI rejects tampered metadata and unsafe paths without printing input or p
       assert.doesNotMatch(result.stderr, /synthetic-private/);
     }
     await writeFile(mp, original);
-    const link = join(dir, "source-link"); await symlink(source, link);
-    for (const path of [link, `${dir}/../${dir.split("/").pop()}/source.sqlite`, `${dir}/synthetic-private-missing`]) {
+    const link = join(dir, "source-link");
+    // Windows needs Developer Mode/admin for symlinks; the other unsafe paths still run.
+    const linked = await symlink(source, link).then(() => true, (e) => { if (e.code !== "EPERM") throw e; return false; });
+    for (const path of [...(linked ? [link] : []), `${dir}/../${dir.split("/").pop()}/source.sqlite`, `${dir}/synthetic-private-missing`]) {
       const result = cli(["export", "--source", path, "--destination", join(dir, "never"), "--writers-stopped"]);
       assert.equal(result.status, 1); assert.equal(result.stdout, "");
       assert.doesNotMatch(result.stderr, /synthetic-private/);

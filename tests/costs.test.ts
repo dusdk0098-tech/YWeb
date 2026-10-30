@@ -149,7 +149,7 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
   });
   assert.equal(close.status, 200, close.text);
   p = close.body;
-  const print = await m.agent.get(`${base}/${id}/print`);
+  const print = await m.agent.get(`${base}/${id}/closures/${p.currentClosure.id}/print`);
   assert.equal(print.status, 200);
   assert.ok(print.text.includes("&lt;script&gt;"));
   assert.ok(!print.text.includes("<script>"));
@@ -170,7 +170,7 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
     ).status,
     409,
   );
-  assert.equal((await m.agent.get(`${base}/${id}/print`)).text, print.text);
+  assert.equal((await m.agent.get(`${base}/${id}/closures/${p.currentClosure.id}/print`)).text, print.text);
   // Fill retained rows cheaply with genuine small amounts; cancelled rows still occupy the cap.
   const child = carry.body;
   const insert = db.prepare(

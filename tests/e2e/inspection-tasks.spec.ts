@@ -42,7 +42,7 @@ test("explicit scheduled start opens pending inspection and shows immutable sche
     .getByRole("button", { name: "자체 양식 · 점검 ↗", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "점검 일정 / 배정", exact: true })
+    .getByRole("button", { name: "점검 일정 / 배정 · 내 일정 업무", exact: true })
     .click();
   await page.getByRole("button", { name: "새 점검 일정", exact: true }).click();
   await page.getByLabel("고정할 게시 양식").selectOption(template.id);
@@ -64,6 +64,24 @@ test("explicit scheduled start opens pending inspection and shows immutable sche
     page.getByRole("heading", { name: "시작 당시 일정 출처", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("일정 자체 양식", { exact: true }).first(),
+    page.getByRole("heading", { name: "일정 자체 양식 · 초안", exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "결과", exact: true }),
+  ).toHaveValue("pending");
+  const source = page.getByRole("complementary").filter({
+    has: page.getByRole("heading", {
+      name: "시작 당시 일정 출처",
+      exact: true,
+    }),
+  });
+  await expect(source).toContainText("합성구역");
+  await expect(source).toContainText(`당시 배정 ${session.user.name} (${session.user.id})`);
+  await expect(
+    page.getByRole("heading", { name: "점검 변경 기록", exact: true }),
+  ).toHaveCount(1);
+  await page.getByRole("button", { name: "최신본 다시 열기", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "점검 변경 기록", exact: true }),
+  ).toHaveCount(1);
 });

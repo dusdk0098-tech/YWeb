@@ -1,6 +1,6 @@
 # 공개용 검증 요약
 
-2026-10-30, 앱0.79.0/DB56·backup56. 개인정보/내부경로를 제외한 요약이며 비공개 원로그/대화/검토이력을 포함하지 않습니다.
+2026-10-30, 앱0.79.0/DB56·backup56. 아래는 최초 공개 staging 당시 결과입니다. 이후 로컬 수정본의 Windows 검사 결과와 남은 실패는 [PC 검증 기록](PC_VALIDATION.md)을 보세요. 개인정보/내부경로를 제외한 요약이며 비공개 원로그/대화/검토이력을 포함하지 않습니다.
 
 원 개발본 최종 npm run check: lint/typecheck/366tests PASS,0FAIL/build PASS. 관련 migration/backup12PASS, CLI schema56. 제한된 독립8 probes/4 renderer 확인은 전체 독립보안 인증이 아닙니다. SEC-LOCAL-01 P2 미해결.
 

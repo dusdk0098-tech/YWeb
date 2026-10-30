@@ -69,7 +69,7 @@ test("own catalog creates a journal with editable copied text and fixed provenan
     page.getByText(/현재 제목\/과정표시\/목표\/내용은 이 출처와 같습니다/),
   ).toBeVisible();
   await page
-    .getByLabel("직접 작성 교육내용", { exact: true })
+    .getByRole("textbox", { name: "직접 작성 교육내용", exact: true })
     .fill("편집한 합성 본문");
   await expect(
     page.getByText(/현재 작성 내용은 출처에서 수정되었습니다/),

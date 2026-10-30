@@ -384,7 +384,7 @@ export function InspectionEditor({
       {record && <InspectionTaskSource siteId={site.id} id={record.id} />}
       {record && (
         <InspectionHistory
-          key={record.id}
+          key={`history:${record.id}`}
           siteId={site.id}
           id={record.id}
           version={record.version}
@@ -392,7 +392,7 @@ export function InspectionEditor({
       )}
       {record && (
         <InspectionHazardLinks
-          key={record.id}
+          key={`hazard-links:${record.id}`}
           site={site}
           record={record}
           busy={busy}

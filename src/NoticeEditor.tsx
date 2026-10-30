@@ -204,7 +204,7 @@ export function NoticeEditor({
       </fieldset>
       {editable && (
         <NoticeRecipients
-          key={record?.id || "new"}
+          key={`recipients:${record?.id || "new"}`}
           siteId={site.id}
           selected={targets}
           disabled={busy}
@@ -336,7 +336,7 @@ export function NoticeEditor({
       )}
       {manager && record && (
         <NoticeHistory
-          key={record.id}
+          key={`history:${record.id}`}
           siteId={site.id}
           id={record.id}
           version={record.version}

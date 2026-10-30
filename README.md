@@ -65,7 +65,7 @@ npm run backup:local -- --help
 
 `check`는 lint → typecheck → 합성 단위/API 테스트 → build 순서입니다. 원 개발본 최종366개PASS와 공개 staging 결과는 [검증 요약](docs/VALIDATION.md)에 구분합니다. 실제 브라우저/PDF 검사를 대신하지 않습니다. GitHub Actions에는 Node24 설치→npm ci→npm run check만 포함하며 배포/실데이터 작업은 없습니다. 원격 CI 결과는 해당 실행을 별도로 확인하세요.
 
-승인된 환경에서는 다음 E2E 도구를 별도로 실행할 수 있습니다. 이번 공개본 준비 과정에서는 실행하지 않았습니다.
+승인된 환경에서는 다음 E2E 도구를 별도로 실행할 수 있습니다. 최초 공개 준비 단계에서는 미실행했으며, 후속 Windows 실행 결과는 [PC 검증 기록](docs/PC_VALIDATION.md)에 구분합니다.
 
 ```sh
 npx playwright install chromium
@@ -74,9 +74,13 @@ npm run test:e2e
 
 E2E는 로컬3107포트·메모리DB·합성 계정만 사용합니다. 테스트 비밀번호를 실제 계정에 재사용하지 마세요.
 
+`test:e2e`는 각 spec을 새 합성 서버에서 순차 실행해 로그인 시도 제한을 유지합니다. 먼저 `npm run build`를 완료하세요. `npm run test:e2e -- --list`는 서버 없이 대상 파일만 나열합니다. 특정 파일은 `npm run test:e2e -- tests/e2e/workflow.spec.ts`처럼 정확한 경로 또는 파일명으로 선택할 수 있습니다. 추가로 지원하는 Playwright 옵션은 `--headed`, `--trace off|on|retain-on-failure`이며 다른 옵션/정규식 필터는 받지 않습니다. 각 spec의 실행 결과가 실패하면 전체 명령도 실패하고, Playwright 증거는 `test-results/e2e-runner/`의 파일별 폴더에 보존됩니다. 기존 Chrome을 쓸 때는 `CHROMIUM_PATH` 환경변수에 실행파일 경로를 지정할 수 있습니다.
+
 ## 문서
 
 [남은 작업](HANDOFF.md) · [보안](SECURITY.md) · [로컬 운영](docs/OPERATIONS.md) · [백업](docs/LOCAL_BACKUP_CLI.md) · [검증](docs/VALIDATION.md) · [공개 구성/제외](docs/PUBLICATION_SCOPE.md) · [의존성](docs/DEPENDENCIES.md) · [라이선스 상태](LICENSE-PROPOSAL.md)
+
+추가 Windows 수정과 실제 검사 범위는 [PC 검증 기록](docs/PC_VALIDATION.md)에 별도로 기록했습니다. 알PDF·Android 실제 검증 및 남은 보안 gate 완료를 뜻하지 않습니다.
 
 ## 라이선스
 

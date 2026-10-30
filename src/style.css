@@ -205,7 +205,11 @@ nav button span {
   padding: 0 46px 50px;
   max-width: 1450px;
   width: 100%;
-  margin: auto;
+  margin: 0 auto;
+  align-self: start;
+}
+.mobile-menu-toggle {
+  display: none;
 }
 .topbar {
   min-height: 80px;
@@ -464,8 +468,20 @@ nav button span {
     margin: 12px 0;
   }
   .sidebar nav {
-    display: flex;
+    display: none;
     gap: 5px;
+  }
+  .mobile-menu-toggle {
+    display: block;
+    width: 100%;
+    text-align: left;
+  }
+  .sidebar nav.mobile-menu-open {
+    display: flex;
+    max-height: 50vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-top: 8px;
   }
   .sidebar nav button {
     font-size: 12px;

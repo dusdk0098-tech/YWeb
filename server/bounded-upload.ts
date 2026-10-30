@@ -3,6 +3,48 @@ import { createHash } from "node:crypto";
 import type { Response } from "express";
 import { HttpError } from "./site-operations.js";
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+// Discard only a small, explicitly bounded overshoot so a local client can receive
+// its 413 before Windows closes a socket with unread request bytes. This never
+// returns file content or increases the accepted/retained attachment limit.
+export const MAX_REJECTED_UPLOAD_BYTES = MAX_ATTACHMENT_BYTES + 64 * 1024;
+export function boundedRejectedUploadDrainer(timeoutMs = 1_000) {
+  let active = 0;
+  return function discard(req: IncomingMessage): Promise<void> {
+    const length = req.headers["content-length"];
+    if (
+      active >= 2 || req.readableEnded || req.aborted || req.destroyed ||
+      length === undefined || !/^\d+$/.test(length) ||
+      Number(length) <= MAX_ATTACHMENT_BYTES ||
+      Number(length) > MAX_REJECTED_UPLOAD_BYTES
+    ) return Promise.resolve();
+    active++;
+    return new Promise((resolve) => {
+      let total = 0, done = false;
+      const timer = setTimeout(finish, timeoutMs);
+      function finish() {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        req.off("data", data);
+        req.off("end", finish);
+        req.off("aborted", finish);
+        req.off("error", finish);
+        req.pause();
+        active--;
+        resolve();
+      }
+      function data(chunk: Buffer) {
+        total += chunk.length;
+        if (total > MAX_REJECTED_UPLOAD_BYTES) finish();
+      }
+      req.on("data", data);
+      req.once("end", finish);
+      req.once("aborted", finish);
+      req.once("error", finish);
+      req.resume();
+    });
+  };
+}
 // One reader per app. Limits bytes retained in memory; does NOT decode or scan files.
 export function boundedUploadReader(timeoutMs = 30_000) {
   let active = 0;

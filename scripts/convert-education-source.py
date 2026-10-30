@@ -38,9 +38,11 @@ def archive(data, outer=False):
     names = set()
     total = 0
     for item in infos:
-        name = item.filename
-        # orig_filename: on Windows zipfile already rewrote '\\' to '/' in filename.
-        require(name and name not in names and '\\' not in item.orig_filename and '\x00' not in name and ':' not in name, 'Duplicate or unsafe archive path')
+        # ZipInfo normalizes backslashes on Windows and truncates NULs on all
+        # platforms. Validate the actual archive name, not its sanitized alias.
+        name = item.orig_filename
+        require(name == item.filename, 'Normalized archive paths are unsupported')
+        require(name and name not in names and '\\' not in name and '\x00' not in name and ':' not in name, 'Duplicate or unsafe archive path')
         require(not name.startswith('/') and all(p not in ('','.', '..') for p in name.split('/')), 'Unsafe archive path')
         require(not item.is_dir() and not stat.S_ISLNK(item.external_attr >> 16), 'Directories/symlinks are unsupported')
         require(not item.flag_bits & 1 and item.compress_type in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED), 'Encrypted/unsupported ZIP entry')

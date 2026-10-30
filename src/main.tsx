@@ -34,6 +34,7 @@ function App() {
     [sites, setSites] = useState<Site[]>([]),
     [siteId, setSiteId] = useState(""),
     [tab, setTab] = useState("home"),
+    [mobileMenuOpen, setMobileMenuOpen] = useState(false),
     [ads, setAds] = useState(false),
     [editor, setEditor] = useState<{ initial: Meeting | null } | null>(null);
   const [attendanceDirty, setAttendanceDirty] = useState(false);
@@ -129,7 +130,20 @@ function App() {
             ))}
           </select>
         </label>
-        <nav aria-label="주 메뉴">
+        <button
+          type="button"
+          className="mobile-menu-toggle secondary"
+          aria-expanded={mobileMenuOpen}
+          aria-controls="primary-navigation"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          {mobileMenuOpen ? "업무 메뉴 닫기" : "업무 메뉴 열기"}
+        </button>
+        <nav
+          id="primary-navigation"
+          aria-label="주 메뉴"
+          className={mobileMenuOpen ? "mobile-menu-open" : ""}
+        >
           {[
             ["home", "현장 홈"],
             ["help", "사용 도움말"],
@@ -167,6 +181,7 @@ function App() {
                 if (id !== tab && !mayLeaveAttendance()) return;
                 setTab(id);
                 setError("");
+                setMobileMenuOpen(false);
               }}
             >
               {title}

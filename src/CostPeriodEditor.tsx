@@ -16,6 +16,7 @@ import type { Page } from "./attendance-types";
 import { useDraftGuard } from "./useDraftGuard";
 import { costWarning, type CostPeriod, type CostExpense } from "./cost-types";
 import { laborKinds } from "../server/cost-labor-kinds";
+import { costDetailFields } from "../server/cost-detail-fields";
 import { CostHistory } from "./CostHistory";
 type ExpenseForm = {
   categoryId: string;
@@ -66,6 +67,7 @@ export function CostPeriodEditor({
   const [detail,setDetail]=useState(false);
   const [settings,setSettings]=useState(false);
   const [laborKind,setLaborKind]=useState("");
+  const [details,setDetails]=useState<Record<string,string>>({});
   const [preflight,setPreflight]=useState<{items:{level:"error"|"warning";message:string}[];errorCount:number}|null>(null);
   const [evidence,setEvidence]=useState(false);
   const [stockExpense,setStockExpense]=useState<string|null>(null);
@@ -171,6 +173,7 @@ export function CostPeriodEditor({
     setReason("");
     setEditing(copy ? null : row);
     setLaborKind(row ? record.laborKinds[row.id] ?? "" : "");
+    setDetails(row ? record.details[row.id] ?? {} : {});
     setPresetSource(null);
     setForm(
       row
@@ -525,7 +528,10 @@ export function CostPeriodEditor({
             <select
               required
               value={form.categoryId}
-              onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, categoryId: e.target.value });
+                setDetails({});
+              }}
             >
               <option value="">비용 항목을 직접 선택하세요</option>
               {record.categories.map((c) => (
@@ -579,6 +585,28 @@ export function CostPeriodEditor({
               }
             />
           </label>
+          {(costDetailFields[record.categories.find((c) => c.id === form.categoryId)?.scCode ?? 0] ?? []).map((f) => (
+            <label key={f.key}>
+              {f.label}
+              {f.required && " *"}
+              {f.type === "select" ? (
+                <select value={details[f.key] ?? ""} onChange={(e) => setDetails({ ...details, [f.key]: e.target.value })}>
+                  <option value="">선택</option>
+                  {f.options!.map((o) => (
+                    <option key={o}>{o}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type={f.type === "date" ? "date" : "text"}
+                  inputMode={f.type === "number" ? "numeric" : undefined}
+                  maxLength={200}
+                  value={details[f.key] ?? ""}
+                  onChange={(e) => setDetails({ ...details, [f.key]: e.target.value })}
+                />
+              )}
+            </label>
+          ))}
           <label>
             인건비 구분 (인건비 항목일 때)
             <select value={laborKind} onChange={(e) => setLaborKind(e.target.value)}>
@@ -607,6 +635,7 @@ export function CostPeriodEditor({
                   ...(editing ? { reason } : {}),
                   expense: form,
                   laborKind: laborKind || null,
+                  details,
                   ...(!editing && presetSource ? {presetSource:presetSource.source} : {}),
                 },
                 editing ? "PUT" : "POST",

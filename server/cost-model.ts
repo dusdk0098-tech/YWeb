@@ -13,6 +13,7 @@ export type CostCategory = {
   label: string;
   plan: string;
   opening: string;
+  scCode?: number; // original PEDIT-SC category 1~9, set only by the SC prefill
 };
 export type CostPeriodRow = {
   id: string;
@@ -156,6 +157,7 @@ export function costPeriodView(db: Db, row: CostPeriodRow) {
     categories,
     settings: readCostSettings(db, row.id),
     laborKinds: costLaborKinds(db, row.id),
+    details: costExpenseDetails(db, row.id),
     totals,
     currentClosure: closure,
     successor: child || null,
@@ -170,6 +172,22 @@ export function costLaborKinds(db: Db, periodId: string): Record<string, string>
     .prepare("SELECT l.expense_id,l.kind FROM cost_expense_labor l JOIN cost_expenses e ON e.id=l.expense_id WHERE e.period_id=?")
     .all(periodId) as { expense_id: string; kind: string }[];
   return Object.fromEntries(rows.map((r) => [r.expense_id, r.kind]));
+}
+export function costExpenseDetails(db: Db, periodId: string): Record<string, Record<string, string>> {
+  const rows = db
+    .prepare("SELECT d.expense_id,d.body FROM cost_expense_details d JOIN cost_expenses e ON e.id=d.expense_id WHERE e.period_id=?")
+    .all(periodId) as { expense_id: string; body: string }[];
+  return Object.fromEntries(rows.map((r) => [r.expense_id, JSON.parse(r.body) as Record<string, string>]));
+}
+// undefined = leave as is; empty values are dropped and an empty set clears the row.
+export function saveExpenseDetails(db: Db, expenseId: string, details: Record<string, string> | undefined, now: string) {
+  if (details === undefined) return;
+  const kept = Object.fromEntries(Object.entries(details).filter(([, v]) => v !== ""));
+  if (!Object.keys(kept).length) db.prepare("DELETE FROM cost_expense_details WHERE expense_id=?").run(expenseId);
+  else
+    db.prepare(
+      "INSERT INTO cost_expense_details VALUES(?,?,?) ON CONFLICT(expense_id) DO UPDATE SET body=excluded.body,updated_at=excluded.updated_at",
+    ).run(expenseId, JSON.stringify(kept), now);
 }
 // undefined = leave as is, null = clear.
 export function saveLaborKind(db: Db, expenseId: string, kind: string | null | undefined, now: string) {

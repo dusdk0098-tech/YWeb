@@ -16,6 +16,7 @@ export const costCreate = z
             label: z.string().trim().min(1).max(100),
             plan: numeric,
             opening: numeric,
+            scCode: z.number().int().min(1).max(9).optional(),
           })
           .strict(),
       )
@@ -47,8 +48,9 @@ export const expenseInput = z
   .strict();
 // 인건비 구분: omitted = unchanged, null = clear.
 const laborKind = z.enum(laborKinds).nullable().optional();
-export const expenseCreate = costVersion.extend({ expense: expenseInput, laborKind });
-export const expenseEdit = costReason.extend({ expense: expenseInput, laborKind });
+const details = z.record(z.string().max(40), z.string().max(200)).optional();
+export const expenseCreate = costVersion.extend({ expense: expenseInput, laborKind, details });
+export const expenseEdit = costReason.extend({ expense: expenseInput, laborKind, details });
 // SC 현장 설정 (original PEDIT-SC settings form). Empty string = not entered yet.
 const settingText = z.string().trim().max(200),
   settingDate = z.union([z.literal(""), date]),

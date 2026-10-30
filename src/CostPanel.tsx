@@ -39,7 +39,7 @@ export function CostPanel({
     [creating, setCreating] = useState(false),
     [month, setMonth] = useState(""),
     [note, setNote] = useState(""),
-    [categories, setCategories] = useState([
+    [categories, setCategories] = useState<{ label: string; plan: string; opening: string; scCode?: number }[]>([
       { label: "", plan: "0", opening: "0" },
     ]),
     [busy, setBusy] = useState(false),
@@ -239,7 +239,7 @@ export function CostPanel({
           <button
             onClick={() =>
               setCategories(
-                scCategoryLabels.map((label) => ({ label, plan: "0", opening: "0" })),
+                scCategoryLabels.map((label, i) => ({ label, plan: "0", opening: "0", scCode: i + 1 })),
               )
             }
           >

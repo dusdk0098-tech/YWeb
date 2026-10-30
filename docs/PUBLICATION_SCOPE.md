@@ -1,6 +1,6 @@
 # 공개 구성과 제외명세
 
-Phase79 앱0.79.0/DB56·backup56의 실행가능 공개 소스입니다. 원본·과거ZIP·비공개증거는 수정하지 않고 별도 준비했습니다. 제이웹(JWeb) 공개명과 기존 PEDIT 내부식별자를 구분합니다.
+Phase79 앱0.79.0/DB56·backup56의 실행가능 공개 소스입니다. 원본·과거ZIP·비공개증거는 수정하지 않고 별도 준비했습니다. Y웹(YWeb) 공개명과 기존 PEDIT 내부식별자를 구분합니다.
 
 포함: server/src/public 전체 실행코드, package/lock·빌드설정, 합성 단위/API/SSR/migration/backup/E2E fixture·시험, 계정발급/백업/E2E/로컬변환 도구(실제자료 없음), 비밀없는 환경예시, 설치·한계·라이선스메타데이터·소스SHA manifest, 읽기전용 권한의 합성검사 GitHub CI.
 

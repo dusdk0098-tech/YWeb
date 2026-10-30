@@ -141,10 +141,13 @@ export function CostPeriodEditor({
           ? (next as { period: CostPeriod }).period
           : (next as CostPeriod),
       );
-      setForm(null);setPresetSource(null);
+      // PEDIT-SC "저장하고 다음": a new row keeps 항목·일자(and 인건비 구분) for the next entry.
+      const added = method === "POST" && path === "/expenses" ? (body as { expense: ExpenseForm }).expense : null;
+      setForm(added ? { ...added, description: "", quantity: "1", unitPriceWon: "" } : null);setPresetSource(null);
       setEditing(null);
       setBudget(null);
       setReason("");
+      if (added) requestAnimationFrame(() => document.getElementById("cost-expense-description")?.focus());
       if(expense && "expense" in next){const saved=(next as {expense:CostExpense}).expense;setSelectedExpense({id:saved.id,version:saved.version,status:saved.status});}
       setTick((v) => v + 1);
     } catch (e) {
@@ -153,11 +156,11 @@ export function CostPeriodEditor({
       setBusy(false);
     }
   }
-  function edit(row: CostExpense | null) {
+  function edit(row: CostExpense | null, copy = false) {
     if (!guard.canLeave()) return;
     setBudget(null);
     setReason("");
-    setEditing(row);
+    setEditing(copy ? null : row);
     setLaborKind(row ? record.laborKinds[row.id] ?? "" : "");
     setPresetSource(null);
     setForm(
@@ -523,6 +526,7 @@ export function CostPeriodEditor({
           <label>
             내용
             <input
+              id="cost-expense-description"
               maxLength={500}
               value={form.description}
               onChange={(e) =>
@@ -565,6 +569,10 @@ export function CostPeriodEditor({
           <button
             disabled={!form.categoryId || !form.spendDate || (editing ? !reason.trim() : !!reason)}
             onClick={() =>
+              // shortcut: checks only the 50 rows on this page; a server-side check would need a new query.
+              (editing || !rows.items.some((r) => r.status === "active" && r.category_id === form.categoryId && r.spend_date === form.spendDate &&
+                r.description === form.description.trim() && r.quantity === form.quantity && r.unit_price_won === form.unitPriceWon) ||
+                window.confirm("같은 항목·일자·내용·수량·단가의 지출이 이미 있습니다. 그래도 저장할까요?")) &&
               void send(
                 "/expenses" + (editing ? "/" + editing.id : ""),
                 {
@@ -629,6 +637,9 @@ export function CostPeriodEditor({
                   onClick={() => edit(row)}
                 >
                   수정
+                </button>
+                <button disabled={busy} onClick={() => edit(row, true)}>
+                  복사 입력
                 </button>
                 <button
                   disabled={busy || !!form || !!budget || !reason.trim()}

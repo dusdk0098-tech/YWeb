@@ -173,6 +173,7 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
     assert.equal((await putSettings({ version: p.version, settings: { ...settings, ...bad } })).status, 400, JSON.stringify(bad));
   let pre = (await m.agent.get(`${base}/${id}/preflight`)).body;
   assert.equal(pre.errorCount, 7);
+  assert.equal((await m.agent.get(`/api/sites/${site}/cost-dashboard`)).body.next, "현장 설정 입력");
   assert.ok(pre.items.some((i: { level: string; message: string }) => i.level === "warning" && i.message.includes("이전 월 지출일")));
   r = await putSettings({ version: p.version, settings });
   assert.equal(r.status, 200, r.text);
@@ -188,6 +189,7 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
     [["1"], "1", "0.0", "29999999.0", "0.0"],
   );
   assert.equal((await ed.agent.get(`/api/sites/${site}/cost-dashboard`)).status, 403);
+  assert.equal(dash.next, "출력 전 확인 후 기록 마감");
   const close = await post(`/${id}/close`, {
     version: p.version,
     reason: "record close",

@@ -59,6 +59,9 @@ export function stockWriter(db: Db) {
         "일반 원본1000/전량 역분개1000 또는 전체9000건 한도입니다. PPE 전용 반납은 별도 예약 정책을 따릅니다. 날짜/잔량 제한은 그대로이며 새 일반 원본 이관은 별도 정책이 필요합니다.",
       );
     const returnProposal = ppeReturn ? checkPpeReturnIntent(db,row.id,state.rows,quantity,kind,direction,reverses,ppeReturn) : null;
+    // Loopback-only app: the server's local date is the user's date. A future typo would lock every later movement.
+    if (v.effectiveDate > new Date().toLocaleDateString("en-CA"))
+      throw new HttpError(400, "효력일은 오늘 이후일 수 없습니다.");
     if (v.effectiveDate < state.lastDate)
       throw new HttpError(
         409,

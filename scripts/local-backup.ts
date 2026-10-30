@@ -22,6 +22,8 @@ const DB_FILE = "database.sqlite",
   MANIFEST = "manifest.json";
 import { CURRENT_SCHEMA_VERSION } from "../server/schema-version.js";
 export const BACKUP_SCHEMA_VERSION = CURRENT_SCHEMA_VERSION;
+// Schema16 added account_auth, which restore must advance. Older restored files are migrated by the app on start.
+const MIN_BACKUP_SCHEMA_VERSION = 16;
 const countTables = [
   "users",
   "sites",
@@ -129,13 +131,14 @@ const countsSchema = z
     risk_publication_acks: z.number().int().nonnegative(),
     risk_publication_events: z.number().int().nonnegative(),
   })
+  .partial()
   .strict();
 const manifestSchema = z
   .object({
     format: z.literal("pedit-local-sqlite-backup"),
     formatVersion: z.literal(1),
     database: z.literal(DB_FILE),
-    schemaVersion: z.literal(BACKUP_SCHEMA_VERSION),
+    schemaVersion: z.number().int().min(MIN_BACKUP_SCHEMA_VERSION).max(BACKUP_SCHEMA_VERSION),
     createdAt: z.iso.datetime(),
     bytes: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
     sha256: z.string().regex(/^[a-f0-9]{64}$/),
@@ -202,22 +205,26 @@ function health(db: DatabaseSync) {
   const schema = (
     db.prepare("PRAGMA user_version").get() as { user_version: number }
   ).user_version;
-  if (schema !== BACKUP_SCHEMA_VERSION)
+  if (schema < MIN_BACKUP_SCHEMA_VERSION || schema > BACKUP_SCHEMA_VERSION)
     throw new Error(
-      "Only the exact supported backup schema is accepted; migration is not performed.",
+      "Backup schema is outside the supported range; this tool does not migrate.",
     );
   const rows = db.prepare("PRAGMA integrity_check").all();
   if (rows.length !== 1 || rows[0].integrity_check !== "ok")
     throw new Error("SQLite integrity check failed.");
   if (db.prepare("PRAGMA foreign_key_check").get())
     throw new Error("SQLite foreign-key check failed.");
+  // Older schemas lack later tables; count only what exists so old bundles still verify.
+  const exists = db.prepare(
+    "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+  );
   const counts = Object.fromEntries(
-    countTables.map((table) => [
+    countTables.filter((table) => exists.get(table)).map((table) => [
       table,
       (db.prepare(`SELECT count(*) n FROM ${table}`).get() as { n: number }).n,
     ]),
   );
-  return countsSchema.parse(counts);
+  return { schema, counts: countsSchema.parse(counts) };
 }
 async function noSidecars(path: string) {
   for (const suffix of ["-wal", "-shm", "-journal"]) {
@@ -274,8 +281,12 @@ export async function verifyBackup(
   try {
     if (db.prepare("PRAGMA journal_mode").get()?.journal_mode !== "delete")
       throw new Error("Backup must use standalone DELETE journal mode.");
-    if (JSON.stringify(health(db)) !== JSON.stringify(manifest.counts))
-      throw new Error("Backup representative table counts mismatch.");
+    const actual = health(db);
+    if (
+      actual.schema !== manifest.schemaVersion ||
+      JSON.stringify(actual.counts) !== JSON.stringify(manifest.counts)
+    )
+      throw new Error("Backup schema or representative table counts mismatch.");
   } finally {
     db.close();
   }
@@ -314,9 +325,9 @@ export async function createBackup(
     }
     await noSidecars(path);
     const copied = readonly(path);
-    let counts;
+    let checked;
     try {
-      counts = health(copied);
+      checked = health(copied);
     } finally {
       copied.close();
     }
@@ -324,10 +335,10 @@ export async function createBackup(
       format: "pedit-local-sqlite-backup",
       formatVersion: 1,
       database: DB_FILE,
-      schemaVersion: BACKUP_SCHEMA_VERSION,
+      schemaVersion: checked.schema,
       createdAt: new Date().toISOString(),
       ...(await hashBackupFile(path)),
-      counts,
+      counts: checked.counts,
     };
     await writeFile(
       join(dest, MANIFEST),
@@ -366,7 +377,7 @@ export async function restoreBackup(
       throw new Error("Restore copy differs from verified bundle.");
     db = new DatabaseSync(path, { enableForeignKeyConstraints: true });
     db.exec("PRAGMA trusted_schema=OFF");
-    const before = health(db);
+    const before = health(db).counts;
     if (JSON.stringify(before) !== JSON.stringify(manifest.counts))
       throw new Error("Restore table counts mismatch.");
     const invalid = db
@@ -401,10 +412,10 @@ export async function restoreBackup(
       formatVersion: 1,
       backupSha256: manifest.sha256,
       restoredDatabase: await hashBackupFile(path),
-      schemaVersion: BACKUP_SCHEMA_VERSION,
+      schemaVersion: manifest.schemaVersion,
       representativeCounts: before,
       sessionsInvalidated: sessionsBefore,
-      accountEpochsAdvanced: before.users,
+      accountEpochsAdvanced: before.users ?? 0,
       recoveryRequired: true,
       passwordHashesRestoredFromBackup: true,
       sessionSecretRotationRequired: true,

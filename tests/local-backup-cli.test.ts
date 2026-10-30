@@ -83,8 +83,9 @@ test("current schema source matches actual database and backup without migration
       edit.close();
       const before = await hashBackupFile(source);
       const result = cli(["export", "--source", source, "--destination", join(dir, `bundle-${version}`), "--writers-stopped"]);
-      assert.equal(result.status, 1);
-      assert.equal(result.stdout, "");
+      // Older schemas export as-is (restore leaves migration to the app); newer ones are refused.
+      assert.equal(result.status, version < CURRENT_SCHEMA_VERSION ? 0 : 1);
+      if (version > CURRENT_SCHEMA_VERSION) assert.equal(result.stdout, "");
       assert.deepEqual(await hashBackupFile(source), before);
     }
     assert.throws(() => openDatabase(source), /newer|supported|version/i);

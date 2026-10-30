@@ -122,6 +122,18 @@ test("stock movements preserve chronology and full reversal, bound balance and 1
     ).status,
     409,
   );
+  assert.equal(
+    (
+      await post(`/${item.id}/movements`, {
+        version: item.version,
+        kind: "receipt",
+        quantity: "1",
+        effectiveDate: "2999-12-31",
+        reason: "future typo",
+      })
+    ).status,
+    400,
+  );
   const exact = await post(`/${item.id}/movements`, {
     version: item.version,
     kind: "receipt",

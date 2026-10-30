@@ -1,7 +1,7 @@
 // Explicit local command only. No environment loading, migration or restore.
 import { createBackup, verifyBackup, BACKUP_SCHEMA_VERSION } from "./local-backup.js";
 
-const help = `Local backup commands (supported schema ${BACKUP_SCHEMA_VERSION}):
+const help = `Local backup commands (supported schema 16-${BACKUP_SCHEMA_VERSION}):
   export --source /absolute/database.sqlite --destination /absolute/new-bundle --writers-stopped
   verify --bundle /absolute/bundle
   list --bundle /absolute/bundle

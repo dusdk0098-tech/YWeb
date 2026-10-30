@@ -124,6 +124,19 @@ async function fixture() {
   }
   return { db, id, other, password, origin, app, login };
 }
+test("login limit counts failures per account, not successes or other accounts on the shared loopback IP", async () => {
+  const f = await fixture();
+  try {
+    for (let i = 0; i < 11; i++)
+      assert.equal((await f.login()).response.status, 200);
+    for (let i = 0; i < 10; i++)
+      assert.equal((await f.login("other@example.test", "wrong-password")).response.status, 401);
+    assert.equal((await f.login("other@example.test", "wrong-password")).response.status, 429);
+    assert.equal((await f.login()).response.status, 200);
+  } finally {
+    f.db.close();
+  }
+});
 test("self change revokes all caller sessions but not others; stale store writes cannot resurrect", async () => {
   const f = await fixture();
   try {

@@ -127,6 +127,9 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
   }
   assert.equal(p.totals.total.current, "1");
   assert.equal(p.totals.byCategory[0].remaining, "-0.5");
+  const detail = await m.agent.get(`${base}/${id}/expenses?categoryId=${p.categories[1].id}`);
+  assert.deepEqual(detail.body.items.map((e: { category_id: string }) => e.category_id), [p.categories[1].id]);
+  assert.equal((await m.agent.get(`${base}/${id}/expenses?categoryId=x&bogus=1`)).status, 400);
   const before = db.prepare("SELECT COUNT(*) n FROM cost_events").get()!.n;
   r = await post(`/${id}/expenses`, {
     version: p.version,

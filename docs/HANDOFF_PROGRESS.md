@@ -35,3 +35,7 @@ DB 버전: 56 → 62 (`cost_period_settings`, `cost_expense_labor`, `cost_expens
 1. **법정 서식 출력** — A안 승인, 1·2단계(표지·집계표·갑·총괄·을·항목 1~9 상세) 구현. 원본 셀 채움 생성기와 합성 입력 1회 대조: 법정 서식 값 일치(표지 날짜 표시 형식만 다름, LEGAL_FORMS_PROPOSAL.md). 남은 것: 알PDF 육안 확인. — 원본 xlsm 양식과의 동등성 기준(문서 순서·쪽 나눔·셀 위치·허용 차이)이 필요하다. 원본 내역집계표의 8번(본사) 열 누락이 의도인지도 확인 필요. 기준안: [LEGAL_FORMS_PROPOSAL.md](LEGAL_FORMS_PROPOSAL.md) (미승인).
 2. **교육·일지 재설계** — A안(화면 흐름)과 B안(교육내용 검수 기록, schema 61, 관리자 기록·미검수 시 경고) 구현. — 인계문서의 제안은 현재 v1에 없는 메타데이터(적용대상·권리 검수)나 전면 화면 재설계를 수반한다. 재설계안: [EDU_JOURNAL_REDESIGN_PROPOSAL.md](EDU_JOURNAL_REDESIGN_PROPOSAL.md) (미승인).
 3. **SEC-LOCAL-01** — A안(읽기 전용 점검·경고)과 B안(운영자 실행 권한 정리 명령·umask 077) 구현: [SEC_LOCAL_01_PROPOSAL.md](SEC_LOCAL_01_PROPOSAL.md). 실제 운영 PC 적용·재검증은 운영자 몫.
+
+## 남은 영역 사양안
+
+기타 항목 승인(2026-10-31)에 따라 MOB-01·P-01·SC-04·오프라인·WEB-01·P-02의 첫 수직 구현 단위와 결정 필요 값을 [REMAINING_AREAS_SPEC.md](REMAINING_AREAS_SPEC.md)에 정리했다. 결정이 채워지는 영역부터 구현한다.

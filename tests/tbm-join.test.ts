@@ -5,6 +5,7 @@ import argon2 from "argon2";
 import request from "supertest";
 import { openDatabase } from "../server/db.js";
 import { createApp } from "../server/app.js";
+import { TBM_SIGNATURE_CONSENT } from "../server/consent-text.js";
 const origin = "http://127.0.0.1:3000";
 const details = { title: "합성 TBM", date: "2026-10-31", time: "08:00", location: "합성 장소", facilitator: "담당", work: "정리", topics: "안전" };
 test("TBM link participation: name + birth date of a roster worker, hashed values only, expiry/revoke/change, no login", async () => {
@@ -43,7 +44,7 @@ test("TBM link participation: name + birth date of a roster worker, hashed value
     assert.match(token, /^[A-Za-z0-9_-]{43}$/);
     assert.doesNotMatch(JSON.stringify(db.prepare("SELECT * FROM activity_invitations").all()), new RegExp(token)); // only its hash is stored
     const anon = request.agent(app), csrf = (await anon.get("/api/session")).body.csrf;
-    const join = (body: object) => anon.post("/api/join").set("Origin", origin).set("x-csrf-token", csrf).send(body);
+    const join = (body: object) => anon.post("/api/join").set("Origin", origin).set("x-csrf-token", csrf).send({ consentVersion: TBM_SIGNATURE_CONSENT.version, decision: "deny", ...body });
     assert.deepEqual((await anon.post("/api/join/info").set("Origin", origin).set("x-csrf-token", csrf).send({ token })).body, { title: "합성 TBM", date: "2026-10-31", location: "합성 장소" });
     assert.equal((await anon.post("/api/join").set("Origin", origin).send({ token, name: "김철수", birthDate: "1990-05-06" })).status, 403); // CSRF still applies
     assert.equal((await join({ token, name: "김철수", birthDate: "1990-05-07" })).status, 400);

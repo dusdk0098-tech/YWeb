@@ -55,7 +55,16 @@ test("legal forms reproduce original SC order and values: cover, 집계표 witho
     assert.match(html, /사용기준금액\(전체\)<\/th><td>15,000,000<\/td>/); // 30,000,000 × 50%
     assert.match(html, /<tr><th>계<\/th><td>100<\/td><td>1,501.5<\/td><td>0.0%<\/td><td>1,601.5<\/td><\/tr>/);
     assert.match(html, /<th>1\. &lt;항목1&gt;<\/th><td>1,000<\/td><td>100<\/td><td>1,000<\/td><td>1,100<\/td><td>-100<\/td>/);
-    assert.match(html, /작성자 · 안전관리자 · 성명 : 작성 \(인\)/);
+    assert.match(html, /작성자 · 안전관리자 · 성명 : 작 성 \(인\)/); // original spacedName
+    // 2단계: 사용내역(을) and 항목 1~9 상세 follow the original order and row capacity.
+    const stage2 = ["2026년 10월 항목별 사용내역", "1. 안전관리자의 임금 등 지급현황", "2. 안전시설비 등 사용현황", "3. 보호구 등 사용현황", "4. 안전보건진단비 등 사용현황",
+      "5. 안전보건교육비 등 사용현황", "6. 근로자 건강장해예방비 등 사용현황", "7. 건설재해예방 기술지도비 사용현황", "8. 본사 전담조직 근로자 임금 등 사용현황", "9. 위험성평가 등에 따른 소요비용"].map((t) => html.indexOf(t));
+    assert.ok(stage2.every((v, i) => v > order[3] && (i === 0 || v > stage2[i - 1])), JSON.stringify(stage2));
+    assert.match(html, /<th rowspan="7">1\. &lt;항목1&gt;<\/th><td>2026-10-02<\/td><td>합성<\/td><td>1<\/td><td>1,000<\/td><td>1,000<\/td><td rowspan="7">1,000<\/td>/);
+    assert.match(html, /<tr><th>계<\/th><td colspan="4"><\/td><td>1,501.5<\/td><td>1,501.5<\/td><\/tr>/); // 을 includes 8번
+    assert.match(html, /<tr><td>안전관리자<\/td><td><\/td><td>합성건설<\/td><td><\/td><td>10월<\/td><td>1,000<\/td><td>합성<\/td><\/tr>/);
+    assert.match(html, /<tr><td>합성<\/td><td><\/td><td>2026-10-02<\/td><td><\/td><td>0.5<\/td><td><\/td><td><\/td><td>3<\/td><td>1.5<\/td>/);
+    assert.equal((html.match(/<h1>1\. 안전관리자의 임금 등 지급현황<\/h1>/g) ?? []).length, 1); // 1 row < 22 capacity → 1 page
     assert.match(html, /2026 년 10월 31일/);
     // A ledger without SC codes is refused instead of dropping money.
     r = await send("post", `/api/sites/${other}/cost-periods`, { month: "2026-10", openingNote: "합성", categories: [{ label: "자체", plan: "1", opening: "0" }] });

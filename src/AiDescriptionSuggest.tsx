@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 // SC-04 1단계: optional AI wording suggestion. Hidden when AI is off; the user decides whether to apply it.
 let status: Promise<{ enabled: boolean; remaining?: number }> | null = null;
+export const resetAiStatus = () => { status = null; };
 export function AiDescriptionSuggest({ siteId, text, onApply }: { siteId: string; text: string; onApply: (v: string) => void }) {
   const [enabled, setEnabled] = useState(false), [result, setResult] = useState<{ suggestion: string; sent: string } | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState("");
   useEffect(() => {

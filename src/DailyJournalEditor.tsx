@@ -227,7 +227,6 @@ export function DailyJournalEditor({
           <button type="button" onClick={() => offline.discard()}>기기 초안 버리기</button>
         </p>
       )}
-      {offline.waiting && <p role="status">연결되면 자동으로 다시 저장합니다.</p>}
       <form onSubmit={save}>
         <fieldset disabled={!editable || allBusy}>
           <label>
@@ -390,6 +389,7 @@ export function DailyJournalEditor({
             일지 초안 저장
           </button>
         )}
+        {offline.waiting && <p role="status">통신이 끊겨 저장하지 못했습니다. 연결되면 자동으로 다시 저장합니다.</p>}
       </form>
       {record && (
         <>

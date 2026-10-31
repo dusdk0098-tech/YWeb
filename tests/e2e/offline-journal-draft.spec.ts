@@ -42,7 +42,8 @@ test("offline drafts: encrypted on device and restorable; a save that failed off
   await context.setOffline(true);
   await page.getByRole("button", { name: "일지 초안 저장", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("이 기기에 암호화해 7일간 보관합니다");
-  await expect(page.getByText("연결되면 자동으로 다시 저장합니다.")).toBeVisible();
+  // The retry notice sits next to the save button, so it is on screen where the user tapped (phones hide the top banner).
+  await expect(page.getByText("연결되면 자동으로 다시 저장합니다.")).toBeInViewport();
   await context.setOffline(false);
   await expect(page.getByText("연결되면 자동으로 다시 저장합니다.")).toHaveCount(0);
   await expect(page.getByRole("alert")).toHaveCount(0);

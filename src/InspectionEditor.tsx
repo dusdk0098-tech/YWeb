@@ -197,7 +197,6 @@ export function InspectionEditor({
           <button type="button" onClick={() => offline.discard()}>기기 초안 버리기</button>
         </p>
       )}
-      {offline.waiting && <p role="status">연결되면 자동으로 다시 저장합니다.</p>}
       <fieldset disabled={!editable || busy}>
         <label>
           점검일
@@ -279,6 +278,7 @@ export function InspectionEditor({
             점검 초안 저장
           </button>
         )}
+        {offline.waiting && <p role="status">통신이 끊겨 저장하지 못했습니다. 연결되면 자동으로 다시 저장합니다.</p>}
         {editable && record && (
           <button
             disabled={busy || formDirty}

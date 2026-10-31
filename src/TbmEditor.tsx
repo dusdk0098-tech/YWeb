@@ -3,6 +3,7 @@ import { TbmRiskReferencePicker } from "./TbmRiskReferencePicker";
 import { useEffect, useRef, useState } from "react";
 import { api, type Site } from "./api";
 import { TbmInvitations } from "./TbmInvitations";
+import { useOfflineDraft } from "./useOfflineDraft";
 import type { Worker, Page } from "./attendance-types";
 import type { TbmDetails, TbmFull, TbmParticipant } from "./tbm-types";
 const empty = (): TbmDetails => ({
@@ -53,6 +54,8 @@ export function TbmEditor({
   const dirty = detailsDirty || referenceDirty;
   const allBusy = busy || referenceBusy;
   const writable = site.role !== "viewer" && record?.status !== "finalized";
+  // 오프라인 2단계: device draft of the TBM details, one automatic save when the connection returns.
+  const offline = useOfflineDraft(`tbm:${site.id}:${record?.id ?? "new"}`, form, record?.body || initialEmpty.current, writable, () => void save());
   const participants =
     record?.snapshot?.body.participants || record?.participants || [];
   // A failed command retains its UUID while the exact path/payload is retried.
@@ -111,8 +114,8 @@ export function TbmEditor({
     )
       onClose();
   }
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(e?: React.FormEvent) {
+    e?.preventDefault();
     if (busy) return;
     setBusy(true);
     setError("");
@@ -128,8 +131,9 @@ export function TbmEditor({
       setFixedSource(null);
       setForm(next.body);
       setKey(crypto.randomUUID());
+      offline.saved();
     } catch (e) {
-      setError((e as Error).message);
+      setError(offline.failed(e));
     } finally {
       setBusy(false);
     }
@@ -225,6 +229,14 @@ export function TbmEditor({
         </p>
       )}
       <form onSubmit={save}>
+      {offline.local && (
+        <p role="status">
+          이 기기에 저장 안 된 초안이 있습니다({new Date(offline.local.savedAt).toLocaleString()}).
+          <button type="button" onClick={() => { setForm(offline.local!.value); offline.discard(); }}>기기 초안 복원</button>
+          <button type="button" onClick={() => offline.discard()}>기기 초안 버리기</button>
+        </p>
+      )}
+      {offline.waiting && <p role="status">연결되면 자동으로 다시 저장합니다.</p>}
         <fieldset disabled={!writable || allBusy}>
           <div className="grid">
             {(

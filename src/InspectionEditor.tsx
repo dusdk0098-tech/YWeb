@@ -13,6 +13,7 @@ import {
   type InspectionBody,
 } from "./inspection-types";
 import { useDraftGuard } from "./useDraftGuard";
+import { useOfflineDraft } from "./useOfflineDraft";
 export function InspectionEditor({
   site,
   user,
@@ -57,6 +58,8 @@ export function InspectionEditor({
     editable =
       site.role !== "viewer" &&
       (!record || (record.status === "draft" && record.owner_id === user.id));
+  // 오프라인 2단계: device draft of the answers; only a failed draft save is retried automatically (submit/review need a live connection).
+  const offline = useOfflineDraft(`inspection:${site.id}:${user.id}:${record?.id ?? "new:" + template?.id}`, form, JSON.parse(baseline.current) as InspectionBody, editable, () => void run("save"));
   useEffect(() => {
     if (site.role !== "manager") return;
     let active = true;
@@ -115,8 +118,9 @@ export function InspectionEditor({
             guard.key(path, value),
           ),
         );
+      if (action === "save") offline.saved();
     } catch (e) {
-      setError((e as Error).message);
+      setError(action === "save" ? offline.failed(e) : (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -186,6 +190,14 @@ export function InspectionEditor({
           {error}
         </p>
       )}
+      {offline.local && (
+        <p role="status">
+          이 기기에 저장 안 된 초안이 있습니다({new Date(offline.local.savedAt).toLocaleString()}).
+          <button type="button" onClick={() => { setForm(offline.local!.value); offline.discard(); }}>기기 초안 복원</button>
+          <button type="button" onClick={() => offline.discard()}>기기 초안 버리기</button>
+        </p>
+      )}
+      {offline.waiting && <p role="status">연결되면 자동으로 다시 저장합니다.</p>}
       <fieldset disabled={!editable || busy}>
         <label>
           점검일

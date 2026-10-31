@@ -5,7 +5,8 @@ import argon2 from "argon2";
 import request from "supertest";
 import { openDatabase } from "../server/db.js";
 import { createApp } from "../server/app.js";
-import { moveCircle, moveItem, resizeCircle, rotateItem, type SceneItem } from "../src/photo-scene.js";
+import { circleAt, moveCircle, moveItem, photoInfoTsv, resizeCircle, rotateItem, type SceneItem } from "../src/photo-scene.js";
+import { cropRect, panView, zoomView } from "../server/photo-view.js";
 const origin = "http://127.0.0.1:3000", png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0]);
 const jpeg = (w: number, h: number) => Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 4, 0, 0, 0xff, 0xc0, 0, 0x11, 8, h >> 8, h & 255, w >> 8, w & 255, 3, 1, 0x11, 0, 2, 0x11, 1, 3, 0x11, 1, 0xff, 0xd9]);
 test("scene geometry: 90° rotation keeps circles on the same content, four turns restore, moves clamp", () => {
@@ -18,6 +19,21 @@ test("scene geometry: 90° rotation keeps circles on the same content, four turn
   const items = [item, { ...item, photoId: "b" }];
   assert.deepEqual(moveItem(items, 0, 1).map((i) => i.photoId), ["b", item.photoId]);
   assert.equal(moveItem(items, 0, -1), items);
+});
+test("stage 2 geometry: zoom window stays inside the photo, turns with it, pans clamp; TSV cells cannot become formulas", () => {
+  assert.deepEqual(cropRect(undefined), { x: 0, y: 0, w: 1, h: 1 });
+  assert.deepEqual(cropRect({ zoom: 2, cx: 0.5, cy: 0.5 }), { x: 0.25, y: 0.25, w: 0.5, h: 0.5 });
+  assert.deepEqual(cropRect({ zoom: 2, cx: 0.05, cy: 0.99 }), { x: 0, y: 0.5, w: 0.5, h: 0.5 }); // clamped to the edges
+  assert.equal(zoomView(undefined, 1), undefined);
+  assert.deepEqual(zoomView({ zoom: 2, cx: 0.9, cy: 0.1 }, 4), { zoom: 4, cx: 0.875, cy: 0.125 }); // 1/4 window keeps its center inside
+  assert.deepEqual(panView({ zoom: 2, cx: 0.5, cy: 0.5 }, 0.6, -0.6), { zoom: 2, cx: 0.75, cy: 0.25 });
+  const item: SceneItem = { photoId: "a", included: true, rotation: 0, caption: "", circles: [{ x: 0.2, y: 0.1, r: 0.05, color: "red" }], view: { zoom: 2, cx: 0.25, cy: 0.25 } };
+  const turned = rotateItem(item);
+  assert.deepEqual(turned.view, { zoom: 2, cx: 0.75, cy: 0.25 }); // same content as the circle rule
+  assert.deepEqual(rotateItem(rotateItem(rotateItem(turned))), item);
+  assert.equal(circleAt(item, 0.21, 0.1, 800, 600), 0);
+  assert.equal(circleAt(item, 0.5, 0.5, 800, 600), -1);
+  assert.equal(photoInfoTsv([["설명", ""], ['=HYPERLINK("x")', "a\tb"]]), '\uFEFF"\'설명"\t""\r\n"\'=HYPERLINK(""x"")"\t"\'a\tb"');
 });
 test("photo board: originals retained, display set once, scene limited to own photos, version conflicts, roles", async () => {
   const db = openDatabase(":memory:"), site = randomUUID(), other = randomUUID(), password = randomUUID(), hash = await argon2.hash(password), ids: Record<string, string> = {};
@@ -68,6 +84,30 @@ test("photo board: originals retained, display set once, scene limited to own ph
     assert.equal(r.status, 200, r.text);
     assert.deepEqual(r.body.scene, scene);
     assert.equal((await send(vw, "put", path, { version: r.body.version, title: "x", body: { siteName: "", work: "", footer: "" }, scene })).status, 403);
+    // 2단계 사진대지: zoom view saved with the scene; print is two per page with rotation, zoom crop and circles as SVG.
+    b = r.body;
+    r = await raw(`${path}/photos`, png, "image/png", "두번째.png", b.version);
+    const second = r.body.photoId;
+    r = await raw(`${path}/photos`, png, "image/png", "제외.png", r.body.board.version);
+    const third = r.body.photoId;
+    b = r.body.board;
+    const zoomed = { ...scene.items[0], caption: "<정리> 완료", view: { zoom: 2, cx: 0.25, cy: 0.25 } };
+    assert.equal((await save(b.version, { ...scene, items: [{ ...zoomed, view: { zoom: 5, cx: 0.5, cy: 0.5 } }] })).status, 400);
+    const full = { layoutVersion: 1, items: [zoomed, { photoId: second, included: true, rotation: 0, caption: "", circles: [] }, { photoId: third, included: false, rotation: 0, caption: "제외됨", circles: [] }] };
+    r = await save(b.version, full);
+    assert.equal(r.status, 200, r.text);
+    assert.deepEqual(r.body.scene.items[0].view, { zoom: 2, cx: 0.25, cy: 0.25 });
+    let html = (await vw.agent.get(`${path}/print`)).text;
+    assert.equal((html.match(/class="photo-page"/g) ?? []).length, 1);
+    // 800×600 display turned 90° → 600×800 frame; 2× zoom at the top-left quarter → viewBox 0 0 300 400.
+    assert.match(html, /<svg viewBox="0 0 300 400"[^>]*><clipPath id="v-[^"]+"><rect x="0" y="0" width="300" height="400"\/><\/clipPath><g clip-path="url\(#v-[^"]+\)"><image href="\/api\/sites\/[^"]+\/photos\/[^"]+\/display" x="-100" y="100" width="800" height="600" transform="rotate\(90 300 400\)"\/><circle cx="300" cy="400" r="60" fill="none" stroke="#f2c200" stroke-width="3.6"\/><\/g><\/svg>/);
+    assert.match(html, /&lt;정리&gt; 완료/);
+    assert.match(html, /표시본 없음 · 두번째\.png/);
+    assert.doesNotMatch(html, /제외됨|빈 칸/);
+    r = await save(r.body.version, { ...full, items: [full.items[0], { ...full.items[1], included: false }, full.items[2]] });
+    html = (await ed.agent.get(`${path}/print`)).text;
+    assert.match(html, /<p>빈 칸<\/p>/); // an odd last slot is marked, not stretched
+    assert.match(html, /1\/1쪽/);
     assert.throws(() => db.prepare("UPDATE photo_board_photos SET bytes=x'00'").run());
     assert.throws(() => db.prepare("DELETE FROM photo_board_photos").run());
     assert.equal((await ed.agent.get(`/api/sites/${other}/photo-boards/${b.id}`)).status, 403); // not a member of that site

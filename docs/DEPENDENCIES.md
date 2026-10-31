@@ -4,6 +4,8 @@ Generated from package-lock.json, including transitive and platform-optional pac
 
 Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-lock.json.
 
+Bundled font (not an npm package): Pretendard Variable 1.3.9, SIL Open Font License 1.1 — public/fonts/PretendardVariable.woff2, license text in public/fonts/LICENSE-Pretendard-OFL.txt (UI 개편 결정 2026-10-31).
+
 | Package path | Version | Declared license | Class |
 |---|---|---|---|
 | @anthropic-ai/sdk | 1.3.0 | Apache-2.0 | runtime/optional |

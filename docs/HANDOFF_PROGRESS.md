@@ -27,10 +27,10 @@
 | N-01 일부 / SC 사진대지 | 정책 A안 승인([PHOTO_BOARD_POLICY_PROPOSAL.md](PHOTO_BOARD_POLICY_PROPOSAL.md)). 브라우저 표시본(EXIF 제거)만 표시, 원본은 다운로드만. 분류4종·촬영일·내용·포함, 분류별 1쪽 2칸 인쇄, 출력 전 확인 경고 | 이 PR | 독립 사진 보드(N: 원형 강조·undo·PNG), 회전·순서, 실제 8방향 EXIF 사진·알PDF·모바일 확인 |
 | UX-SC / 마감 차단 | 사용자 결정에 따라 출력 전 확인 오류가 있으면 서버가 마감 거부(409), 화면 마감 버튼 비활성. 기존 마감 시험은 합성 현장 설정을 넣는 공통 도우미(`tests/fixtures/cost-close-ready.ts`)로 유지 | 이 PR | — |
 
-DB 버전: 56 → 60 (`cost_period_settings`, `cost_expense_labor`, `cost_expense_details`, `cost_evidence_displays`). 앞의 세 테이블 모두 지출 행·마감본 바이트를 바꾸지 않는 옆 테이블이며, 작성 중 원장에서만 쓰기가 가능하다(트리거).
+DB 버전: 56 → 61 (`cost_period_settings`, `cost_expense_labor`, `cost_expense_details`, `cost_evidence_displays`, `education_catalog_reviews`). 앞의 세 테이블 모두 지출 행·마감본 바이트를 바꾸지 않는 옆 테이블이며, 작성 중 원장에서만 쓰기가 가능하다(트리거).
 
 ## 결정 필요 (구현 보류)
 
 1. **법정 서식 출력** — A안 승인, 1·2단계(표지·집계표·갑·총괄·을·항목 1~9 상세) 구현. 원본 셀 채움 생성기와 합성 입력 1회 대조: 법정 서식 값 일치(표지 날짜 표시 형식만 다름, LEGAL_FORMS_PROPOSAL.md). 남은 것: 알PDF 육안 확인. — 원본 xlsm 양식과의 동등성 기준(문서 순서·쪽 나눔·셀 위치·허용 차이)이 필요하다. 원본 내역집계표의 8번(본사) 열 누락이 의도인지도 확인 필요. 기준안: [LEGAL_FORMS_PROPOSAL.md](LEGAL_FORMS_PROPOSAL.md) (미승인).
-2. **교육·일지 재설계** — A안(화면 흐름, DB 변경 없음) 구현. B안(교육내용 검수 메타데이터)은 미승인. — 인계문서의 제안은 현재 v1에 없는 메타데이터(적용대상·권리 검수)나 전면 화면 재설계를 수반한다. 재설계안: [EDU_JOURNAL_REDESIGN_PROPOSAL.md](EDU_JOURNAL_REDESIGN_PROPOSAL.md) (미승인).
+2. **교육·일지 재설계** — A안(화면 흐름)과 B안(교육내용 검수 기록, schema 61, 관리자 기록·미검수 시 경고) 구현. — 인계문서의 제안은 현재 v1에 없는 메타데이터(적용대상·권리 검수)나 전면 화면 재설계를 수반한다. 재설계안: [EDU_JOURNAL_REDESIGN_PROPOSAL.md](EDU_JOURNAL_REDESIGN_PROPOSAL.md) (미승인).
 3. **SEC-LOCAL-01** — A안(읽기 전용 점검·경고)과 B안(운영자 실행 권한 정리 명령·umask 077) 구현: [SEC_LOCAL_01_PROPOSAL.md](SEC_LOCAL_01_PROPOSAL.md). 실제 운영 PC 적용·재검증은 운영자 몫.

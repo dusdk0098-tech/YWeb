@@ -1,3 +1,4 @@
+import { CatalogReview, type CatalogReviewRecord } from "./CatalogReview";
 import { CatalogUseNotice,type CatalogUseStatus } from "./CatalogUseNotice";
 import { CatalogStopForm } from "./CatalogStopForm";
 import { useEffect, useRef, useState } from "react";
@@ -38,6 +39,7 @@ export function EducationCatalogEditor({
     [reason, setReason] = useState(""),
     [makeJournal, setMake] = useState(false),
     [readAll, setReadAll] = useState(false),
+    [review, setReview] = useState<CatalogReviewRecord | null>(null), [reviewDirty, setReviewDirty] = useState(false),
     [schedule, setSchedule] = useState({
       date: "",
       startTime: "09:00",
@@ -52,7 +54,7 @@ export function EducationCatalogEditor({
   const baseline = useRef(JSON.stringify(body)),
     changed = JSON.stringify(body) !== baseline.current,
     guard = useDraftGuard(
-      changed || !!reason || makeJournal || stopDirty,
+      changed || !!reason || makeJournal || stopDirty || reviewDirty,
       busy,
       onDirtyChange,
       onBusyChange,
@@ -124,6 +126,7 @@ export function EducationCatalogEditor({
         {useStatus?<CatalogUseNotice state={useStatus}/>:<p role={useError?"alert":undefined}>{useError?"현재 사용상태 조회 실패: "+useError:"현재 사용상태 조회 중"}</p>}
         <button disabled={busy||stopDirty||changed||!!reason||makeJournal} onClick={()=>setUseTick(t=>t+1)}>현재 사용상태 다시 조회</button>
         {site.role==="manager"&&useStatus&&!useStatus.useStopped&&!makeJournal&&<CatalogStopForm busy={busy||changed||!!reason} onDirtyChange={setStopDirty} onStop={why=>void stopUse(why)}/>}
+        {record.published_hash&&<CatalogReview key={record.id} path={base+"/"+record.id+"/reviews"} sourceHash={record.published_hash} manager={site.role==="manager"} keyFor={guard.key} onLatest={setReview} onDirty={setReviewDirty}/>}
       </>}
       <button
         disabled={busy}
@@ -242,7 +245,7 @@ export function EducationCatalogEditor({
                   <p>
                     판본 ID {record.id} v{record.version} · hash {record.published_hash} · 과정 표시 {record.body.categoryLabel || "없음"}
                   </p>
-                  <p>적용대상·출처·권리 검수: 미검토 (검수 기록 항목이 아직 없습니다)</p>
+                  {review ? <p>적용대상·출처·권리 검수: {review.target} · {review.source} · 권리 확인 {review.rightsCheckedBy}({review.rightsCheckedDate}) · 현행성 확인 {review.currencyCheckedDate}</p> : <p role="alert">적용대상·출처·권리 검수: 미검토 — 검수 기록이 없습니다. 적용은 할 수 있지만 내용을 직접 확인하세요.</p>}
                   <h3>{record.body.title}</h3>
                   <h4>교육 목표</h4>
                   <p style={{ whiteSpace: "pre-wrap" }}>{record.body.objectives || "없음"}</p>

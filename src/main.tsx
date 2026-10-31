@@ -22,6 +22,7 @@ import {
 } from "./DomainPanels";
 import { Login } from "./Login";
 import { JoinPage } from "./JoinPage";
+import { clearOfflineDrafts } from "./offline-draft";
 import { Minutes } from "./Minutes";
 import { SiteManagement } from "./SiteManagement";
 import { PasswordChange } from "./PasswordChange";
@@ -79,6 +80,7 @@ function App() {
       return;
     try {
       await api("/logout", "POST");
+      await clearOfflineDrafts();
       setEditor(null);
       setSites([]);
       setUser(null);

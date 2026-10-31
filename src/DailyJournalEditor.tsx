@@ -1,3 +1,4 @@
+import { deleteDraft, loadDraft, saveDraft } from "./offline-draft";
 import { DailyJournalToday } from "./DailyJournalToday";
 import { DailyInspectionReferences,DailyInspectionCaptured } from "./DailyInspectionReferences";
 import { useEffect, useRef, useState } from "react";
@@ -69,6 +70,22 @@ export function DailyJournalEditor({
   const [inspectionBusy,setInspectionBusy]=useState(false);
   const allBusy=busy||inspectionBusy;
   const guard = useDraftGuard(dirty, allBusy, onDirtyChange, onBusyChange);
+  // 오프라인 초안: an encrypted copy on this device while the form differs from the server (cleared after a successful save).
+  const draftId = `journal:${site.id}:${user.id}:${record?.id ?? "new"}`,
+    [localDraft, setLocalDraft] = useState<{ value: { body: typeof body; day: string }; savedAt: string } | null>(null);
+  useEffect(() => {
+    if (!editable) return;
+    let active = true;
+    void loadDraft<{ body: typeof body; day: string }>(draftId).then((d) => {
+      if (active && d && JSON.stringify(d.value.body) !== JSON.stringify(record?.body || initialBody.current)) setLocalDraft(d);
+    });
+    return () => { active = false; };
+  }, [draftId]); // checked once per opened record
+  useEffect(() => {
+    if (!editable || !formDirty) return;
+    const t = setTimeout(() => void saveDraft(draftId, { body, day }), 800);
+    return () => clearTimeout(t);
+  }, [editable, formDirty, draftId, body, day]);
   useEffect(() => {
     if (!manager) return;
     let active = true;
@@ -126,8 +143,12 @@ export function DailyJournalEditor({
           guard.key(path, value),
         ),
       );
+      void deleteDraft(draftId);
+      setLocalDraft(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(e instanceof TypeError
+        ? "통신이 끊겨 서버에 저장하지 못했습니다. 입력은 이 기기에 암호화해 7일간 보관합니다. 연결되면 다시 저장하세요."
+        : (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -213,6 +234,13 @@ export function DailyJournalEditor({
       {error && (
         <p role="alert" className="error">
           {error}
+        </p>
+      )}
+      {localDraft && (
+        <p role="status">
+          이 기기에 저장 안 된 초안이 있습니다({new Date(localDraft.savedAt).toLocaleString()}).
+          <button type="button" onClick={() => { setBody(localDraft.value.body); if (!record) setDay(localDraft.value.day); setLocalDraft(null); }}>기기 초안 복원</button>
+          <button type="button" onClick={() => { void deleteDraft(draftId); setLocalDraft(null); }}>기기 초안 버리기</button>
         </p>
       )}
       <form onSubmit={save}>

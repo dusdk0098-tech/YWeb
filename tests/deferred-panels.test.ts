@@ -94,6 +94,8 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
     ['            "사진대지 N",\n', ''],
     ['        ) : site && tab === "daily" ? (', '        ) : site && tab === "photoboard" ? (\n          <PhotoBoardPanel\n            key={site.id}\n            site={site}\n            onDirtyChange={setAttendanceDirty}\n            onBusyChange={setAttendanceBusy}\n          />\n        ) : site && tab === "daily" ? ('],
   );
+  // 오프라인 초안: logout also clears this device's encrypted drafts.
+  mobileChanges.push(['      await api("/logout", "POST");\n', '      await api("/logout", "POST");\n      await clearOfflineDrafts();\n']);
   // WEB-01 1단계 adds one menu entry and panel branch.
   mobileChanges.push(
     ['            ["daily", "안전업무일지"],\n            ["photoboard", "사진 보드"],', '            ["daily", "안전업무일지"],\n            ["photoboard", "사진 보드"],\n            ["library", "현장 자료실"],'],

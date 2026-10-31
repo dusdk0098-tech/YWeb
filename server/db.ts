@@ -2,6 +2,7 @@ import { migrateCostDetails } from "./cost-detail-schema.js";
 import { migrateCostPhotos } from "./cost-photo-schema.js";
 import { migrateEducationReviews } from "./education-catalog-review.js";
 import { migratePhotoBoards } from "./photo-board.js";
+import { migrateTbmJoin } from "./tbm-join.js";
 import { migrateCostLabor } from "./cost-labor-schema.js";
 import { migrateCostSettings } from "./cost-settings-schema.js";
 import { migrateDailyInspectionReferences } from "./daily-inspection-migration.js";
@@ -211,6 +212,7 @@ PRAGMA user_version=1;`);
       if (version < 60) migrateCostPhotos(db);
       if (version < 61) migrateEducationReviews(db);
       if (version < 62) migratePhotoBoards(db);
+      if (version < 63) migrateTbmJoin(db);
     });
   } catch (error) {
     db.close();

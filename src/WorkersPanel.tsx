@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type Site } from "./api";
 import type { Worker, Page } from "./attendance-types";
+import { WorkerIdentity } from "./WorkerIdentity";
 const empty = {
   name: "",
   affiliation: "",
@@ -38,6 +39,13 @@ export function WorkersPanel({
   const dirty = JSON.stringify(form) !== JSON.stringify(original);
   useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
   useEffect(() => onBusyChange(busy), [busy, onBusyChange]);
+  const [identities, setIdentities] = useState<string[]>([]);
+  useEffect(() => {
+    if (site.role !== "manager") return;
+    let active = true;
+    api<{ workerIds: string[] }>(`/sites/${site.id}/worker-identities`).then((v) => active && setIdentities(v.workerIds)).catch(() => {});
+    return () => { active = false; };
+  }, [site.id, site.role]);
   function mayDiscard() {
     return !dirty || window.confirm("저장하지 않은 명부 입력을 버릴까요?");
   }
@@ -132,6 +140,10 @@ export function WorkersPanel({
                   {w.active ? "활성" : "비활성"} · ID {w.id}
                 </small>
               </span>
+              {site.role === "manager" && (
+                <WorkerIdentity siteId={site.id} workerId={w.id} registered={identities.includes(w.id)}
+                  onChange={(v) => setIdentities((old) => (v ? [...old.filter((x) => x !== w.id), w.id] : old.filter((x) => x !== w.id)))} />
+              )}
               {site.role === "manager" && (
                 <button
                   type="button"

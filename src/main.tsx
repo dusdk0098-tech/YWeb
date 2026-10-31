@@ -20,6 +20,7 @@ import {
   PhotoBoardPanel,
 } from "./DomainPanels";
 import { Login } from "./Login";
+import { JoinPage } from "./JoinPage";
 import { Minutes } from "./Minutes";
 import { SiteManagement } from "./SiteManagement";
 import { PasswordChange } from "./PasswordChange";
@@ -472,6 +473,6 @@ function App() {
 }
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    {location.pathname === "/join" ? <JoinPage /> : <App />}
   </React.StrictMode>,
 );

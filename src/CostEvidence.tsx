@@ -1,7 +1,7 @@
 import { CostEvidenceRequest } from "./CostEvidenceRequest";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, uploadCostEvidence, uploadCostPhotoDisplay } from "./api";
-import { makePhotoDisplay } from "./photo-display";
+import { exifTakenDate, makePhotoDisplay } from "./photo-display";
 import { CostPhotoLabel, type PhotoLabel } from "./CostPhotoLabel";
 import { useDraftGuard } from "./useDraftGuard";
 import type { Page } from "./attendance-types";
@@ -33,6 +33,12 @@ export function CostEvidence({ base, onClose, onDirtyChange, onBusyChange }: {
     const original: Blob = source ?? await fetch("/api" + base + `/evidence/files/${fileId}/download`, { credentials: "same-origin" }).then(r => { if (!r.ok) throw new Error("원본을 내려받지 못했습니다."); return r.blob(); });
     const path = base + `/evidence/files/${fileId}/display`;
     await uploadCostPhotoDisplay(path, await makePhotoDisplay(original), periodVersion, guard.key(path, { fileId }));
+    // Policy A: EXIF 촬영일 only prefills the editable 촬영일 (new display is labelVersion 1); GPS is never read.
+    const takenDate = exifTakenDate(new Uint8Array(await original.slice(0, 256 * 1024).arrayBuffer()));
+    if (takenDate) {
+      const labelPath = path + "/label", body = { labelVersion: 1, groupName: "안전시설비 등", takenDate, description: "", included: true };
+      await api(labelPath, "PUT", body, guard.key(labelPath, body));
+    }
   }
   async function makeDisplay(fileId: string) {
     if (!view || busy) return;

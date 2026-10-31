@@ -24,7 +24,7 @@
 | UX-SC / SC-01 | 원본 9개 화면 대조표, 9개 법정 항목 채우기, 항목별 상세, 현장 설정, 인건비 구분·조회, 월마감 대시보드(다음 작업 포함), 연속 입력·복사·중복 경고, 출력 전 확인, 항목별 추가필드 | #7~#13, #16 | 아래 "결정 필요" |
 | MT-01 | 현장 전체 후속조치 보드(내 담당·미확인 필터, 기한 표시) | #15 | 실제 서명·법적 역할 |
 | 회귀 | 위 변경으로 생긴 E2E 실패 4건 수정 | #17 | — |
-| N-01 일부 / SC 사진대지 | 정책 A안 승인([PHOTO_BOARD_POLICY_PROPOSAL.md](PHOTO_BOARD_POLICY_PROPOSAL.md)). 브라우저 표시본(EXIF 제거)만 표시, 원본은 다운로드만. 분류4종·촬영일·내용·포함, 분류별 1쪽 2칸 인쇄, 출력 전 확인 경고 | 이 PR | 독립 사진 보드(N: 원형 강조·undo·PNG), 회전·순서, EXIF 촬영일 자동 채움, 실제 8방향 EXIF 사진·알PDF·모바일 확인 |
+| N-01 일부 / SC 사진대지 | 정책 A안 승인([PHOTO_BOARD_POLICY_PROPOSAL.md](PHOTO_BOARD_POLICY_PROPOSAL.md)). 브라우저 표시본(EXIF 제거)만 표시, 원본은 다운로드만. 분류4종·촬영일·내용·포함, 분류별 1쪽 2칸 인쇄, 출력 전 확인 경고 | 이 PR | 독립 사진 보드(N: 원형 강조·undo·PNG), 회전·순서, 실제 8방향 EXIF 사진·알PDF·모바일 확인 |
 | UX-SC / 마감 차단 | 사용자 결정에 따라 출력 전 확인 오류가 있으면 서버가 마감 거부(409), 화면 마감 버튼 비활성. 기존 마감 시험은 합성 현장 설정을 넣는 공통 도우미(`tests/fixtures/cost-close-ready.ts`)로 유지 | 이 PR | — |
 
 DB 버전: 56 → 60 (`cost_period_settings`, `cost_expense_labor`, `cost_expense_details`, `cost_evidence_displays`). 앞의 세 테이블 모두 지출 행·마감본 바이트를 바꾸지 않는 옆 테이블이며, 작성 중 원장에서만 쓰기가 가능하다(트리거).

@@ -5,6 +5,7 @@ import { registerCostEvidenceComparison } from "./cost-evidence-comparison-route
 import { registerCostEvidenceRequests } from "./cost-evidence-request-routes.js";
 import { registerCostEvidence, isCostEvidenceUpload } from "./cost-evidence-routes.js";
 import { registerCostPhotos, isCostPhotoUpload } from "./cost-photo-routes.js";
+import { registerLegalForms } from "./cost-legal-forms.js";
 import { registerCostPresets } from "./cost-preset-routes.js";
 import { registerDailyMonthlyRecords } from "./daily-monthly-record-routes.js";
 import { registerDailyJournalRegister } from "./daily-journal-register.js";
@@ -201,6 +202,7 @@ export async function createApp(db: Db, config: AppConfig) {
   registerEducationAttachments(app,db,{access,mutate},attachmentReader);
   registerCostEvidence(app,db,{access,mutate},attachmentReader);
   registerCostPhotos(app,db,{access,mutate},attachmentReader);
+  registerLegalForms(app,db,{access,mutate});
   registerCostEvidenceRequests(app,db,{access,mutate});
   registerCostEvidenceComparison(app,db,{access,mutate});
   registerCostOutput(app,db,{access,mutate});

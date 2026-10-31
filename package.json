@@ -17,7 +17,8 @@
     "test": "node --import tsx --test tests/*.test.ts",
     "test:e2e": "node scripts/e2e-runner.mjs",
     "check": "npm run lint && npm run typecheck && npm test && npm run build",
-    "backup:local": "node --import tsx scripts/local-backup-cli.ts"
+    "backup:local": "node --import tsx scripts/local-backup-cli.ts",
+    "secure-data": "node --import tsx scripts/secure-data.ts"
   },
   "keywords": [],
   "author": "JO YEONG JIN",

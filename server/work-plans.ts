@@ -22,6 +22,8 @@ import {
 } from "./work-plan-model.js";
 import { capturePlanSources, planSourceFacts } from "./work-plan-sources.js";
 import { journalHash } from "./daily-journal-sources.js";
+import { copyFormChecklist } from "./work-plan-form-checklist.js";
+import { copyWorkPlanCalculation } from "./work-plan-calculations.js";
 import { printWorkPlan } from "./work-plan-print.js";
 export function registerWorkPlans(
   app: Express,
@@ -242,6 +244,8 @@ export function registerWorkPlans(
         db.prepare(
           "INSERT INTO work_plans VALUES(?,?,?,'draft',1,?,?,?,NULL,?,?)",
         ).run(child, site, resetPacketBodyJson(row.body), v.authorId, id, v.reason, now, now);
+        copyFormChecklist(db, id, child, site, req.session.userId!);
+        copyWorkPlanCalculation(db, id, child, site, req.session.userId!);
         return event(
           req,
           getWorkPlan(db, site, child),

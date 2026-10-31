@@ -39,6 +39,11 @@ test("form checklist API: defaults, draft edits, version conflicts, frozen after
     assert.equal((await f.send("put", path, { version: c.version, choices })).status, 409);
     assert.throws(() => f.db.prepare("UPDATE work_plan_form_checklists SET body='[]'").run());
     assert.throws(() => f.db.prepare("DELETE FROM work_plan_form_checklists").run());
+    const archived = (await f.agent.get(f.base + `/work-plans/${id}`)).body;
+    r = await f.send("post", `/work-plans/${id}/revise`, { version: archived.version, authorId: f.manager, reason: "개정" });
+    assert.equal(r.status, 200, r.text);
+    const child = (await f.agent.get(f.base + `/work-plans/${r.body.id}/form-checklist`)).body;
+    assert.deepEqual([child.saved, child.version, child.choices.find((x: { type: string }) => x.type === "PLATE_LOAD_TEST").note], [true, 1, "<시험>"]);
   } finally {
     f.db.close();
   }

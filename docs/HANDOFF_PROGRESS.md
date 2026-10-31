@@ -24,6 +24,7 @@
 | UX-SC / SC-01 | 원본 9개 화면 대조표, 9개 법정 항목 채우기, 항목별 상세, 현장 설정, 인건비 구분·조회, 월마감 대시보드(다음 작업 포함), 연속 입력·복사·중복 경고, 출력 전 확인, 항목별 추가필드 | #7~#13, #16 | 아래 "결정 필요" |
 | MT-01 | 현장 전체 후속조치 보드(내 담당·미확인 필터, 기한 표시) | #15 | 실제 서명·법적 역할 |
 | 회귀 | 위 변경으로 생긴 E2E 실패 4건 수정 | #17 | — |
+| SC-04 1단계 / AI 문구 제안 | 기본 꺼짐(`AI_ENABLED`+월 요청 상한 필요), 공식 SDK로 Claude에 내용 문구만 전송(숫자 마스킹), 제안 표시 후 사용자 적용, 관리자만, 월 사용량 (schema 67) | 이 PR | 월 상한 값, 실제 API 호출 확인 |
 | 오프라인 1단계 / 일지 초안 | 일지 입력을 기기에 AES-GCM 암호화 보관(추출 불가 키), 통신 실패 안내, 다시 열 때 복원/버리기 선택, 저장 성공·7일·로그인·로그아웃 시 삭제, 서버 DB 변경 없음 | 이 PR | 다른 화면, 자동 재전송, 기기 철회, 실기기 |
 | WEB-01 1단계 / 현장 자료실 | 구성원 전용, 관리자 업로드 시 권리 확인 필수·확인자 기록, 판 표시, 미검사 원본 다운로드, 사유 있는 게시 중지(삭제 없음), 200개·용량 합산 (schema 66) | 이 PR | 외부 공개 커뮤니티, 배포 목록, 뉴스·날씨(제외 결정) |
 | P-01 1단계 / 양식사용 체크리스트 | 원본 P 17개 양식 모듈 포함·메모, 필수 제외 불가·권장 제외 사유, 작성자·초안만 수정, 보관 후 고정, 인쇄, 이 앱 지원 상태 표시 (schema 65) | 이 PR | 계산 양식(P-02 보류), 개정 시 체크리스트 복사 |
@@ -33,7 +34,7 @@
 | N-01 일부 / SC 사진대지 | 정책 A안 승인([PHOTO_BOARD_POLICY_PROPOSAL.md](PHOTO_BOARD_POLICY_PROPOSAL.md)). 브라우저 표시본(EXIF 제거)만 표시, 원본은 다운로드만. 분류4종·촬영일·내용·포함, 분류별 1쪽 2칸 인쇄, 출력 전 확인 경고 | 이 PR | 독립 사진 보드(N: 원형 강조·undo·PNG), 회전·순서, 실제 8방향 EXIF 사진·알PDF·모바일 확인 |
 | UX-SC / 마감 차단 | 사용자 결정에 따라 출력 전 확인 오류가 있으면 서버가 마감 거부(409), 화면 마감 버튼 비활성. 기존 마감 시험은 합성 현장 설정을 넣는 공통 도우미(`tests/fixtures/cost-close-ready.ts`)로 유지 | 이 PR | — |
 
-DB 버전: 56 → 62 (`cost_period_settings`, `cost_expense_labor`, `cost_expense_details`, `cost_evidence_displays`, `education_catalog_reviews`, `photo_boards`·`photo_board_photos`) → 63 (`worker_identities`, `activity_invitations`, `participation_events`) → 64 (`consent_records`, `signature_records`) → 65 (`work_plan_form_checklists`) → 66 (`library_files`). 앞의 세 테이블 모두 지출 행·마감본 바이트를 바꾸지 않는 옆 테이블이며, 작성 중 원장에서만 쓰기가 가능하다(트리거).
+DB 버전: 56 → 62 (`cost_period_settings`, `cost_expense_labor`, `cost_expense_details`, `cost_evidence_displays`, `education_catalog_reviews`, `photo_boards`·`photo_board_photos`) → 63 (`worker_identities`, `activity_invitations`, `participation_events`) → 64 (`consent_records`, `signature_records`) → 65 (`work_plan_form_checklists`) → 66 (`library_files`) → 67 (`ai_usage`). 앞의 세 테이블 모두 지출 행·마감본 바이트를 바꾸지 않는 옆 테이블이며, 작성 중 원장에서만 쓰기가 가능하다(트리거).
 
 ## 결정 필요 (구현 보류)
 

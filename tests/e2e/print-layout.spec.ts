@@ -19,7 +19,7 @@ test("print routes keep maximum valid headings and cost columns within A4 width"
   await page.getByLabel("이메일", { exact: true }).fill("test@example.test");
   await page.getByLabel("비밀번호", { exact: true }).fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /오늘의 기록을/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "오늘", exact: true })).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
   const post = async (path: string, data: unknown) => {
     const response = await page.request.post(path, {

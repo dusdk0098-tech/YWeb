@@ -5,7 +5,7 @@ test("SC 법정 서식 prints all sheets in order within A4 width", async ({ pag
   await page.getByLabel("이메일", { exact: true }).fill("test@example.test");
   await page.getByLabel("비밀번호", { exact: true }).fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /오늘의 기록을/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "오늘", exact: true })).toBeVisible();
   const s = await (await page.request.get("/api/session")).json(),
     headers = () => ({ Origin: "http://127.0.0.1:3107", "x-csrf-token": s.csrf, "idempotency-key": randomUUID() });
   const site = await (await page.request.post("/api/sites", { headers: headers(), data: { name: "서식 합성 " + randomUUID() } })).json();

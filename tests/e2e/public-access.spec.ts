@@ -5,8 +5,8 @@ test("외부 접속 설정: save tunnel settings on this PC, applied at next sta
   await page.getByLabel("이메일", { exact: true }).fill("test@example.test");
   await page.getByLabel("비밀번호", { exact: true }).fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /오늘의 기록을/ })).toBeVisible();
-  await page.getByRole("button", { name: "외부 접속 설정 ↗", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "오늘", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "외부 접속 설정", exact: true }).click();
   await expect(page.getByRole("status").first()).toContainText("꺼짐 (이 PC에서만 접속)");
   await page.getByLabel("방식").selectOption({ label: "Cloudflare Tunnel" });
   await page.getByLabel("도메인").fill("safety.example.test");

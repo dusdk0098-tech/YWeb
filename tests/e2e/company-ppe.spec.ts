@@ -11,7 +11,7 @@ test("company affiliation source and PPE full return update one stock ledger", a
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
   async function post(
@@ -64,7 +64,7 @@ test("company affiliation source and PPE full return update one stock ledger", a
     .getByLabel("작업 현장")
     .selectOption({ label: "보호구 합성 현장" });
   await page
-    .getByRole("button", { name: "업체 · 소속 · 보호구 ↗", exact: true })
+    .getByRole("button", { name: "업체 · 보호구", exact: true })
     .click();
   await page
     .getByRole("button", { name: "보호구 지급·반납", exact: true })

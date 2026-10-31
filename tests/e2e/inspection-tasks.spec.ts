@@ -11,7 +11,7 @@ test("explicit scheduled start opens pending inspection and shows immutable sche
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
   const headers = {
@@ -39,7 +39,7 @@ test("explicit scheduled start opens pending inspection and shows immutable sche
   await page.reload();
   await page.getByLabel("작업 현장").selectOption({ label: "일정 합성 현장" });
   await page
-    .getByRole("button", { name: "자체 양식 · 점검 ↗", exact: true })
+    .getByRole("button", { name: "점검", exact: true })
     .click();
   await page
     .getByRole("button", { name: "점검 일정 / 배정 · 내 일정 업무", exact: true })

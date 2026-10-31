@@ -10,7 +10,7 @@ test("TBM manual participation, manager record finalization and linked pending r
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
   const headers = {
@@ -30,11 +30,11 @@ test("TBM manual participation, manager record finalization and linked pending r
   });
   await page.reload();
   await page.getByLabel("작업 현장").selectOption({ label: "TBM 합성 현장" });
-  await page.getByRole("button", { name: "TBM 기록 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "TBM", exact: true }).click();
   await page.getByRole("button", { name: "+ TBM 초안", exact: true }).click();
   await page.getByLabel("TBM 제목 *", { exact: true }).fill("작업 전 TBM");
   page.once("dialog", (d) => d.dismiss());
-  await page.getByRole("button", { name: "현장 홈 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "오늘", exact: true }).click();
   await expect(page.getByLabel("TBM 제목 *", { exact: true })).toHaveValue(
     "작업 전 TBM",
   );

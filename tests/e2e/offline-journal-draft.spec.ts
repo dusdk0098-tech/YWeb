@@ -8,8 +8,8 @@ async function login(page: Page) {
 }
 async function openNewJournal(page: Page, siteId: string) {
   await page.getByLabel("작업 현장").selectOption(siteId);
-  await page.getByRole("button", { name: "현장 홈 ↗", exact: true }).click();
-  await page.getByRole("button", { name: "안전업무일지 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "오늘", exact: true }).click();
+  await page.getByRole("button", { name: "안전업무일지", exact: true }).click();
   await page.getByRole("button", { name: "새 안전업무일지", exact: true }).click();
 }
 const deviceDrafts = (page: Page) => page.evaluate(() => new Promise<string>((done) => {
@@ -48,7 +48,7 @@ test("offline drafts: encrypted on device and restorable; a save that failed off
   await expect(page.getByRole("alert")).toHaveCount(0);
   await expect.poll(async () => JSON.stringify(await (await page.request.get(`/api/sites/${site.id}/daily-journals`)).json())).toContain("통신 두절 중 작성한 합성 요약");
   // 3) Same for a TBM draft.
-  await page.getByRole("button", { name: "TBM 기록 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "TBM", exact: true }).click();
   await page.getByRole("button", { name: "+ TBM 초안", exact: true }).click();
   await page.getByLabel("TBM 제목 *", { exact: true }).fill("오프라인 TBM");
   await context.setOffline(true);

@@ -8,12 +8,12 @@ test("manual roster/attendance with cancel guards, correction history and print"
     .getByLabel("비밀번호", { exact: true })
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
-  await page.getByRole("button", { name: "현장 관리 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "현장 관리", exact: true }).click();
   await page.getByLabel("현장 이름", { exact: true }).fill("출역 합성 현장");
   await page.getByRole("button", { name: "현장 만들기", exact: true }).click();
   await page.getByLabel("작업 현장").selectOption({ label: "출역 합성 현장" });
   await page
-    .getByRole("button", { name: "명부 · 출역 ↗", exact: true })
+    .getByRole("button", { name: "명부 · 출역", exact: true })
     .click();
   await page
     .getByRole("button", { name: "근로자 · 방문자 명부", exact: true })
@@ -26,7 +26,7 @@ test("manual roster/attendance with cancel guards, correction history and print"
     "김합성",
   );
   page.once("dialog", (d) => d.dismiss());
-  await page.getByRole("button", { name: "현장 홈 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "오늘", exact: true }).click();
   await expect(page.getByLabel("이름 *", { exact: true })).toHaveValue(
     "김합성",
   );
@@ -76,7 +76,9 @@ test("manual roster/attendance with cancel guards, correction history and print"
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.getByRole("button", { name: "로그아웃", exact: true }).click();
+  // On a phone the account lives in the 더보기 sheet.
+  await page.getByRole("navigation", { name: "하단 메뉴" }).getByRole("button", { name: "더보기", exact: true }).click();
+  await page.getByRole("dialog", { name: "더보기 메뉴" }).getByRole("button", { name: "로그아웃", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "로그인", exact: true }),
   ).toBeVisible();

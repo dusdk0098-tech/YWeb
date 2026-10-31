@@ -11,7 +11,7 @@ test("general work plan requires explicit source capture before manual archive",
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
   const headers = {
@@ -28,7 +28,7 @@ test("general work plan requires explicit source capture before manual archive",
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
   await page
-    .getByRole("button", { name: "수기 일반 작업계획 ↗", exact: true })
+    .getByRole("button", { name: "작업계획", exact: true })
     .click();
   await page.getByRole("button", { name: "일반 작업계획 초안 작성" }).click();
   await page.getByLabel("작업계획 제목").fill("합성 작업계획");

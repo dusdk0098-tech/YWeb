@@ -11,7 +11,7 @@ test("warned raw upload, dirty navigation, retained detach and frozen submit", a
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
   const site = await (
@@ -28,7 +28,7 @@ test("warned raw upload, dirty navigation, retained detach and frozen submit", a
   await page.reload();
   await page.getByLabel("작업 현장").selectOption({ label: "첨부 합성 현장" });
   await page
-    .getByRole("button", { name: "신고 · 조치 ↗", exact: true })
+    .getByRole("button", { name: "신고 · 조치", exact: true })
     .click();
   await page.getByRole("button", { name: "+ 신고 초안", exact: true }).click();
   await page.getByLabel("신고 제목 *", { exact: true }).fill("첨부 시험");

@@ -5,7 +5,7 @@ test("사진 보드: upload, circle highlight, rotate, undo/redo, save and PNG",
   await page.getByLabel("이메일", { exact: true }).fill("test@example.test");
   await page.getByLabel("비밀번호", { exact: true }).fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /오늘의 기록을/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "오늘", exact: true })).toBeVisible();
   const s = await (await page.request.get("/api/session")).json();
   const site = await (await page.request.post("/api/sites", { headers: { Origin: "http://127.0.0.1:3107", "x-csrf-token": s.csrf, "idempotency-key": randomUUID() }, data: { name: "사진 보드 합성 " + randomUUID() } })).json();
   const pngBytes = Buffer.from(await page.evaluate(async () => {
@@ -16,7 +16,7 @@ test("사진 보드: upload, circle highlight, rotate, undo/redo, save and PNG",
   }));
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
-  await page.getByRole("button", { name: "사진 보드 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "사진 보드", exact: true }).click();
   await page.getByLabel("제목", { exact: true }).fill("작업 전후");
   await page.getByRole("button", { name: "사진 보드 만들기" }).click();
   await page.getByLabel("현장명").fill("합성 현장");

@@ -171,8 +171,13 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
     m.agent.put(`${base}/${id}/settings`).set("Origin", origin).set("x-csrf-token", m.csrf).set("idempotency-key", randomUUID()).send(body);
   for (const bad of [{ projectEnd: "2025-12-31" }, { projectEnd: "" }, { safetyBudgetWon: "1.5" }, { coverProgress: "101" }, { writtenDate: "2026-02-30" }])
     assert.equal((await putSettings({ version: p.version, settings: { ...settings, ...bad } })).status, 400, JSON.stringify(bad));
+  let pre = (await m.agent.get(`${base}/${id}/preflight`)).body;
+  assert.equal(pre.errorCount, 7);
+  assert.ok(pre.items.some((i: { level: string; message: string }) => i.level === "warning" && i.message.includes("이전 월 지출일")));
   r = await putSettings({ version: p.version, settings });
   assert.equal(r.status, 200, r.text);
+  pre = (await m.agent.get(`${base}/${id}/preflight`)).body;
+  assert.equal(pre.errorCount, 0);
   p = r.body;
   assert.equal(p.settings.summaryStart, "2026-01-01"); // same-as-project copied on the server
   assert.equal((await putSettings({ version: p.version - 1, settings })).status, 409);

@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import type { Db } from "./db.js";
 import type { SiteOperations } from "./site-operations.js";
-import { costExpenses, costTotals, readCostSettings, type CostCategory } from "./cost-model.js";
+import { costExpenses, costTotals, readCostSettings, getCostPeriod, costPeriodView, type CostCategory } from "./cost-model.js";
+import { currentCostEvidence } from "./cost-evidence-model.js";
 import { moneyUnits } from "./cost-money.js";
 // Ratio a/b as a percent string with one decimal, truncated (no rounding up).
 export function percentText(a: bigint, b: bigint) {
@@ -53,7 +54,33 @@ export function costDashboard(db: Db, site: string) {
     },
   };
 }
+// PEDIT-SC 출력 전 확인 (state-query.js preflightState), limited to data this app has.
+// Advisory: closing is not blocked here; stock/photo/legal-limit checks are out of scope.
+export function costPreflight(db: Db, site: string, id: string) {
+  const period = costPeriodView(db, getCostPeriod(db, site, id)),
+    items: { level: "error" | "warning"; message: string }[] = [],
+    s = period.settings;
+  for (const [key, label] of [
+    ["writtenDate", "작성일"], ["projectName", "공사명"], ["contractor", "건설업체명"], ["contractAmountWon", "공사금액"],
+    ["safetyBudgetWon", "계상안전관리비"], ["author", "작성자"], ["reviewer", "작성확인자"],
+  ] as const)
+    if (!s?.[key]) items.push({ level: "error", message: `현장 설정의 ${label}을(를) 입력하세요.` });
+  if (s?.safetyBudgetWon === "0") items.push({ level: "error", message: "계상안전관리비는 0보다 커야 합니다." });
+  if (!period.categories.some((c) => moneyUnits(c.plan) > 0n)) items.push({ level: "error", message: "항목별 계획금액을 입력하세요." });
+  for (const e of costExpenses(db, id))
+    if (e.status === "active" && e.spend_date < period.month + "-01")
+      items.push({ level: "warning", message: `${e.description}은(는) 이전 월 지출일(${e.spend_date})로 입력되었습니다.` });
+  const noEvidence = currentCostEvidence(db, site, id).warnings.activeExpensesWithoutLink.length;
+  if (noEvidence) items.push({ level: "warning", message: `증빙 연결이 없는 지출이 ${noEvidence}건 있습니다.` });
+  for (const c of period.totals.byCategory)
+    if (c.overPlan) items.push({ level: "warning", message: `${c.label} 항목이 계획금액을 초과했습니다.` });
+  return { items, errorCount: items.filter((i) => i.level === "error").length };
+}
 export function registerCostDashboard(app: Express, db: Db, { access }: SiteOperations) {
+  app.get("/api/sites/:siteId/cost-periods/:id/preflight", (req, res) => {
+    access(req, true, true);
+    res.json(costPreflight(db, String(req.params.siteId), String(req.params.id)));
+  });
   app.get("/api/sites/:siteId/cost-dashboard", (req, res) => {
     access(req, true, true);
     res.json(costDashboard(db, String(req.params.siteId)));

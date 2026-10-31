@@ -66,6 +66,7 @@ export function CostPeriodEditor({
   const [detail,setDetail]=useState(false);
   const [settings,setSettings]=useState(false);
   const [laborKind,setLaborKind]=useState("");
+  const [preflight,setPreflight]=useState<{items:{level:"error"|"warning";message:string}[];errorCount:number}|null>(null);
   const [evidence,setEvidence]=useState(false);
   const [stockExpense,setStockExpense]=useState<string|null>(null);
   const [batch, setBatch] = useState(false),
@@ -79,6 +80,14 @@ export function CostPeriodEditor({
       onBusyChange,
     ),
     base = `/sites/${site.id}/cost-periods/${record.id}`;
+  useEffect(() => {
+    let active = true;
+    if (record.status !== "open") setPreflight(null);
+    else api<NonNullable<typeof preflight>>(`${base}/preflight`).then((v) => active && setPreflight(v)).catch(() => active && setPreflight(null));
+    return () => {
+      active = false;
+    };
+  }, [base, record.status, record.version]);
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -325,6 +334,22 @@ export function CostPeriodEditor({
       </button>
       <CostOutputControl key={`${base}:${record.version}:${dirty}:${busy}`} base={base} disabled={dirty||busy||batchBusy} />
       {history && <CostHistory base={base} tick={tick} disabled={dirty||busy||batchBusy} />}
+      {preflight && (
+        <details open={preflight.errorCount > 0}>
+          <summary>
+            출력 전 확인 · 오류 {preflight.errorCount}건, 확인 {preflight.items.length - preflight.errorCount}건
+          </summary>
+          {preflight.items.length ? (
+            <ul>
+              {preflight.items.map((i, n) => (
+                <li key={n}>{i.level === "error" ? "오류" : "확인"} · {i.message}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>출력 준비 완료</p>
+          )}
+        </details>
+      )}
       <fieldset disabled={busy}>
         <legend>원장 작업</legend>
         <label>
@@ -341,6 +366,8 @@ export function CostPeriodEditor({
               disabled={!!form || !!budget || !reason.trim()}
               onClick={() => {
                 if (
+                  (!preflight?.errorCount ||
+                    window.confirm(`출력 전 확인 오류 ${preflight.errorCount}건이 남아 있습니다. 원본 SC는 이 상태로 마감하지 않았습니다. 그래도 진행할까요?`)) &&
                   window.confirm(
                     "기록을 마감하여 잠글까요? 법정 인정이나 결재가 아닙니다.",
                   )

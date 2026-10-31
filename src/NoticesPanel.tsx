@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Notice } from "./ui";
 import { api, type Site } from "./api";
 import type { Page } from "./attendance-types";
 import { noticeStatus, type NoticeView } from "./notice-types";
@@ -80,11 +81,11 @@ export function NoticesPanel({
   return (
     <>
       <h1>현장 계정 공지</h1>
-      <p>
+      <Notice summary="공지는 지정한 계정에게만 보입니다. 외부로 알림을 보내지 않습니다.">
         관리자는 현장 전체 공지와 수신 대상/계정 확인을 관리합니다. 일반 계정은
         자신에게 지정된 게시/과거 공지만 볼 수 있습니다. 근로자 본인 확인·숙지
         증명·외부 알림이 아닙니다.
-      </p>
+      </Notice>
       {site.role === "manager" && (
         <button disabled={busy} onClick={() => setOpen({ record: null })}>
           새 공지 초안

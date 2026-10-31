@@ -47,7 +47,6 @@ export function Minutes({
     <>
       <div className="section-head page-heading">
         <div>
-          <p className="eyebrow">MEETING MINUTES</p>
           <h1>회의록</h1>
           <p>회의의 결정을 다음 행동으로 이어갑니다.</p>
         </div>

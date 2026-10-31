@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Notice } from "./ui";
 import { api, type Site, type User } from "./api";
 import type { RiskAction } from "../server/risk-actions";
 import { RiskActionCreate } from "./RiskActionCreate";
@@ -60,11 +61,11 @@ export function RiskActionsPanel({
   return (
     <section>
       <h1>위험성평가 계획 · 수기 조치 추적</h1>
-      <p>
+      <Notice summary="담당자 보고와 다른 관리자의 확인을 나눠 기록합니다.">
         보고와 다른 관리자의 확인 기록을 분리합니다. 실제 현장 관측/위험
         해소/작업 재개 허가가 아니며 위험행별 별도 재평가 기록은 평가 문서에서
         조회합니다.
-      </p>
+      </Notice>
       {error && <p role="alert">{error}</p>}
       <button disabled={loading} onClick={() => setTick((x) => x + 1)}>
         목록 다시 조회

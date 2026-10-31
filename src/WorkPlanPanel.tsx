@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Notice } from "./ui";
 import { api, type Site, type User } from "./api";
 import type { Page } from "./attendance-types";
 import { WorkPlanEditor } from "./WorkPlanEditor";
@@ -80,7 +81,7 @@ export function WorkPlanPanel({
   return (
     <section>
       <h2>자체 수기 일반 작업계획</h2>
-      <p>{workPlanWarning}</p>
+      <Notice summary="직접 쓰는 작업계획서입니다. 작업허가나 공학 검토가 아닙니다.">{workPlanWarning}</Notice>
       {error && <p role="alert">{error}</p>}
       {site.role !== "viewer" && (
         <button disabled={busy} onClick={() => setRecord(null)}>

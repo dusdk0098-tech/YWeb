@@ -1,4 +1,5 @@
 import { RiskReuseForm } from "./RiskReuseForm";
+import { Notice } from "./ui";
 import { RiskReuseSource } from "./RiskReuseSource";
 import { RiskOpinionsPanel } from "./RiskOpinionsPanel";
 import { RiskPrintControl } from "./RiskPrintControl";
@@ -208,12 +209,12 @@ export function RiskAssessmentEditor({
             : body.method === "narrative" ? "핵심요인 서술형" : "체크리스트 사람 판단"}{" "}
         · {row ? riskStatus[row.status] : "초안 · 미검토/미승인"}
       </h2>
-      <p>
+      <Notice tone="warning" summary="긴급 위험은 이 화면 저장을 기다리지 말고 현장 비상 절차를 따르세요.">
         수치형은 설정 기준의 산술이며, 3단계·체크리스트·서술형은 사람의 판단 기록입니다. 안전
         판정·준법 보증·작업 재개 허가가 아닙니다. 저감 계획은 실제 이행·검증
         완료와 다릅니다. 긴급 위험은 이 화면 저장을 기다리지 말고 현장 비상
         절차를 따르세요.
-      </p>
+      </Notice>
       {error && <p role="alert">{error}</p>}
       <fieldset
         disabled={busy || reviewBusy || printBusy || reviewDirty || !editable}

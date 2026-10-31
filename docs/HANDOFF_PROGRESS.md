@@ -31,6 +31,6 @@ DB 버전: 56 → 60 (`cost_period_settings`, `cost_expense_labor`, `cost_expens
 
 ## 결정 필요 (구현 보류)
 
-1. **법정 서식 출력** — 원본 xlsm 양식과의 동등성 기준(문서 순서·쪽 나눔·셀 위치·허용 차이)이 필요하다. 원본 내역집계표의 8번(본사) 열 누락이 의도인지도 확인 필요. 기준안: [LEGAL_FORMS_PROPOSAL.md](LEGAL_FORMS_PROPOSAL.md) (미승인).
+1. **법정 서식 출력** — A안 승인, 1단계(표지·집계표·갑·총괄) 구현. 남은 것: 사용내역(을)·항목 1~9 상세, 원본 셀 값 자동 대조 fixture. — 원본 xlsm 양식과의 동등성 기준(문서 순서·쪽 나눔·셀 위치·허용 차이)이 필요하다. 원본 내역집계표의 8번(본사) 열 누락이 의도인지도 확인 필요. 기준안: [LEGAL_FORMS_PROPOSAL.md](LEGAL_FORMS_PROPOSAL.md) (미승인).
 2. **교육·일지 재설계** — 인계문서의 제안은 현재 v1에 없는 메타데이터(적용대상·권리 검수)나 전면 화면 재설계를 수반한다. 재설계안: [EDU_JOURNAL_REDESIGN_PROPOSAL.md](EDU_JOURNAL_REDESIGN_PROPOSAL.md) (미승인).
 3. **SEC-LOCAL-01** — A안(읽기 전용 점검·경고) 구현. 권한 정리 명령·umask(B안)는 미승인: [SEC_LOCAL_01_PROPOSAL.md](SEC_LOCAL_01_PROPOSAL.md).

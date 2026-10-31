@@ -83,3 +83,15 @@ td {
   max-height: 105mm;
   margin: 0 auto;
 }
+.form-page {
+  break-after: page;
+}
+.form-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.form-page th,
+.form-page td {
+  border: 1px solid #555;
+  padding: 2px 4px;
+}

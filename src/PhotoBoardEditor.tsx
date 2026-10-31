@@ -150,7 +150,7 @@ export function PhotoBoardEditor({ base, initial, writable, onClose, onDirtyChan
     </ol>
   </section>;
 }
-function ItemCanvas({ img, item, label, selectedCircle, writable, onAdd, onSelect, onCommit, onKey }: {
+export function ItemCanvas({ img, item, label, selectedCircle, writable, onAdd, onSelect, onCommit, onKey }: {
   img?: HTMLImageElement; item: SceneItem; label: string; selectedCircle: number | null; writable: boolean;
   onAdd: (x: number, y: number) => void; onSelect: (circle: number) => void; onCommit: (item: SceneItem) => void; onKey: (e: React.KeyboardEvent) => void;
 }) {

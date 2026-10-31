@@ -25,14 +25,19 @@ test("SC 사진대지: browser makes an EXIF-free JPEG display, labels it and pr
   page.on("dialog", (d) => d.accept());
   await page.locator('input[type="file"]').setInputFiles({ name: "현장.png", mimeType: "image/png", buffer: onePixel });
   await page.getByRole("button", { name: "원본 저장" }).click();
-  const img = page.getByRole("img", { name: "현장.png 표시본" });
-  await expect(img).toBeVisible();
-  expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(1);
+  const canvas = page.getByRole("img", { name: /현장\.png 미리보기, 원형 강조 0개/ });
+  await expect(canvas).toBeVisible();
   const evidence = await (await page.request.get(`/api/sites/${site.id}/cost-periods/${period.id}/evidence`)).json();
   const fileId = evidence.items[0].file.id;
   const shown = await page.request.get(`/api/sites/${site.id}/cost-periods/${period.id}/evidence/files/${fileId}/display`);
   expect(shown.headers()["content-type"]).toBe("image/jpeg");
   expect([...(await shown.body()).subarray(0, 3)]).toEqual([0xff, 0xd8, 0xff]);
+  // 보완: tap adds a circle, 90° rotation; undo/redo before saving.
+  await canvas.click({ position: { x: 240, y: 180 } });
+  await expect(page.getByRole("img", { name: /원형 강조 1개/ })).toBeVisible();
+  await page.getByRole("button", { name: "90° 회전" }).click();
+  await page.getByRole("button", { name: "실행 취소" }).click();
+  await page.getByRole("button", { name: "다시 실행" }).click();
   await page.getByLabel("촬영일").fill("2026-10-03");
   await page.getByLabel("내용", { exact: true }).fill("안전망 설치");
   await page.getByRole("button", { name: "사진대지 항목 저장" }).click();
@@ -43,5 +48,6 @@ test("SC 사진대지: browser makes an EXIF-free JPEG display, labels it and pr
   await expect(page.getByText("안전망 설치 · 촬영일 2026-10-03")).toBeVisible();
   const printed = page.getByRole("img", { name: "안전망 설치 사진" });
   await expect(printed).toBeVisible();
-  expect(await printed.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(1);
+  expect(await printed.locator("image").getAttribute("transform")).toMatch(/^rotate\(90 /);
+  await expect(printed.locator("circle")).toHaveCount(1);
 });

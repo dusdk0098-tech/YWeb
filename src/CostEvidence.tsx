@@ -36,7 +36,7 @@ export function CostEvidence({ base, onClose, onDirtyChange, onBusyChange }: {
     // Policy A: EXIF 촬영일 only prefills the editable 촬영일 (new display is labelVersion 1); GPS is never read.
     const takenDate = exifTakenDate(new Uint8Array(await original.slice(0, 256 * 1024).arrayBuffer()));
     if (takenDate) {
-      const labelPath = path + "/label", body = { labelVersion: 1, groupName: "안전시설비 등", takenDate, description: "", included: true };
+      const labelPath = path + "/label", body = { labelVersion: 1, groupName: "안전시설비 등", takenDate, description: "", included: true, rotation: 0, circles: [] };
       await api(labelPath, "PUT", body, guard.key(labelPath, body));
     }
   }
@@ -66,6 +66,14 @@ export function CostEvidence({ base, onClose, onDirtyChange, onBusyChange }: {
       setView(next); setTick(v => v + 1);
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
+  // 사진대지 순서: swap within the group and save the whole group's order (the server checks every photo's label version).
+  async function movePhoto(group: Board["photos"], at: number, delta: -1 | 1) {
+    const items = group.map(p => ({ attachmentId: p.attachmentId, labelVersion: p.labelVersion }));
+    [items[at], items[at + delta]] = [items[at + delta], items[at]];
+    setBusy(true); setError("");
+    try { const path = base + "/photo-board/order", body = { groupName: group[at].groupName, items }; setBoard(await api<Board>(path, "PUT", body, guard.key(path, body))); }
+    catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+  }
   return <section><button disabled={busy} onClick={() => { if (guard.canLeave()) onClose(); }}>비용 원장으로 돌아가기</button>
     <h2>비용 원본·같은 월 지출 연결</h2><p>{costEvidenceWarning}</p><p>증빙 참조 목록은 정확한 마감 ID/해시에 연결된 별도 기록입니다. 기존 금융 기준본·수기 제출 진술에 파일이나 증빙 목록을 자동 포함하지 않습니다. 과거 마감 목록은 원장의 변경 이력에서 확인하세요.</p>
     <p>월별 보존20파일/각5MiB, 파일별 활성 연결50행. 신고·회의록·작업계획·비용·교육 합산 현장200개/100MiB·전체512MiB. 연결을 분리해도 원본과 용량은 보존됩니다. 다음 월로 복사하지 않습니다.</p>
@@ -78,8 +86,9 @@ export function CostEvidence({ base, onClose, onDirtyChange, onBusyChange }: {
       {view.items.map(({file:f, links}) => <article key={f.id}><h3>{f.filename}</h3><p>{f.format} · {f.size} bytes · {f.id}</p><p>원본 SHA256 {f.sha256}</p>
         <a href={"/api" + base + `/evidence/files/${f.id}/download`}>미검사 원본 다운로드</a>
         {f.format !== "application/pdf" && (board?.photos.some(p => p.attachmentId === f.id)
-          ? <><p><img src={"/api" + base + `/evidence/files/${f.id}/display`} alt={`${f.filename} 표시본`} style={{ maxWidth: 240, maxHeight: 180 }}/></p>
-            <CostPhotoLabel key={`${f.id}:${board.photos.find(p => p.attachmentId === f.id)!.labelVersion}`} base={base} photo={board.photos.find(p => p.attachmentId === f.id)!} open={view.period.status === "open"} disabled={busy || loading || !!file || editing !== null} onSaved={() => setTick(v => v + 1)} onDirty={labelDirty} keyFor={guard.key}/></>
+          ? (() => { const photo = board.photos.find(p => p.attachmentId === f.id)!, group = board.photos.filter(p => p.groupName === photo.groupName), at = group.indexOf(photo);
+            return <CostPhotoLabel key={`${f.id}:${photo.labelVersion}`} base={base} photo={photo} open={view.period.status === "open"} disabled={busy || loading || !!file || editing !== null} onSaved={() => setTick(v => v + 1)} onDirty={labelDirty} keyFor={guard.key}
+              first={at === 0} last={at === group.length - 1} onMove={(d) => void movePhoto(group, at, d)}/>; })()
           : view.period.status === "open" && <button disabled={busy || loading || !!file || editing !== null} onClick={() => void makeDisplay(f.id)}>사진대지 표시본 만들기</button>)}
         <p>활성 연결 {links.length}개 {links.length === 0 ? "(어느 지출도 입증하지 않는 미연결 원본)" : ""}</p>
         {links.map(l => <p key={l.expenseId}>지출 {l.expenseId} · 연결 당시 {l.source.description} (v{l.source.version}) · 현재 v{l.currentVersion}/{l.currentStatus === "active" ? "유효행" : "취소행"} · {l.changedSinceLink ? "연결 뒤 변경 있음" : "연결 당시와 같은 행"}</p>)}

@@ -19,9 +19,9 @@ test("SC 사진대지: EXIF 촬영일 only prefills the editable 촬영일", asy
   const s = await (await page.request.get("/api/session")).json(),
     headers = () => ({ Origin: "http://127.0.0.1:3107", "x-csrf-token": s.csrf, "idempotency-key": randomUUID() });
   const site = await (await page.request.post("/api/sites", { headers: headers(), data: { name: "EXIF 합성 " + randomUUID() } })).json();
-  await page.request.post(`/api/sites/${site.id}/cost-periods`, {
+  const period = await (await page.request.post(`/api/sites/${site.id}/cost-periods`, {
     headers: headers(), data: { month: "2026-10", openingNote: "합성", categories: [{ label: "안전시설비", plan: "100", opening: "0" }] },
-  });
+  })).json();
   const jpeg = Buffer.from(await page.evaluate(async () => {
     const c = document.createElement("canvas"); c.width = 4; c.height = 3; c.getContext("2d")!.fillRect(0, 0, 4, 3);
     const b = await new Promise<Blob>((done) => c.toBlob((x) => done(x!), "image/jpeg"));
@@ -35,9 +35,9 @@ test("SC 사진대지: EXIF 촬영일 only prefills the editable 촬영일", asy
   page.on("dialog", (d) => d.accept());
   await page.locator('input[type="file"]').setInputFiles({ name: "exif.jpg", mimeType: "image/jpeg", buffer: withExif(jpeg, "2026:10:03 09:15:00") });
   await page.getByRole("button", { name: "원본 저장" }).click();
-  const img = page.getByRole("img", { name: "exif.jpg 표시본" });
-  await expect(img).toBeVisible();
-  expect(await img.evaluate((el: HTMLImageElement) => [el.naturalWidth, el.naturalHeight])).toEqual([4, 3]);
+  await expect(page.getByRole("img", { name: /exif\.jpg 미리보기, 원형 강조 0개/ })).toBeVisible();
+  const board = await (await page.request.get(`/api/sites/${site.id}/cost-periods/${period.id}/photo-board`)).json();
+  expect([board.photos[0].width, board.photos[0].height]).toEqual([4, 3]);
   await expect(page.getByLabel("촬영일")).toHaveValue("2026-10-03");
   await expect(page.getByLabel("촬영일")).toBeEnabled();
 });

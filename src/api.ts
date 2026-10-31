@@ -22,8 +22,13 @@ export async function api<T>(
   if (response.status === 204) return undefined as T;
   const data = await response.json();
   if (!response.ok)
-    throw new Error(data.error || "요청을 처리하지 못했습니다.");
+    throw new Error(errorText(data));
   return data as T;
+}
+// Append the server's Korean field reasons (custom zod messages); zod's English defaults stay hidden.
+export function errorText(data: { error?: string; fields?: { message: string }[] }) {
+  const reasons = [...new Set((data.fields ?? []).map((f) => f.message).filter((m) => /[가-힣]/.test(m)))];
+  return (data.error || "요청을 처리하지 못했습니다.") + (reasons.length ? " " + reasons.join(" / ") : "");
 }
 export type User = { id: string; name: string; email: string };
 export type Site = {

@@ -1,9 +1,9 @@
 import type { Express, Request } from "express";
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { audit, type Db } from "./db.js";
 import { HttpError, type SiteOperations } from "./site-operations.js";
+import { isLocalRequest, openSecret, sealSecret } from "./local-admin.js";
 // SC-04: optional AI wording suggestion for one cost expense description. Off by default. Only the description text leaves
 // the server (long digit runs masked); the suggestion is shown for the user to apply or ignore — nothing in the ledger changes.
 // Keys: .env (AI_ENABLED=true + AI_MONTHLY_REQUEST_LIMIT, legacy) wins; otherwise the in-app setting picks one install-wide key
@@ -57,27 +57,6 @@ export function aiConfigFromEnv(): AiConfig | undefined {
   const model = process.env.AI_MODEL || "claude-opus-5-5";
   return { model, monthlyLimit: limit, suggest: anthropicSuggest() };
 }
-const keyFor = (secret: string) => createHash("sha256").update("yweb-ai-key-v1|" + secret).digest();
-export function sealKey(secret: string, apiKey: string) {
-  const iv = randomBytes(12), c = createCipheriv("aes-256-gcm", keyFor(secret), iv);
-  const cipher = Buffer.concat([c.update(apiKey, "utf8"), c.final()]);
-  return { iv: iv.toString("base64"), tag: c.getAuthTag().toString("base64"), cipher: cipher.toString("base64") };
-}
-function openKey(secret: string, row: { iv: string; tag: string; cipher: string }) {
-  try {
-    const d = createDecipheriv("aes-256-gcm", keyFor(secret), Buffer.from(row.iv, "base64"));
-    d.setAuthTag(Buffer.from(row.tag, "base64"));
-    return Buffer.concat([d.update(Buffer.from(row.cipher, "base64")), d.final()]).toString("utf8");
-  } catch { return undefined; } // SESSION_SECRET changed: the key must be registered again
-}
-// Install-wide settings change only from a browser on the server PC itself, so opening the app to the internet never exposes them.
-// Host must be the loopback address too: a tunnel (cloudflared) also connects from 127.0.0.1 but keeps the public Host header.
-export function isLocalRequest(req: Request) {
-  const ip = req.socket.remoteAddress || "";
-  const host = (req.get("host") || "").replace(/:\d+$/, "").toLowerCase();
-  return ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(ip) && ["127.0.0.1", "localhost", "[::1]"].includes(host)
-    && !req.get("x-forwarded-for") && !req.get("cf-connecting-ip");
-}
 type Settings = { mode: "off" | "install" | "account"; model: string };
 type KeyRow = { owner: string; iv: string; tag: string; cipher: string; hint: string; monthly_limit: number };
 const month = () => new Date().toISOString().slice(0, 7);
@@ -107,7 +86,7 @@ export function registerAiSuggest(app: Express, db: Db, { access }: SiteOperatio
     } catch (err) { next(err); }
   });
   const saveKey = (owner: string, body: unknown) => {
-    const { apiKey, monthlyLimit } = keySchema.parse(body), sealed = sealKey(rt.secret, apiKey);
+    const { apiKey, monthlyLimit } = keySchema.parse(body), sealed = sealSecret(rt.secret, apiKey);
     db.prepare("INSERT INTO ai_keys VALUES(?,?,?,?,?,?,?) ON CONFLICT(owner) DO UPDATE SET iv=excluded.iv,tag=excluded.tag,cipher=excluded.cipher,hint=excluded.hint,monthly_limit=excluded.monthly_limit,updated_at=excluded.updated_at")
       .run(owner, sealed.iv, sealed.tag, sealed.cipher, "…" + apiKey.slice(-4), monthlyLimit, new Date().toISOString());
   };
@@ -148,7 +127,7 @@ export function registerAiSuggest(app: Express, db: Db, { access }: SiteOperatio
       access(req, true, true);
       const r = resolve(req.session.userId!);
       if (!r) throw new HttpError(404, "AI 기능이 꺼져 있거나 등록된 AI 키가 없습니다.");
-      const apiKey = r.row ? openKey(rt.secret, r.row) : undefined;
+      const apiKey = r.row ? openSecret(rt.secret, r.row) : undefined;
       if (r.row && !apiKey) throw new HttpError(409, "저장된 AI 키를 읽을 수 없습니다(서버 비밀값 변경). 키를 다시 등록하세요.");
       const text = maskForAi(z.object({ text: z.string().trim().min(1, "내용을 입력한 뒤 제안을 받으세요.").max(200) }).strict().parse(req.body).text);
       db.exec("BEGIN IMMEDIATE");

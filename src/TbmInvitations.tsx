@@ -16,7 +16,9 @@ export function TbmInvitations({ path, draft, writable }: { path: string; draft:
       const v = await api<Invitations & { token?: string; expiresAt?: string }>(path + sub, "POST", {}, crypto.randomUUID());
       setData(v);
       if (made && v.token) {
-        const url = `${location.origin}/join#t=${v.token}`;
+        // Phones need the public domain when this PC serves one; 127.0.0.1 only works on this PC.
+        const pub = await api<{ origin: string | null }>("/public-origin").catch(() => ({ origin: null }));
+        const url = `${pub.origin ?? location.origin}/join#t=${v.token}`;
         setLink({ url, expiresAt: v.expiresAt!, qr: await QRCode.toDataURL(url, { margin: 1, width: 240, errorCorrectionLevel: "M" }) });
       }
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
@@ -27,7 +29,7 @@ export function TbmInvitations({ path, draft, writable }: { path: string; draft:
     <p className="muted">명부에 있고 생년월일이 등록된 사람만 이름·생년월일로 참여를 기록합니다. 기록은 참석 상태를 자동으로 바꾸지 않으므로 아래 명부에서 직접 반영하세요. 링크는 2시간 뒤 만료되고, TBM 내용이 바뀌거나 확정되면 쓸 수 없습니다.</p>
     {error && <p role="alert">{error}</p>}
     {writable && draft && <button disabled={busy} onClick={() => void run("", true)}>참여 링크 만들기</button>}
-    {link && <p role="status">새 링크(지금 한 번만 표시): <input readOnly aria-label="참여 링크" value={link.url} onFocus={(e) => e.target.select()} /> <button onClick={() => void navigator.clipboard?.writeText(link.url)}>복사</button> · 만료 {new Date(link.expiresAt).toLocaleString()}<br /><img src={link.qr} width={240} height={240} alt="참여 링크 QR 코드" /> 화면을 근로자에게 보여 주거나 인쇄해 휴대폰 카메라로 읽게 하세요.</p>}
+    {link && <p role="status">새 링크(지금 한 번만 표시): <input readOnly aria-label="참여 링크" value={link.url} onFocus={(e) => e.target.select()} /> <button onClick={() => void navigator.clipboard?.writeText(link.url)}>복사</button> · 만료 {new Date(link.expiresAt).toLocaleString()}<br /><img src={link.qr} width={240} height={240} alt="참여 링크 QR 코드" /> 화면을 근로자에게 보여 주거나 인쇄해 휴대폰 카메라로 읽게 하세요.{/^http:\/\/(127\.0\.0\.1|localhost)/.test(link.url) && " 이 링크는 이 PC에서만 열립니다. 휴대폰으로 쓰려면 \"외부 접속 설정\"을 먼저 켜세요."}</p>}
     {data && <>
       <ul>{data.invitations.map((i) => <li key={i.id}>{new Date(i.created_at).toLocaleString()} 발급 · {i.revoked_at ? "폐기됨" : i.expires_at <= now ? "만료" : !i.current ? "TBM 내용 변경으로 사용 불가" : `유효(~${new Date(i.expires_at).toLocaleTimeString()})`}
         {writable && !i.revoked_at && i.expires_at > now && <button disabled={busy} onClick={() => void run(`/${i.id}/revoke`)}>폐기</button>}</li>)}</ul>

@@ -7,6 +7,7 @@ import { migrateWorkPlanFormChecklists } from "./work-plan-form-checklist.js";
 import { migrateSiteLibrary } from "./site-library.js";
 import { migrateAiUsage, migrateAiKeys } from "./ai-suggest.js";
 import { migrateWorkPlanCalculations } from "./work-plan-calculations.js";
+import { migratePublicAccess } from "./public-access.js";
 import { migrateCostLabor } from "./cost-labor-schema.js";
 import { migrateCostSettings } from "./cost-settings-schema.js";
 import { migrateDailyInspectionReferences } from "./daily-inspection-migration.js";
@@ -223,6 +224,7 @@ PRAGMA user_version=1;`);
       if (version < 67) migrateAiUsage(db);
       if (version < 68) migrateAiKeys(db);
       if (version < 69) migrateWorkPlanCalculations(db);
+      if (version < 70) migratePublicAccess(db);
     });
   } catch (error) {
     db.close();

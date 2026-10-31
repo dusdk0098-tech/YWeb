@@ -6,6 +6,8 @@ import { openDatabase } from "./db.js";
 import { createApp } from "./app.js";
 import { localPermissionWarnings as localPermissionWarningsFor } from "./local-permissions.js";
 import { aiConfigFromEnv } from "./ai-suggest.js";
+import { publicOrigin, readPublicSettings, type PublicRuntime } from "./public-access.js";
+import { startDirect, startTunnel } from "./public-serve.js";
 if (existsSync(".env")) process.loadEnvFile(".env");
 // SEC-LOCAL-01 B안: files this process creates (DB WAL/SHM) are owner-only on POSIX; Windows uses ACLs instead.
 if (process.platform !== "win32") process.umask(0o077);
@@ -21,21 +23,37 @@ assertRecoveryReady(databasePath);
 const db = openDatabase(databasePath);
 const localPermissionWarnings = localPermissionWarningsFor(databasePath);
 for (const w of localPermissionWarnings) console.warn("SEC-LOCAL-01 경고:", w);
+const secret = process.env.SESSION_SECRET || "";
+// Self-hosting settings are read once here; changing them on the settings screen takes effect at the next start.
+const pub = readPublicSettings(db, secret);
+const runtime: PublicRuntime = { mode: pub.mode, origin: publicOrigin(pub), state: pub.mode === "off" ? "꺼짐" : "시작 중" };
+if (pub.mode === "tunnel" && !pub.tunnelToken) Object.assign(runtime, { mode: "off", origin: undefined, state: "꺼짐", detail: "저장된 터널 토큰을 읽을 수 없습니다(SESSION_SECRET 변경). 토큰을 다시 입력하세요." });
 const app = await createApp(db, {
-  secret: process.env.SESSION_SECRET || "",
+  secret,
   origin: process.env.APP_ORIGIN || `http://127.0.0.1:${port}`,
   adsEnabled: process.env.ADS_ENABLED === "true",
   localPermissionWarnings,
   ai: aiConfigFromEnv(),
+  publicOrigin: runtime.origin,
+  trustProxy: runtime.mode === "tunnel",
+  publicRuntime: runtime,
 });
 app.use(express.static(resolve("dist"), { index: false }));
 app.get("/{*path}", (_req, res) => res.sendFile(resolve("dist/index.html")));
 const server = app.listen(port, "127.0.0.1", () =>
   console.log(`PEDIT local foundation: http://127.0.0.1:${port}`),
 );
+// A failure here leaves the local app running; the reason is shown on the 외부 접속 설정 screen and in this console.
+let publicServer: { close: () => void } | undefined;
+const fail = (e: Error) => { Object.assign(runtime, { state: "중지", detail: e.message }); console.error("외부 접속 시작 실패:", e.message); };
+if (runtime.mode === "direct")
+  startDirect(app, pub, runtime, { dir: resolve(process.env.TLS_DIR || "./data/tls"), httpPort: Number(process.env.PUBLIC_HTTP_PORT || 80), httpsPort: Number(process.env.PUBLIC_HTTPS_PORT || 443) })
+    .then((s) => { publicServer = s; console.log("외부 접속:", runtime.detail); }).catch(fail);
+if (runtime.mode === "tunnel" && pub.tunnelToken) publicServer = startTunnel(pub.tunnelToken, runtime);
 for (const signal of ["SIGINT", "SIGTERM"])
   process.on(signal, () =>
     server.close(() => {
+      publicServer?.close();
       db.close();
       process.exit(0);
     }),

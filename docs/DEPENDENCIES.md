@@ -1,6 +1,6 @@
 # Dependency / license inventory
 
-Generated from package-lock.json, including transitive and platform-optional packages. Metadata only, not legal clearance. Inspect actual LICENSE/NOTICE before redistribution. Application license remains undecided. Node/browser/OS are separate runtimes.
+Generated from package-lock.json, including transitive and platform-optional packages. Metadata only, not legal clearance. Inspect actual LICENSE/NOTICE before redistribution. Application license: MIT (see LICENSE). Node/browser/OS are separate runtimes.
 
 Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-lock.json.
 
@@ -57,6 +57,18 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | @opentelemetry/api | 1.10.0 | Apache-2.0 | runtime/optional |
 | @oxc-project/types | 0.155.0 | MIT | development |
 | @paralleldrive/cuid2 | 2.3.1 | MIT | development |
+| @peculiar/asn1-cms | 2.11.1 | MIT | runtime/optional |
+| @peculiar/asn1-csr | 2.11.1 | MIT | runtime/optional |
+| @peculiar/asn1-ecc | 2.11.1 | MIT | runtime/optional |
+| @peculiar/asn1-pfx | 2.11.1 | MIT | runtime/optional |
+| @peculiar/asn1-pkcs8 | 2.11.1 | MIT | runtime/optional |
+| @peculiar/asn1-pkcs9 | 2.11.1 | MIT | runtime/optional |
+| @peculiar/asn1-rsa | 2.11.1 | MIT | runtime/optional |
+| @peculiar/asn1-schema | 2.11.1 | MIT | runtime/optional |
+| @peculiar/asn1-x509 | 2.11.1 | MIT | runtime/optional |
+| @peculiar/asn1-x509-attr | 2.11.1 | MIT | runtime/optional |
+| @peculiar/utils | 2.0.3 | MIT | runtime/optional |
+| @peculiar/x509 | 1.14.3 | MIT | runtime/optional |
 | @phc/format | 1.0.0 | MIT | runtime/optional |
 | @playwright/test | 1.64.1 | Apache-2.0 | development |
 | @rolldown/binding-android-arm-eabi | 1.2.15 | MIT | development |
@@ -110,14 +122,18 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | @typescript-eslint/visitor-keys | 8.72.1 | MIT | development |
 | @vitejs/plugin-react | 6.1.2 | MIT | development |
 | accepts | 2.0.0 | MIT | runtime/optional |
+| acme-client | 5.4.0 | MIT | runtime/optional |
 | acorn | 8.19.0 | MIT | development |
 | acorn-jsx | 5.3.2 | MIT | development |
+| agent-base | 6.0.2 | MIT | runtime/optional |
 | ajv | 6.15.0 | MIT | development |
 | ansi-regex | 5.0.1 | MIT | runtime/optional |
 | ansi-styles | 4.3.0 | MIT | runtime/optional |
 | argon2 | 0.45.1 | MIT | runtime/optional |
 | asap | 2.0.6 | MIT | development |
-| asynckit | 0.4.0 | MIT | development |
+| asn1js | 3.1.0 | BSD-3-Clause | runtime/optional |
+| asynckit | 0.4.0 | MIT | runtime/optional |
+| axios | 1.21.0 | MIT | runtime/optional |
 | balanced-match | 4.0.4 | MIT | development |
 | body-parser | 2.4.0 | MIT | runtime/optional |
 | brace-expansion | 5.0.12 | MIT | development |
@@ -129,7 +145,7 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | cliui | 6.0.0 | ISC | runtime/optional |
 | color-convert | 2.0.1 | MIT | runtime/optional |
 | color-name | 1.1.4 | MIT | runtime/optional |
-| combined-stream | 1.0.8 | MIT | development |
+| combined-stream | 1.0.8 | MIT | runtime/optional |
 | component-emitter | 1.3.1 | MIT | development |
 | content-disposition | 2.0.1 | MIT | runtime/optional |
 | content-type | 2.1.0 | MIT | runtime/optional |
@@ -142,7 +158,7 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | debug | 4.4.3 | MIT | runtime/optional |
 | decamelize | 1.2.0 | MIT | runtime/optional |
 | deep-is | 0.1.4 | MIT | development |
-| delayed-stream | 1.0.0 | MIT | development |
+| delayed-stream | 1.0.0 | MIT | runtime/optional |
 | depd | 2.0.0 | MIT | runtime/optional |
 | detect-libc | 2.1.2 | Apache-2.0 | development |
 | dezalgo | 1.0.4 | ISC | development |
@@ -154,7 +170,7 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | es-define-property | 1.0.1 | MIT | runtime/optional |
 | es-errors | 1.3.0 | MIT | runtime/optional |
 | es-object-atoms | 1.1.2 | MIT | runtime/optional |
-| es-set-tostringtag | 2.1.0 | MIT | development |
+| es-set-tostringtag | 2.1.0 | MIT | runtime/optional |
 | esbuild | 0.28.2 | MIT | development |
 | escape-html | 1.0.3 | MIT | runtime/optional |
 | escape-string-regexp | 4.0.0 | MIT | development |
@@ -184,9 +200,10 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | find-up | 5.0.0 | MIT | development |
 | flat-cache | 6.1.23 | MIT | development |
 | flatted | 3.4.4 | ISC | development |
-| form-data | 4.0.6 | MIT | development |
-| form-data/node_modules/mime-db | 1.52.0 | MIT | development |
-| form-data/node_modules/mime-types | 2.1.35 | MIT | development |
+| follow-redirects | 1.16.2 | MIT | runtime/optional |
+| form-data | 4.0.6 | MIT | runtime/optional |
+| form-data/node_modules/mime-db | 1.52.0 | MIT | runtime/optional |
+| form-data/node_modules/mime-types | 2.1.35 | MIT | runtime/optional |
 | formidable | 3.5.4 | MIT | development |
 | forwarded | 0.2.0 | MIT | runtime/optional |
 | fresh | 2.0.0 | MIT | runtime/optional |
@@ -198,12 +215,13 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | glob-parent | 6.0.2 | ISC | development |
 | gopd | 1.2.0 | MIT | runtime/optional |
 | has-symbols | 1.1.0 | MIT | runtime/optional |
-| has-tostringtag | 1.0.2 | MIT | development |
+| has-tostringtag | 1.0.2 | MIT | runtime/optional |
 | hashery | 1.5.1 | MIT | development |
 | hasown | 2.0.4 | MIT | runtime/optional |
 | helmet | 8.3.0 | MIT | runtime/optional |
 | hookified | 1.15.1 | MIT | development |
 | http-errors | 2.0.1 | MIT | runtime/optional |
+| https-proxy-agent | 5.0.1 | MIT | runtime/optional |
 | iconv-lite | 0.7.3 | MIT | runtime/optional |
 | ignore | 5.3.2 | MIT | development |
 | imurmurhash | 0.1.4 | MIT | development |
@@ -246,6 +264,7 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | natural-compare | 1.4.0 | MIT | development |
 | negotiator | 1.1.0 | MIT | runtime/optional |
 | node-addon-api | 8.9.2 | MIT | runtime/optional |
+| node-forge | 1.4.2 | (BSD-3-Clause OR GPL-2.0) | runtime/optional |
 | node-gyp-build | 4.8.4 | MIT | runtime/optional |
 | object-inspect | 1.13.4 | MIT | runtime/optional |
 | on-finished | 2.4.2 | MIT | runtime/optional |
@@ -267,7 +286,10 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | postcss | 8.5.32 | MIT | development |
 | prelude-ls | 1.2.1 | MIT | development |
 | proxy-addr | 2.0.8 | MIT | runtime/optional |
+| proxy-from-env | 2.1.0 | MIT | runtime/optional |
 | punycode | 2.3.1 | MIT | development |
+| pvtsutils | 1.3.6 | MIT | runtime/optional |
+| pvutils | 1.2.0 | MIT | runtime/optional |
 | qified | 0.10.1 | MIT | development |
 | qified/node_modules/hookified | 2.2.0 | MIT | development |
 | qrcode | 1.5.4 | MIT | runtime/optional |
@@ -277,6 +299,7 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | raw-body | 3.0.2 | MIT | runtime/optional |
 | react | 19.3.1 | MIT | runtime/optional |
 | react-dom | 19.3.1 | MIT | runtime/optional |
+| reflect-metadata | 0.2.2 | Apache-2.0 | runtime/optional |
 | require-directory | 2.1.1 | MIT | runtime/optional |
 | require-main-filename | 2.0.0 | ISC | runtime/optional |
 | rolldown | 1.2.15 | MIT | development |
@@ -306,7 +329,10 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | toidentifier | 1.0.1 | MIT | runtime/optional |
 | ts-algebra | 2.0.0 | MIT | runtime/optional |
 | ts-api-utils | 2.5.0 | MIT | development |
+| tslib | 2.9.1 | 0BSD | runtime/optional |
 | tsx | 4.23.15 | MIT | development |
+| tsyringe | 4.10.0 | MIT | runtime/optional |
+| tsyringe/node_modules/tslib | 1.14.1 | 0BSD | runtime/optional |
 | type-check | 0.4.0 | MIT | development |
 | type-is | 2.1.0 | MIT | runtime/optional |
 | typescript | 6.0.3 | Apache-2.0 | development |

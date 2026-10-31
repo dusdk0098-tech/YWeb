@@ -41,12 +41,12 @@ test("manager ledger keeps exact fractions through explicit close and carry", as
   await page.getByRole("button", { name: "저장", exact: true }).click();
   await expect(page.getByText(/0.25 × 3원 = 0.75원/)).toBeVisible();
   await page.getByLabel("변경 / 마감 / 재개 사유").fill("수기 마감");
-  page.once("dialog", (d) => d.accept());
+  // 출력 전 확인 errors (no 현장 설정 here) add a second confirm before the close confirm.
+  page.on("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "기록 마감", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: /2026-10 비용 원장 · 마감/ }),
   ).toBeVisible();
-  page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "다음 월 이월 생성" }).click();
   await expect(
     page.getByRole("heading", { name: /2026-11 비용 원장/ }),

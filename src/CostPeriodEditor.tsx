@@ -68,13 +68,16 @@ export function CostPeriodEditor({
   const [settings,setSettings]=useState(false);
   const [laborKind,setLaborKind]=useState("");
   const [details,setDetails]=useState<Record<string,string>>({});
+  const [nextBlank,setNextBlank]=useState<string|null>(null);
   const [preflight,setPreflight]=useState<{items:{level:"error"|"warning";message:string}[];errorCount:number}|null>(null);
   const [evidence,setEvidence]=useState(false);
   const [stockExpense,setStockExpense]=useState<string|null>(null);
   const [batch, setBatch] = useState(false),
     [batchDirty, setBatchDirty] = useState(false),
     [batchBusy, setBatchBusy] = useState(false);
-  const dirty = !!form || !!budget || !!reason || batchDirty,
+  // A blank "저장하고 다음" form is not unsaved input; it must not block 마감 or leaving.
+  const formOpen = !!form && JSON.stringify(form) !== nextBlank;
+  const dirty = formOpen || !!budget || !!reason || batchDirty,
     guard = useDraftGuard(
       dirty,
       busy || batchBusy,
@@ -154,7 +157,8 @@ export function CostPeriodEditor({
       );
       // PEDIT-SC "저장하고 다음": a new row keeps 항목·일자(and 인건비 구분) for the next entry.
       const added = method === "POST" && path === "/expenses" ? (body as { expense: ExpenseForm }).expense : null;
-      setForm(added ? { ...added, description: "", quantity: "1", unitPriceWon: "" } : null);setPresetSource(null);
+      const blank = added ? { ...added, description: "", quantity: "1", unitPriceWon: "" } : null;
+      setForm(blank);setNextBlank(blank ? JSON.stringify(blank) : null);setPresetSource(null);
       setEditing(null);
       setBudget(null);
       setReason("");
@@ -174,6 +178,7 @@ export function CostPeriodEditor({
     setEditing(copy ? null : row);
     setLaborKind(row ? record.laborKinds[row.id] ?? "" : "");
     setDetails(row ? record.details[row.id] ?? {} : {});
+    setNextBlank(null);
     setPresetSource(null);
     setForm(
       row
@@ -366,7 +371,7 @@ export function CostPeriodEditor({
         {open ? (
           <>
             <button
-              disabled={!!form || !!budget || !reason.trim()}
+              disabled={formOpen || !!budget || !reason.trim()}
               onClick={() => {
                 if (
                   (!preflight?.errorCount ||
@@ -698,7 +703,7 @@ export function CostPeriodEditor({
                   복사 입력
                 </button>
                 <button
-                  disabled={busy || !!form || !!budget || !reason.trim()}
+                  disabled={busy || formOpen || !!budget || !reason.trim()}
                   onClick={() =>
                     void send(
                       `/expenses/${row.id}/${row.status === "active" ? "cancel" : "restore"}`,

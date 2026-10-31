@@ -7,7 +7,7 @@ import { rawAttachmentMetadata, checkRawImageHeader, recheckUploadSession } from
 import { attachmentUsage, enforceAttachmentQuota } from "./attachment-quota.js";
 import { sendAttachment, type boundedUploadReader } from "./bounded-upload.js";
 import { imageSize, PHOTO_DISPLAY_MAX_BYTES, PHOTO_DISPLAY_MAX_SIDE } from "./image-size.js";
-import { CIRCLE_COLORS, MAX_ZOOM, cropRect } from "./photo-view.js";
+import { MAX_ZOOM, photoSvg } from "./photo-view.js";
 import { escapeHtml as e } from "./print.js";
 // 사진 보드(N) 1단계 (사진 정책 A안): originals kept as download-only bytes; only the browser-made EXIF-free JPEG is shown.
 // The scene (order, include, 90° rotation, caption, circle highlights in normalized coordinates) is stored apart from photos.
@@ -160,15 +160,11 @@ export function registerPhotoBoards(app: Express, db: Db, { access, mutate }: Si
   // rotation, zoom view and circles print exactly as the editor draws them; an odd last slot is marked empty, not stretched.
   app.get(base + "/:id/print", (req, res) => {
     const row = board(req), v = boardView(db, row), body = v.body as { siteName: string; work: string; footer: string }, photos = new Map(v.photos.map((p) => [p.id, p]));
-    const n = (x: number) => Math.round(x * 100) / 100, src = (id: string) => `/api/sites/${row.site_id}/photo-boards/${row.id}/photos/${id}/display`;
+    const src = (id: string) => `/api/sites/${row.site_id}/photo-boards/${row.id}/photos/${id}/display`;
     const slot = (item: z.infer<typeof photoScene>["items"][number]) => {
       const p = photos.get(item.photoId), caption = `<figcaption>${e(item.caption || "설명 미입력")}</figcaption>`;
       if (!p?.hasDisplay || !p.width || !p.height) return `<figure class="photo-slot"><p>표시본 없음 · ${e(p?.filename ?? "")}</p>${caption}</figure>`;
-      const turned = item.rotation % 180 !== 0, iw = turned ? p.height : p.width, ih = turned ? p.width : p.height, c = cropRect(item.view);
-      const circles = item.circles.map((k) => `<circle cx="${n(k.x * iw)}" cy="${n(k.y * ih)}" r="${n(k.r * Math.min(iw, ih))}" fill="none" stroke="${CIRCLE_COLORS[k.color]}" stroke-width="${n(Math.max(2, Math.min(c.w * iw, c.h * ih) * 0.012))}"/>`).join("");
-      // The slot is usually wider than the zoomed window, so clip to it: a letterbox must stay blank, not show the cropped-out part.
-      const vb = `x="${n(c.x * iw)}" y="${n(c.y * ih)}" width="${n(c.w * iw)}" height="${n(c.h * ih)}"`;
-      return `<figure class="photo-slot"><svg viewBox="${n(c.x * iw)} ${n(c.y * ih)} ${n(c.w * iw)} ${n(c.h * ih)}" role="img" aria-label="${e(item.caption || p.filename)} 사진"><clipPath id="v-${p.id}"><rect ${vb}/></clipPath><g clip-path="url(#v-${p.id})"><image href="${src(p.id)}" x="${n((iw - p.width) / 2)}" y="${n((ih - p.height) / 2)}" width="${p.width}" height="${p.height}" transform="rotate(${item.rotation} ${n(iw / 2)} ${n(ih / 2)})"/>${circles}</g></svg>${caption}</figure>`;
+      return `<figure class="photo-slot">${photoSvg({ href: src(p.id), width: p.width, height: p.height, rotation: item.rotation, circles: item.circles, view: item.view, label: `${e(item.caption || p.filename)} 사진`, clipId: `v-${p.id}` })}${caption}</figure>`;
     };
     const items = v.scene.items.filter((i) => i.included), pages: (typeof items)[] = [];
     for (let i = 0; i < items.length; i += 2) pages.push(items.slice(i, i + 2));

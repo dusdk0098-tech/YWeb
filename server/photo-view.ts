@@ -24,3 +24,12 @@ export function zoomView(v: View | undefined, zoom: number): View | undefined {
   if (z <= 1) return undefined;
   return panView({ zoom: z, cx: v?.cx ?? 0.5, cy: v?.cy ?? 0.5 }, 0, 0);
 }
+// One printed photo: an SVG over the display JPEG with rotation, optional zoom window and circles, clipped to the window so a
+// wider slot never shows the cropped-out part. `label` must already be HTML-escaped; ids/numbers are generated here.
+export type SvgCircle = { x: number; y: number; r: number; color: keyof typeof CIRCLE_COLORS };
+export function photoSvg(o: { href: string; width: number; height: number; rotation: number; circles: SvgCircle[]; view?: View; label: string; clipId: string }) {
+  const n = (x: number) => Math.round(x * 100) / 100, turned = o.rotation % 180 !== 0, iw = turned ? o.height : o.width, ih = turned ? o.width : o.height, c = cropRect(o.view);
+  const circles = o.circles.map((k) => `<circle cx="${n(k.x * iw)}" cy="${n(k.y * ih)}" r="${n(k.r * Math.min(iw, ih))}" fill="none" stroke="${CIRCLE_COLORS[k.color]}" stroke-width="${n(Math.max(2, Math.min(c.w * iw, c.h * ih) * 0.012))}"/>`).join("");
+  const box = `x="${n(c.x * iw)}" y="${n(c.y * ih)}" width="${n(c.w * iw)}" height="${n(c.h * ih)}"`;
+  return `<svg viewBox="${n(c.x * iw)} ${n(c.y * ih)} ${n(c.w * iw)} ${n(c.h * ih)}" role="img" aria-label="${o.label}"><clipPath id="${o.clipId}"><rect ${box}/></clipPath><g clip-path="url(#${o.clipId})"><image href="${o.href}" x="${n((iw - o.width) / 2)}" y="${n((ih - o.height) / 2)}" width="${o.width}" height="${o.height}" transform="rotate(${o.rotation} ${n(iw / 2)} ${n(ih / 2)})"/>${circles}</g></svg>`;
+}

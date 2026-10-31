@@ -56,12 +56,13 @@ test("SC 사진대지 display: browser JPEG only, fixed image, open-month labels
     const original = await f.agent.get(`${f.siteBase}${f.base}/evidence/files/${photo}/download`);
     assert.equal(original.headers["content-type"], "application/octet-stream"); // original stays a download
     board = (await f.agent.get(`${f.siteBase}${f.base}/photo-board`)).body;
-    assert.deepEqual(board.photos[0], { attachmentId: photo, filename: "현장.png", groupName: "안전시설비 등", takenDate: "", description: "", included: true, labelVersion: 1 });
+    assert.deepEqual(board.photos[0], { attachmentId: photo, filename: "현장.png", groupName: "안전시설비 등", takenDate: "", description: "", included: true, labelVersion: 1, width: 1600, height: 1200, rotation: 0, circles: [], position: null });
     let pre = (await f.agent.get(`${f.siteBase}${f.base}/preflight`)).body;
     assert.ok(pre.items.some((i: { level: string; message: string }) => i.level === "warning" && i.message.includes("촬영일자")));
     assert.ok(pre.items.some((i: { level: string; message: string }) => i.level === "warning" && i.message.includes("사진대지 내용")));
     const label = (body: object) => f.send(`${f.base}/evidence/files/${photo}/display/label`, body, randomUUID(), "put");
-    const good = { labelVersion: 1, groupName: "신호수", takenDate: "2026-10-03", description: "<b>신호수</b> 배치", included: true };
+    const good = { labelVersion: 1, groupName: "신호수", takenDate: "2026-10-03", description: "<b>신호수</b> 배치", included: true, rotation: 90, circles: [{ x: 0.5, y: 0.5, r: 0.1, color: "red" }] };
+    assert.equal((await label({ ...good, rotation: 45 })).status, 400);
     assert.equal((await label({ ...good, groupName: "없는 분류" })).status, 400);
     assert.equal((await label({ ...good, takenDate: "2026-02-30" })).status, 400);
     assert.equal((await label({ ...good, labelVersion: 2 })).status, 409);
@@ -76,11 +77,23 @@ test("SC 사진대지 display: browser JPEG only, fixed image, open-month labels
     assert.match(html, /&lt;b&gt;신호수&lt;\/b&gt; 배치 · 촬영일 2026-10-03/);
     assert.match(html, new RegExp(`evidence/files/${photo}/display`));
     assert.doesNotMatch(html, /download/);
-    r = await label({ ...good, labelVersion: 2, included: false });
+    // 보완: rotation and circles print as SVG over the display (1600×1200 turned 90° → 1200×1600 frame).
+    assert.match(html, /transform="rotate\(90 600 800\)"\/><circle cx="600" cy="800" r="120" fill="none" stroke="#e0312b"/);
+    // Manual order inside a group: the whole group with current label versions; a stale version is refused.
+    const order = (items: object[]) => f.send(`${f.base}/photo-board/order`, { groupName: "신호수", items }, randomUUID(), "put");
+    assert.equal((await order([{ attachmentId: photo, labelVersion: 1 }])).status, 409);
+    r = await order([{ attachmentId: photo, labelVersion: 2 }]);
+    assert.equal(r.status, 200, r.text);
+    assert.deepEqual([r.body.photos[0].position, r.body.photos[0].labelVersion], [0, 3]);
+    r = await label({ ...good, labelVersion: 3, groupName: "기타 사진대지" });
+    assert.equal(r.body.photos[0].position, null); // a group change drops the manual position
+    r = await label({ ...good, labelVersion: 4 });
+    assert.equal(r.status, 200, r.text);
+    r = await label({ ...good, labelVersion: 5, included: false });
     assert.equal(r.status, 200, r.text);
     html = (await f.agent.get(`${f.siteBase}${f.base}/photo-board/print`)).text;
     assert.match(html, /사진대지에 넣을 사진이 없습니다/);
-    r = await label({ ...good, labelVersion: 3 });
+    r = await label({ ...good, labelVersion: 6 });
     assert.equal(r.status, 200, r.text);
     const usage = f.db.prepare("SELECT coalesce(sum(size),0) n FROM cost_evidence_displays").get() as { n: number };
     assert.equal(usage.n, jpeg(1600, 1200).length);
@@ -88,7 +101,7 @@ test("SC 사진대지 display: browser JPEG only, fixed image, open-month labels
     assert.equal(r.status, 200, r.text);
     assert.equal((await put(photo, jpeg(10, 10))).status, 409); // closed month
     assert.equal((await f.agent.get(`${f.siteBase}${f.base}/photo-board/print`)).status, 200);
-    assert.equal((await label({ ...good, labelVersion: 4 })).status, 409); // closed month labels are fixed
+    assert.equal((await label({ ...good, labelVersion: 7 })).status, 409); // closed month labels are fixed
     assert.throws(() => f.db.prepare("UPDATE cost_evidence_displays SET description='x'").run());
   } finally {
     f.db.close();

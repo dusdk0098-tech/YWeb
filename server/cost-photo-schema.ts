@@ -4,6 +4,15 @@ export const photoGroups = ["신호수", "안전보호구 등", "안전시설비
 // IF NOT EXISTS: older-schema test fixtures drop only the tables they know about.
 // SC 사진대지 표시본: browser re-encoded JPEG (EXIF removed) for an image evidence original. Original stays download-only.
 // Image bytes are fixed; only the 사진대지 labels change, and only while the month is open.
+// SC 사진대지 보완 ("3번 진행"): 90° rotation, circle highlights (normalized, rotated frame) and a manual order inside a group.
+// Label-like fields: editable only while the month is open (cost_display_fixed already blocks every update after close).
+export function migrateCostPhotoScene(db: Db) {
+  const cols = new Set((db.prepare("PRAGMA table_info(cost_evidence_displays)").all() as { name: string }[]).map((c) => c.name));
+  if (!cols.has("rotation")) db.exec("ALTER TABLE cost_evidence_displays ADD COLUMN rotation INTEGER NOT NULL DEFAULT 0 CHECK(rotation IN (0,90,180,270))");
+  if (!cols.has("circles")) db.exec("ALTER TABLE cost_evidence_displays ADD COLUMN circles TEXT NOT NULL DEFAULT '[]'");
+  if (!cols.has("position")) db.exec("ALTER TABLE cost_evidence_displays ADD COLUMN position INTEGER CHECK(position IS NULL OR position>=0)");
+  db.exec("PRAGMA user_version=71");
+}
 export function migrateCostPhotos(db: Db) {
   db.exec(`
  CREATE TABLE IF NOT EXISTS cost_evidence_displays(

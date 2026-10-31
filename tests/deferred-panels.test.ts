@@ -108,6 +108,11 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
     ['            ["account", "내 비밀번호 변경"],', '            ["account", "내 비밀번호 변경"],\n            ["ai", "AI 문구 설정"],'],
     ['        ) : tab === "account" ? (', '        ) : tab === "ai" ? (\n          <AiSettings />\n        ) : tab === "account" ? ('],
   );
+  // Self-hosting settings menu entry and panel branch.
+  mobileChanges.push(
+    ['            ["ai", "AI 문구 설정"],', '            ["ai", "AI 문구 설정"],\n            ["public", "외부 접속 설정"],'],
+    ['          <AiSettings />\n', '          <AiSettings />\n        ) : tab === "public" ? (\n          <PublicAccessSettings />\n'],
+  );
   for (const [source, replacement] of mobileChanges) {
     assert.equal(expected.split(source).length, 2);
     expected = expected.replace(source, replacement);

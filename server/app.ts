@@ -22,6 +22,8 @@ import { registerWorkPlanFormChecklists } from "./work-plan-form-checklist.js";
 import { registerWorkPlanCalculations } from "./work-plan-calculations.js";
 import { registerSiteLibrary, isLibraryUpload } from "./site-library.js";
 import { registerAiSuggest, anthropicSuggest, type AiConfig, type AiSuggest } from "./ai-suggest.js";
+import { registerPublicAccess, type PublicRuntime } from "./public-access.js";
+import { rateLimit } from "express-rate-limit";
 import { registerCostBaselines } from "./cost-baseline-routes.js";
 import { registerPpeReturns } from "./ppe-return-routes.js";
 import { registerWorkPlanReview } from "./work-plan-review.js";
@@ -112,17 +114,26 @@ export type AppConfig = {
   // SC-04: .env AI config (legacy, wins over the in-app setting) and the call used for in-app keys (tests inject a fake).
   ai?: AiConfig;
   aiSuggest?: AiSuggest;
+  // Self-hosting: the https origin phones use (set only when this PC serves a domain), whether a local tunnel proxies requests,
+  // and what the running process did with the settings (shown on the settings screen).
+  publicOrigin?: string;
+  trustProxy?: boolean;
+  publicRuntime?: PublicRuntime;
 };
 export async function createApp(db: Db, config: AppConfig) {
   if (config.secret.length < 32 || config.secret.startsWith("replace-"))
     throw new Error("Set a random SESSION_SECRET (32+ characters).");
   if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(config.origin))
     throw new Error("This foundation allows a loopback HTTP origin only.");
+  if (config.publicOrigin && !/^https:\/\/[a-z0-9.-]+$/.test(config.publicOrigin))
+    throw new Error("The public origin must be https://<domain>.");
+  const origins = [config.origin, config.publicOrigin].filter(Boolean);
   const app = express();
   app.disable("x-powered-by");
+  if (config.trustProxy) app.set("trust proxy", "loopback");
   app.use(
     helmet({
-      strictTransportSecurity: false,
+      strictTransportSecurity: config.publicOrigin ? { maxAge: 15552000 } : false,
       contentSecurityPolicy: {
         directives: {
           "upgrade-insecure-requests": null,
@@ -157,14 +168,14 @@ export async function createApp(db: Db, config: AppConfig) {
       cookie: {
         httpOnly: true,
         sameSite: "strict",
-        secure: false,
+        secure: config.publicOrigin ? "auto" : false,
         maxAge: 8 * 60 * 60 * 1000,
       },
     }),
   );
   app.use("/api", (req, res, next) => {
     if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
-      if (req.get("origin") !== config.origin)
+      if (!origins.includes(req.get("origin") ?? ""))
         return res
           .status(403)
           .json({ error: "요청 출처를 확인할 수 없습니다." });
@@ -181,6 +192,11 @@ export async function createApp(db: Db, config: AppConfig) {
     }
     next();
   });
+  // Reachable from the internet: also cap failed logins and join checks per client address (accounts/links are capped already).
+  if (config.publicOrigin)
+    app.post(["/api/login", "/api/join"], rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, skipSuccessfulRequests: true, standardHeaders: "draft-8", legacyHeaders: false,
+      message: { error: "이 주소에서 시도가 많습니다. 15분 후 다시 시도해 주세요." } }));
+  registerPublicAccess(app, db, config.publicRuntime ?? { mode: "off", state: "꺼짐" }, config.secret);
   registerTbmJoinPublic(app, db);
   await registerAuthentication(app, db, !!config.adsEnabled);
   const { access, mutate } = siteOperations(db);

@@ -27,6 +27,7 @@ import { Minutes } from "./Minutes";
 import { SiteManagement } from "./SiteManagement";
 import { PasswordChange } from "./PasswordChange";
 import { AiSettings } from "./AiSettings";
+import { PublicAccessSettings } from "./PublicAccessSettings";
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, setCsrf, type Meeting, type Site, type User } from "./api";
@@ -158,6 +159,7 @@ function App() {
               : []),
             ["account", "내 비밀번호 변경"],
             ["ai", "AI 문구 설정"],
+            ["public", "외부 접속 설정"],
             ["minutes", "회의록"],
             ["attendance", "명부 · 출역"],
             ["companyppe", "업체 · 소속 · 보호구"],
@@ -320,6 +322,8 @@ function App() {
           </>
         ) : tab === "ai" ? (
           <AiSettings />
+        ) : tab === "public" ? (
+          <PublicAccessSettings />
         ) : tab === "account" ? (
           <PasswordChange
             onDirtyChange={setAttendanceDirty}

@@ -1,4 +1,5 @@
 import { useOfflineDraft } from "./useOfflineDraft";
+import { Notice, TechDetails } from "./ui";
 import { DailyJournalToday } from "./DailyJournalToday";
 import { DailyInspectionReferences,DailyInspectionCaptured } from "./DailyInspectionReferences";
 import { useEffect, useRef, useState } from "react";
@@ -210,11 +211,11 @@ export function DailyJournalEditor({
           일지 목록으로
         </button>
       </div>
-      <p className="notice">
+      <Notice summary="직접 입력한 기록입니다. 앱이 판정하거나 승인하지 않습니다.">
         사용자가 선택한 날짜의 수기 안전업무일지입니다. 임금/근로시간/고용·교육
         이수·법적 승인·서명을 자동 판정하지 않습니다. 순찰 지적/조치는 직접
         입력한 설명이며 실제 위험 제거를 보증하지 않습니다.
-      </p>
+      </Notice>
       {error && (
         <p role="alert" className="error">
           {error}
@@ -393,10 +394,12 @@ export function DailyJournalEditor({
       </form>
       {record && (
         <>
-          <p className="muted">
-            일지 {record.id} · {record.date} · v{record.version} · 작성 계정{" "}
-            {record.author_id}
-          </p>
+          <TechDetails>
+            <p>
+              일지 {record.id} · {record.date} · v{record.version} · 작성 계정{" "}
+              {record.author_id}
+            </p>
+          </TechDetails>
           <div className="actions">
             <button
               className="secondary"

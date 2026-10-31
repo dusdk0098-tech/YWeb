@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Notice } from "./ui";
 import { api, type Site, type User } from "./api";
 import { useDraftGuard } from "./useDraftGuard";
 import {
@@ -182,7 +183,7 @@ export function WorkStopEditor({
           목록으로
         </button>
       </div>
-      <p className="notice">{workStopWarning}</p>
+      <Notice tone="warning" summary="긴급 상황은 현장의 실제 대응 절차를 별도로 따르세요.">{workStopWarning}</Notice>
       <p>
         관리자의 재개 기록은 원 요청자·개선 제출자와 다른 관리자만 가능합니다.
         관리자 본인이 요청하면 다른 관리자가 필요합니다. 현장 관리에서 계정

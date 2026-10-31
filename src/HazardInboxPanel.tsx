@@ -1,3 +1,4 @@
+import { Notice } from "./ui";
 import { useEffect, useRef, useState } from "react";
 import { api, type Site } from "./api";
 import type { HazardInbox, HazardInboxKind } from "../server/hazard-inbox";
@@ -9,7 +10,7 @@ export function HazardInboxPanel({site,onOpen,disabled=false}:{site:Site;onOpen:
     const value=await api<HazardInbox>(`/sites/${site.id}/hazard-inbox?kind=${kind}&offset=${offset}`);
     if(sequence.current===seq)setResult(value);
   }catch(e){if(sequence.current===seq)setError((e as Error).message);}finally{if(sequence.current===seq)setBusy(false);}}
-  return <section className="panel"><h2>내 신고 조치 · 검토 대기</h2><p>현재 계정과 현장의 업무를 수동 조회합니다. 알림 발송·읽음 확인·자동 처리 기능이 아닙니다.</p>
+  return <section className="panel"><h2>내 신고 조치 · 검토 대기</h2><Notice summary="버튼을 눌러야 최신 업무를 불러옵니다.">현재 계정과 현장의 업무를 수동 조회합니다. 알림 발송·읽음 확인·자동 처리 기능이 아닙니다.</Notice>
     <label>조회할 업무 <select value={kind} disabled={disabled||busy} onChange={e=>{setKind(e.target.value as HazardInboxKind);setResult(null);setError('');}}><option value="mine">내 배정 · 제출 후 검토 대기</option>{site.role==='manager'&&<option value="reviews">관리자 독립 검토 대기</option>}</select></label>
     <button disabled={disabled||busy} onClick={()=>void load(0)}>현재 업무 새로고침</button>
     {busy&&<p>조회 중</p>}{error&&<p role="alert">{error} · 조회 실패는 업무 0건이 아닙니다.</p>}

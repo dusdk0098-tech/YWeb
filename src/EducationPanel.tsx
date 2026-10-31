@@ -1,4 +1,5 @@
 import { EducationCatalogPanel } from "./EducationCatalogPanel";
+import { Notice } from "./ui";
 import { useEffect, useState } from "react";
 import { api, type Site, type User } from "./api";
 import type { EducationSession, EducationFull } from "./education-types";
@@ -109,7 +110,6 @@ export function EducationPanel({
     <>
       <div className="section-head page-heading">
         <div>
-          <p className="eyebrow">MANUAL EDUCATION JOURNAL</p>
           <h1>교육일지 기록</h1>
           <button disabled={opening} onClick={() => setCatalogMode(true)}>
             자체 교육내용 카탈로그
@@ -123,10 +123,10 @@ export function EducationPanel({
         )}
       </div>
       <section className="panel">
-        <p className="notice">
+        <Notice summary="참여는 담당자가 사람마다 직접 기록합니다.">
           출역을 교육일지 참여로 자동 처리하지 않습니다. 기록 보관은 신원
           확인·서명·법정 교육 이수 인증이 아닙니다.
-        </p>
+        </Notice>
         {error && (
           <p role="alert" className="error">
             {error}

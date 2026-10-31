@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Notice } from "./ui";
 import { api, type Site } from "./api";
 import type { TbmSession, TbmFull } from "./tbm-types";
 import type { Page } from "./attendance-types";
@@ -84,7 +85,6 @@ export function TbmPanel({
     <>
       <div className="section-head page-heading">
         <div>
-          <p className="eyebrow">TOOLBOX MEETING</p>
           <h1>TBM 기록</h1>
           <p>담당자 수기 참여기록 · 관리자 기록 확정.</p>
         </div>
@@ -95,10 +95,10 @@ export function TbmPanel({
         )}
       </div>
       <section className="panel">
-        <p className="notice">
+        <Notice summary="참여는 담당자가 사람마다 직접 기록합니다.">
           출역을 TBM 참여로 자동 처리하지 않습니다. 기록 확정은 신원
           확인·서명·법정 교육 이수 인증이 아닙니다.
-        </p>
+        </Notice>
         {error && (
           <p role="alert" className="error">
             {error}

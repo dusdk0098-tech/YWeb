@@ -1,4 +1,5 @@
 import { InspectionTaskSource } from "./InspectionTaskSource";
+import { Notice, TechDetails } from "./ui";
 import { InspectionHazardLinks } from "./InspectionHazardLinks";
 import { HazardEditor } from "./HazardEditor";
 import type { HazardRecord } from "./hazard-types";
@@ -165,19 +166,20 @@ export function InspectionEditor({
           점검 목록으로
         </button>
       </div>
-      <p>
-        양식 {t.id} · 게시 버전 {t.version} · {t.body.instructions}
-      </p>
-      <p className="notice">
+      {t.body.instructions && <p>{t.body.instructions}</p>}
+      <Notice summary="부적합 결과는 자동으로 조치 완료되지 않습니다.">
         계정이 직접 입력한 점검 기록입니다. 본인 확인·법정 점검 증명·안전 인증이
         아니며, 부적합 결과가 자동으로 조치 완료 처리되지 않습니다.
-      </p>
-      {record && (
-        <p>
-          기록 {record.id} · v{record.version} · 작성 계정 {record.owner_id} ·
-          이전 기록 {record.parent_id || "없음"}
-        </p>
-      )}
+      </Notice>
+      <TechDetails>
+        <p>양식 {t.id} · 게시 버전 {t.version}</p>
+        {record && (
+          <p>
+            기록 {record.id} · v{record.version} · 작성 계정 {record.owner_id} ·
+            이전 기록 {record.parent_id || "없음"}
+          </p>
+        )}
+      </TechDetails>
       {record?.submitted_snapshot && (
         <p>
           원 제출 계정: {record.submitted_snapshot.submitter.name} (

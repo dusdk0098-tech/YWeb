@@ -1,4 +1,5 @@
 import { DailyMonthlyReport } from "./DailyMonthlyReport";
+import { Notice } from "./ui";
 import { useEffect, useState } from "react";
 import { api, type Site, type User } from "./api";
 import type { Page } from "./attendance-types";
@@ -110,10 +111,10 @@ export function DailyJournalPanel({
   return (
     <section className="panel">
       <h1>안전업무일지 · 수기 기록</h1>
-      <p className="notice">
+      <Notice summary="날짜마다 일지 하나. 보관한 뒤 고칠 때는 정정 초안을 새로 씁니다.">
         현장·선택 날짜별 최초 일지 하나, 보관 이후 정정은 새 초안입니다.
         작업/순찰 기록은 실제 안전·고용/임금·법적 승인이나 서명이 아닙니다.
-      </p>
+      </Notice>
       <div className="actions">
         <button
           className="secondary"
@@ -176,7 +177,7 @@ export function DailyJournalPanel({
             </h2>
             <p>{j.workSummary.slice(0, 200) || "작업 요약 미입력"}</p>
             <p className="muted">
-              {j.id} · v{j.version} · {j.parent_id ? "정정본" : "최초 일지"}
+              {j.parent_id ? "정정본" : "최초 일지"}
             </p>
             <button disabled={busy} onClick={() => void view(j.id)}>
               일지 열기

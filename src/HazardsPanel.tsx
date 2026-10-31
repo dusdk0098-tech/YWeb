@@ -1,4 +1,5 @@
 import { HazardInboxPanel } from "./HazardInboxPanel";
+import { Notice } from "./ui";
 import { useEffect, useState } from "react";
 import { api, type Site, type User } from "./api";
 import type { Page } from "./attendance-types";
@@ -93,7 +94,6 @@ export function HazardsPanel({
     <>
       <div className="section-head page-heading">
         <div>
-          <p className="eyebrow">REPORT & FOLLOW-UP</p>
           <h1>신고 · 조치</h1>
           <p>텍스트 신고부터 담당자 조치, 관리자 검토까지.</p>
         </div>
@@ -105,10 +105,10 @@ export function HazardsPanel({
       </div>
       <HazardInboxPanel site={site} disabled={opening} onOpen={id => void view(id)} />
       <section className="panel">
-        <p className="notice">
+        <Notice tone="warning" summary="긴급 상황은 현장의 실제 대응 절차를 따르세요.">
           기록상 종결은 실제 위험 제거·작업 안전을 보증하지 않습니다. 긴급
           상황은 현장의 실제 대응 절차를 따르세요. 신고 초안의 PNG/JPEG 원본은 미검사 다운로드 전용이며 미리보기·위험 점수/등급 평가는 지원하지 않습니다.
-        </p>
+        </Notice>
         <label>
           신고 상태 필터
           <select

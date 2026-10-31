@@ -175,7 +175,7 @@ function detailSheets(f: Forms) {
       const slice = rows.slice(page * def.capacity, page * def.capacity + def.capacity),
         body = Array.from({ length: def.capacity }, (_, i) => `<tr>${slice[i] ? def.row(slice[i], f.view.details[slice[i].id] ?? {}, f, cum).map(cell).join("") : def.heads.map(() => "<td></td>").join("")}</tr>`).join("");
       return `<section class="form-page">${def.pre ?? ""}<h1>${def.title}${pages > 1 ? ` (${page + 1})` : ""}</h1>
-<table><thead><tr>${def.heads.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table>
+<table><thead><tr>${def.heads.map((h) => `<th>${h.replace("금월", `금 월(${f.view.month.slice(2, 4)}년 ${f.view.month.slice(5, 7)}월)`)}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table>
 <table><tbody><tr><th>계</th><th>계 획</th><td>${won(c.plan)}</td><th>전회까지 누계금액</th><td>${won(c.opening)}</td><th>금월</th><td>${won(c.current)}</td><th>누 계</th><td>${won(c.cumulative)}</td></tr></tbody></table>
 ${(def.notes ?? []).map((t) => `<p>${e(t)}</p>`).join("")}</section>`;
     }).join("");

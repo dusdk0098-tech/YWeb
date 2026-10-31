@@ -64,6 +64,7 @@ test("legal forms reproduce original SC order and values: cover, 집계표 witho
     assert.match(html, /<tr><th>계<\/th><td colspan="4"><\/td><td>1,501.5<\/td><td>1,501.5<\/td><\/tr>/); // 을 includes 8번
     assert.match(html, /<tr><td>안전관리자<\/td><td><\/td><td>합성건설<\/td><td><\/td><td>10월<\/td><td>1,000<\/td><td>합성<\/td><\/tr>/);
     assert.match(html, /<tr><td>합성<\/td><td><\/td><td>2026-10-02<\/td><td><\/td><td>0.5<\/td><td><\/td><td><\/td><td>3<\/td><td>1.5<\/td>/);
+    assert.match(html, /<th>금 월\(26년 10월\) 일자<\/th>/); // original 3. 보호구 F2 header
     assert.equal((html.match(/<h1>1\. 안전관리자의 임금 등 지급현황<\/h1>/g) ?? []).length, 1); // 1 row < 22 capacity → 1 page
     assert.match(html, /2026 년 10월 31일/);
     // A ledger without SC codes is refused instead of dropping money.

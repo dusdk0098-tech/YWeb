@@ -103,6 +103,11 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
   );
   // MOB-01 1단계: the no-login /join page is chosen at the root render only.
   mobileChanges.push(['    <App />\n  </React.StrictMode>', '    {location.pathname === "/join" ? <JoinPage /> : <App />}\n  </React.StrictMode>']);
+  // SC-04: AI wording settings menu entry and panel branch.
+  mobileChanges.push(
+    ['            ["account", "내 비밀번호 변경"],', '            ["account", "내 비밀번호 변경"],\n            ["ai", "AI 문구 설정"],'],
+    ['        ) : tab === "account" ? (', '        ) : tab === "ai" ? (\n          <AiSettings />\n        ) : tab === "account" ? ('],
+  );
   for (const [source, replacement] of mobileChanges) {
     assert.equal(expected.split(source).length, 2);
     expected = expected.replace(source, replacement);

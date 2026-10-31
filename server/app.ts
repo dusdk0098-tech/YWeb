@@ -15,6 +15,7 @@ import { boundedUploadReader, boundedRejectedUploadDrainer } from "./bounded-upl
 import { registerInspectionWorkflow } from "./inspection-workflow-routes.js";
 import { registerEducationTransfer } from "./education-transfer-routes.js";
 import { registerCatalogUse } from "./education-catalog-use-routes.js";
+import { registerEducationReviews } from "./education-catalog-review.js";
 import { registerCostBaselines } from "./cost-baseline-routes.js";
 import { registerPpeReturns } from "./ppe-return-routes.js";
 import { registerWorkPlanReview } from "./work-plan-review.js";
@@ -224,6 +225,7 @@ export async function createApp(db: Db, config: AppConfig) {
   registerEducationTransfer(app, db, { access, mutate });
   registerEducationCatalog(app, db, { access, mutate });
   registerCatalogUse(app, db, { access, mutate });
+  registerEducationReviews(app, db, { access, mutate });
   registerWorkPlans(app, db, { access, mutate });
   registerWorkPlanReview(app, db, { access, mutate });
   registerEquipmentDue(app, db, { access, mutate });

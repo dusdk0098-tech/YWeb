@@ -23,7 +23,7 @@ h2 {
   break-after: avoid;
 }
 p {
-  white-space: pre-wrap;
+  white-space: break-spaces; /* pre-wrap lets a line-end space hang past the A4 box */
   overflow-wrap: anywhere;
   orphans: 3;
   widows: 3;

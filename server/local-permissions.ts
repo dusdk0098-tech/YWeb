@@ -1,8 +1,8 @@
-import { existsSync, statSync } from "node:fs";
+import { chmodSync, existsSync, readdirSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { hostname, userInfo } from "node:os";
-import { dirname, resolve } from "node:path";
-// SEC-LOCAL-01 A안: read-only check of the local data paths. Never changes permissions.
+import { dirname, join, resolve } from "node:path";
+// SEC-LOCAL-01 A안: read-only check of the local data paths (never changes permissions); B안 below changes them only when run explicitly.
 const READ = new Set(["F", "M", "RX", "R", "GR", "GA", "RD"]), INHERIT = new Set(["I", "OI", "CI", "IO", "NP"]);
 const TRUSTED = ["NT AUTHORITY\\SYSTEM", "BUILTIN\\Administrators"];
 // Principals other than self/SYSTEM/Administrators that icacls lists with read access. Inherit-only (IO) ACEs do not apply to the path itself.
@@ -17,16 +17,15 @@ export function aclReaders(output: string, path: string, self: string) {
   }
   return readers;
 }
-export function localPermissionWarnings(databasePath: string, envPath = ".env") {
-  const db = resolve(databasePath),
-    paths = [dirname(db), db, db + "-wal", db + "-shm", resolve(envPath)].filter((p) => existsSync(p)),
-    self = `${process.env.USERDOMAIN || hostname()}\\${userInfo().username}`,
-    warnings: string[] = [];
+const selfName = () => `${process.env.USERDOMAIN || hostname()}\\${userInfo().username}`;
+// shortcut: decodes icacls output as CP949 (Korean Windows); other code pages may garble non-ASCII account names in messages only.
+const icacls = (args: string[]) => new TextDecoder("euc-kr").decode(execFileSync("icacls", args, { windowsHide: true }));
+export function pathWarnings(paths: string[]) {
+  const warnings: string[] = [];
   for (const p of paths) {
     try {
       if (process.platform === "win32") {
-        // shortcut: decodes icacls output as CP949 (Korean Windows); other code pages may garble non-ASCII account names in the message only.
-        const readers = aclReaders(new TextDecoder("euc-kr").decode(execFileSync("icacls", [p], { windowsHide: true })), p, self);
+        const readers = aclReaders(icacls([p]), p, selfName());
         if (readers.length) warnings.push(`${p}: 본인·SYSTEM·Administrators 외 계정이 읽을 수 있습니다 (${readers.join(", ")}).`);
       } else {
         const mode = statSync(p).mode & 0o777;
@@ -37,4 +36,38 @@ export function localPermissionWarnings(databasePath: string, envPath = ".env") 
     }
   }
   return warnings;
+}
+export function localPermissionWarnings(databasePath: string, envPath = ".env") {
+  const db = resolve(databasePath);
+  return pathWarnings([dirname(db), db, db + "-wal", db + "-shm", resolve(envPath)].filter((p) => existsSync(p)));
+}
+// SEC-LOCAL-01 B안 (approved): owner-only permissions, run explicitly by the operator (scripts/secure-data.ts, dry-run first).
+export function secureTargets(databasePath: string, envPath = ".env", backupDir?: string) {
+  const walk = (d: string): string[] => [d, ...readdirSync(d, { withFileTypes: true }).flatMap((x) => (x.isDirectory() ? walk(join(d, x.name)) : [join(d, x.name)]))];
+  const dataDir = dirname(resolve(databasePath));
+  return [
+    ...(existsSync(dataDir) ? [dataDir, ...readdirSync(dataDir, { withFileTypes: true }).filter((x) => x.isFile()).map((x) => join(dataDir, x.name))] : []),
+    ...(existsSync(envPath) ? [resolve(envPath)] : []),
+    ...(backupDir && existsSync(backupDir) ? walk(resolve(backupDir)) : []),
+  ];
+}
+type Step = { path: string; command: string[] } | { path: string; mode: number };
+export function securePlan(paths: string[], platform = process.platform, self = selfName()): Step[] {
+  return paths.map((p) => {
+    const dir = statSync(p).isDirectory();
+    // Well-known SIDs avoid localized names: S-1-5-18 SYSTEM, S-1-5-32-544 Administrators.
+    return platform === "win32"
+      ? { path: p, command: [p, "/inheritance:r", "/grant:r", ...[self, "*S-1-5-18", "*S-1-5-32-544"].map((t) => `${t}:${dir ? "(OI)(CI)" : ""}F`)] }
+      : { path: p, mode: dir ? 0o700 : 0o600 };
+  });
+}
+// Applies the plan, removes any remaining explicit ACE for other accounts, and returns what still looks open.
+export function secureApply(plan: Step[]) {
+  for (const step of plan) {
+    if ("command" in step) {
+      icacls(step.command);
+      for (const other of aclReaders(icacls([step.path]), step.path, selfName())) icacls([step.path, "/remove:g", other]);
+    } else chmodSync(step.path, step.mode);
+  }
+  return pathWarnings(plan.map((s) => s.path));
 }

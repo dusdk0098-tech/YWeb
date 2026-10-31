@@ -11,10 +11,10 @@ test("self password change clears fields and all sessions before new login", asy
   await page.getByLabel("비밀번호", { exact: true }).fill(old);
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "내 비밀번호 변경 ↗", exact: true })
+    .getByRole("button", { name: "내 비밀번호", exact: true })
     .click();
   await page.getByLabel("현재 비밀번호", { exact: true }).fill(old);
   await page.getByLabel("새 비밀번호", { exact: true }).fill(next);
@@ -36,7 +36,7 @@ test("self password change clears fields and all sessions before new login", asy
   await page.getByLabel("비밀번호", { exact: true }).fill(next);
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   // Restore only this known synthetic fixture; no production account is touched.
   const session = await (await page.request.get("/api/session")).json();

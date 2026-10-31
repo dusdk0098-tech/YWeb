@@ -33,19 +33,10 @@ export function Login({
   return (
     <main className="login">
       <div className="login-intro">
+        <img src="/brand/yweb-mark.svg" alt="" width={48} height={48} />
         <span className="brand">Y웹</span>
-        <p className="eyebrow">A CLEARER WAY TO WORK</p>
-        <h1>
-          현장의 기록,
-          <br />
-          함께 이어가다.
-        </h1>
-        <p>
-          현장별 업무 공간의 작은 시작.
-          <br />
-          통합 기반과 회의록을 먼저 만나보세요.
-        </p>
-        <span className="badge">격리 개발용 · 운영 서비스 아님</span>
+        <p>현장 안전 기록</p>
+        <p className="muted">TBM · 점검 · 안전업무일지 · 작업계획 · 비용 원장을 한곳에서.</p>
       </div>
       <section className="login-form panel">
         <h2>로그인</h2>
@@ -79,7 +70,7 @@ export function Login({
           <button disabled={busy}>{busy ? "확인 중…" : "로그인"}</button>
         </form>
         <p className="muted">
-          공개 가입·비밀번호 재설정·SSO는 아직 제공하지 않습니다.
+          공개 가입·비밀번호 재설정·SSO는 제공하지 않습니다. 계정은 관리자가 만듭니다.
         </p>
       </section>
     </main>

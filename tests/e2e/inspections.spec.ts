@@ -12,7 +12,7 @@ test("own template publish, inspection submit and independent return", async ({
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   const session = await (await page.request.get("/api/session")).json(),
     headers = {
@@ -33,7 +33,7 @@ test("own template publish, inspection submit and independent return", async ({
   await page.reload();
   await page.getByLabel("작업 현장").selectOption({ label: "점검 합성 현장" });
   await page
-    .getByRole("button", { name: "자체 양식 · 점검 ↗", exact: true })
+    .getByRole("button", { name: "점검", exact: true })
     .click();
   await page
     .getByRole("button", { name: "양식 / 새 점검", exact: true })
@@ -74,7 +74,7 @@ test("own template publish, inspection submit and independent return", async ({
       .getByLabel("작업 현장")
       .selectOption({ label: "점검 합성 현장" });
     await staff
-      .getByRole("button", { name: "자체 양식 · 점검 ↗", exact: true })
+      .getByRole("button", { name: "점검", exact: true })
       .click();
     await staff
       .getByRole("button", { name: "양식 / 새 점검", exact: true })

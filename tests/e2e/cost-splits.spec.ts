@@ -11,7 +11,7 @@ test("exact quantity and amount split can be explicitly undone", async ({
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   const s = await (await page.request.get("/api/session")).json(),
     headers = () => ({
@@ -54,7 +54,7 @@ test("exact quantity and amount split can be explicitly undone", async ({
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
   await page
-    .getByRole("button", { name: "수기 비용 원장 ↗", exact: true })
+    .getByRole("button", { name: "비용 원장", exact: true })
     .click();
   await page
     .getByRole("button", { name: "2026-10 · 작성 중 · v2", exact: true })

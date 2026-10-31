@@ -11,7 +11,7 @@ test("manual due metadata uses explicit date and does not claim certification", 
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
   const post = async (path: string, data: object) =>
@@ -38,7 +38,7 @@ test("manual due metadata uses explicit date and does not claim certification", 
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
   await page
-    .getByRole("button", { name: "장비 · 수기 사용 ↗", exact: true })
+    .getByRole("button", { name: "장비", exact: true })
     .click();
   await page.getByRole("button", { name: "수기 검사·보험 기한 메모" }).click();
   await page.getByLabel("비교 기준일").fill("2026-10-28");

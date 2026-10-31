@@ -15,7 +15,7 @@ test("SC 사진대지: EXIF 촬영일 only prefills the editable 촬영일", asy
   await page.getByLabel("이메일", { exact: true }).fill("test@example.test");
   await page.getByLabel("비밀번호", { exact: true }).fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /오늘의 기록을/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "오늘", exact: true })).toBeVisible();
   const s = await (await page.request.get("/api/session")).json(),
     headers = () => ({ Origin: "http://127.0.0.1:3107", "x-csrf-token": s.csrf, "idempotency-key": randomUUID() });
   const site = await (await page.request.post("/api/sites", { headers: headers(), data: { name: "EXIF 합성 " + randomUUID() } })).json();
@@ -29,7 +29,7 @@ test("SC 사진대지: EXIF 촬영일 only prefills the editable 촬영일", asy
   }));
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
-  await page.getByRole("button", { name: "수기 비용 원장 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "비용 원장", exact: true }).click();
   await page.getByRole("button", { name: /2026-10 · 작성 중/ }).click();
   await page.getByRole("button", { name: "미검사 원본·동일 월 지출 연결" }).click();
   page.on("dialog", (d) => d.accept());

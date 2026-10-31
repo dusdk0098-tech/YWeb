@@ -5,7 +5,7 @@ test("work plan 양식사용 체크리스트: 17 forms, required locked, save an
   await page.getByLabel("이메일", { exact: true }).fill("test@example.test");
   await page.getByLabel("비밀번호", { exact: true }).fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /오늘의 기록을/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "오늘", exact: true })).toBeVisible();
   const s = await (await page.request.get("/api/session")).json(), headers = () => ({ Origin: "http://127.0.0.1:3107", "x-csrf-token": s.csrf, "idempotency-key": randomUUID() });
   const site = await (await page.request.post("/api/sites", { headers: headers(), data: { name: "양식 합성 " + randomUUID() } })).json();
   const plan = await (await page.request.post(`/api/sites/${site.id}/work-plans`, { headers: headers(), data: { body: {
@@ -14,7 +14,7 @@ test("work plan 양식사용 체크리스트: 17 forms, required locked, save an
   } } })).json();
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
-  await page.getByRole("button", { name: "수기 일반 작업계획 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "작업계획", exact: true }).click();
   await page.getByRole("button", { name: "작업계획 열기" }).click();
   await expect(page.getByRole("heading", { name: "양식사용 체크리스트 (원본 P 시트 1)" })).toBeVisible();
   await expect(page.getByLabel(/ 포함$/)).toHaveCount(17);

@@ -11,7 +11,7 @@ test("own catalog creates a journal with editable copied text and fixed provenan
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
   const siteName = `카탈로그 합성 현장 ${randomUUID()}`;
@@ -26,7 +26,7 @@ test("own catalog creates a journal with editable copied text and fixed provenan
   await page.reload();
   await page.getByLabel("작업 현장").selectOption({ label: siteName });
   await page
-    .getByRole("button", { name: "수기 교육일지 ↗", exact: true })
+    .getByRole("button", { name: "교육일지", exact: true })
     .click();
   await page
     .getByRole("button", { name: "자체 교육내용 카탈로그", exact: true })

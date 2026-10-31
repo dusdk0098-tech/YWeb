@@ -11,7 +11,7 @@ test("manager overview uses explicit date and selected current manager site", as
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
   const site = await (
@@ -26,7 +26,7 @@ test("manager overview uses explicit date and selected current manager site", as
   ).json();
   await page.reload();
   await page
-    .getByRole("button", { name: "관리 현장 현황 ↗", exact: true })
+    .getByRole("button", { name: "관리 현장 현황", exact: true })
     .click();
   await page
     .getByLabel("현황 비교 및 일지 기준일", { exact: true })

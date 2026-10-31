@@ -15,16 +15,16 @@ test("login → site → meeting create/edit/list/print → logout; desktop and 
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   await expect(page.getByLabel("광고 자리")).toHaveCount(0);
-  await page.getByRole("button", { name: "현장 관리 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "현장 관리", exact: true }).click();
   await page.getByLabel("현장 이름", { exact: true }).fill("테스트 현장");
   await page.getByRole("button", { name: "현장 만들기", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "테스트 현장", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "회의록 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "회의록", exact: true }).click();
   await page.getByRole("button", { name: "+ 새 회의록", exact: true }).click();
   await page
     .getByLabel("제목 *", { exact: true })
@@ -102,7 +102,7 @@ test("login → site → meeting create/edit/list/print → logout; desktop and 
     fullPage: true,
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.getByRole("button", { name: "현장 홈 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "오늘", exact: true }).click();
   await page.screenshot({
     path: "test-results/desktop-home.png",
     fullPage: true,

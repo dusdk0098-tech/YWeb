@@ -11,7 +11,7 @@ test("equipment code normalization and manual use cancellation", async ({
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   const session = await (await page.request.get("/api/session")).json(),
     site = await (
@@ -27,7 +27,7 @@ test("equipment code normalization and manual use cancellation", async ({
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
   await page
-    .getByRole("button", { name: "장비 · 수기 사용 ↗", exact: true })
+    .getByRole("button", { name: "장비", exact: true })
     .click();
   await page.getByRole("button", { name: "새 장비 등록", exact: true }).click();
   await page.getByLabel("장비 이름", { exact: true }).fill("합성 장비");

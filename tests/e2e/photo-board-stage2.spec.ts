@@ -9,7 +9,7 @@ test("사진 보드 2단계: folder, zoom, drag, TSV, two-per-page print", async
   await page.getByLabel("이메일", { exact: true }).fill("test@example.test");
   await page.getByLabel("비밀번호", { exact: true }).fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /오늘의 기록을/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "오늘", exact: true })).toBeVisible();
   const s = await (await page.request.get("/api/session")).json();
   const site = await (await page.request.post("/api/sites", { headers: { Origin: "http://127.0.0.1:3107", "x-csrf-token": s.csrf, "idempotency-key": randomUUID() }, data: { name: "사진 2단계 " + randomUUID() } })).json();
   const png = async (color: string) => Buffer.from(await page.evaluate(async (fill) => {
@@ -24,7 +24,7 @@ test("사진 보드 2단계: folder, zoom, drag, TSV, two-per-page print", async
   await writeFile(join(dir, "메모.txt"), "not a photo");
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
-  await page.getByRole("button", { name: "사진 보드 ↗", exact: true }).click();
+  await page.getByRole("button", { name: "사진 보드", exact: true }).click();
   await page.getByLabel("제목", { exact: true }).fill("2단계 보드");
   await page.getByRole("button", { name: "사진 보드 만들기" }).click();
   await page.getByLabel("폴더 추가(안의 PNG·JPEG만)").setInputFiles(dir);

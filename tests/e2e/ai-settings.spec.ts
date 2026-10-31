@@ -5,8 +5,8 @@ test("AI settings: choose per-account keys and register one without showing it a
   await page.getByLabel("이메일", { exact: true }).fill("test@example.test");
   await page.getByLabel("비밀번호", { exact: true }).fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /오늘의 기록을/ })).toBeVisible();
-  await page.getByRole("button", { name: "AI 문구 설정 ↗", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "오늘", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "AI 문구 설정", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("꺼짐");
   await expect(page.getByText("이 PC 공용 설정 (이 PC에서 접속했을 때만 보입니다)")).toBeVisible();
   await page.getByLabel("사용 방식").selectOption({ label: "계정마다 본인 키" });

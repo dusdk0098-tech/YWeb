@@ -12,7 +12,7 @@ test("accepted failure creates one draft and opens immutable provenance", async 
     .fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /오늘의 기록을/ }),
+    page.getByRole("heading", { name: "오늘", exact: true }),
   ).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
   const headers = () => ({
@@ -55,7 +55,7 @@ test("accepted failure creates one draft and opens immutable provenance", async 
       .fill("synthetic-e2e-password");
     await staff.getByRole("button", { name: "로그인", exact: true }).click();
     await expect(
-      staff.getByRole("heading", { name: /오늘의 기록을/ }),
+      staff.getByRole("heading", { name: "오늘", exact: true }),
     ).toBeVisible();
     const es = await (await staff.request.get("/api/session")).json(),
       eh = () => ({
@@ -99,7 +99,7 @@ test("accepted failure creates one draft and opens immutable provenance", async 
   await page.reload();
   await page.getByLabel("작업 현장").selectOption({ label: "연결 합성 현장" });
   await page
-    .getByRole("button", { name: "자체 양식 · 점검 ↗", exact: true })
+    .getByRole("button", { name: "점검", exact: true })
     .click();
   await page.getByRole("button", { name: "점검 열기", exact: true }).click();
   page.once("dialog", (d) => d.accept());

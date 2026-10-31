@@ -9,7 +9,7 @@ test("independent risk document review and print preparation keep one section ea
   await page.getByLabel("이메일", { exact: true }).fill("test@example.test");
   await page.getByLabel("비밀번호", { exact: true }).fill("synthetic-e2e-password");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /오늘의 기록을/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "오늘", exact: true })).toBeVisible();
   const session = await (await page.request.get("/api/session")).json();
   const send = async (client: APIRequestContext, csrf: string, path: string, data: object) => {
     const response = await client.post(path, {
@@ -61,7 +61,7 @@ test("independent risk document review and print preparation keep one section ea
     });
     await page.reload();
     await page.getByLabel("작업 현장").selectOption(site.id);
-    await page.getByRole("button", { name: "위험성평가 문서 ↗", exact: true }).click();
+    await page.getByRole("button", { name: "위험성평가", exact: true }).click();
     await page.getByRole("button", { name: "합성 위험 문서 / v2 / submitted", exact: true }).click();
     const review = page.getByRole("heading", { name: "문서 기록 처리", exact: true });
     const print = page.getByRole("heading", { name: "고정 원문 출력: HTML / JSON", exact: true });

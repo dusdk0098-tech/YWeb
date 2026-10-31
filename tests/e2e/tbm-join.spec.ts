@@ -33,11 +33,23 @@ test("TBM link participation: manager registers birth date, worker confirms with
   await expect(phone.getByText(/참여 링크 TBM/)).toBeVisible();
   await phone.getByLabel("이름").fill("박 참여");
   await phone.getByLabel("생년월일").fill("1988-03-05");
-  await phone.getByRole("button", { name: "참여 기록" }).click();
+  await expect(phone.getByText(/TBM 참여 확인 서명 동의/)).toBeVisible();
+  await expect(phone.getByRole("button", { name: "동의하고 서명 제출" })).toBeDisabled(); // nothing drawn yet
+  await phone.getByRole("button", { name: "동의하지 않고 참여만 기록" }).click();
   await expect(phone.getByRole("alert")).toContainText("맞지 않습니다");
   await phone.getByLabel("생년월일").fill("1988-03-04");
-  await phone.getByRole("button", { name: "참여 기록" }).click();
-  await expect(phone.getByRole("status")).toContainText("박참여님의 참여를 기록했습니다");
+  const pad = phone.getByRole("img", { name: /서명 칸/ }), box = (await pad.boundingBox())!;
+  await phone.mouse.move(box.x + 20, box.y + 20);
+  await phone.mouse.down();
+  await phone.mouse.move(box.x + 120, box.y + 60, { steps: 5 });
+  await phone.mouse.move(box.x + 220, box.y + 30, { steps: 5 });
+  await phone.mouse.up();
+  await expect(phone.getByRole("img", { name: "서명 칸, 서명함" })).toBeVisible();
+  await phone.getByRole("button", { name: "동의하고 서명 제출" }).click();
+  await expect(phone.getByRole("status")).toContainText("박참여님의 참여를 기록했습니다(서명 포함)");
   await page.getByRole("button", { name: "참여 기록 새로 조회" }).click();
-  await expect(page.getByText(/참여 기록 1건: 박참여/)).toBeVisible();
+  await expect(page.getByText(/참여 기록 1건: 박참여\(.* · 서명\)/)).toBeVisible();
+  const signature = page.getByRole("img", { name: "박참여 서명" });
+  await expect(signature).toBeVisible();
+  expect(await signature.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(600);
 });

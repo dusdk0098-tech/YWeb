@@ -25,6 +25,9 @@ test("TBM link participation: manager registers birth date, worker confirms with
   await page.getByRole("button", { name: "참여 링크 만들기" }).click();
   const link = await page.getByLabel("참여 링크").inputValue();
   expect(link).toMatch(/\/join#t=[A-Za-z0-9_-]{43}$/);
+  const qr = page.getByRole("img", { name: "참여 링크 QR 코드" });
+  await expect(qr).toBeVisible();
+  expect(await qr.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBe(240);
   const phone = await (await browser.newContext()).newPage(); // separate browser, not logged in
   await phone.goto(link);
   await expect(phone.getByText(/참여 링크 TBM/)).toBeVisible();

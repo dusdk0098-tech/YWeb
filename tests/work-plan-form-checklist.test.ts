@@ -29,7 +29,7 @@ test("form checklist API: defaults, draft edits, version conflicts, frozen after
     const html = (await f.agent.get(f.base + path + "/print")).text;
     assert.match(html, /&lt;양식&gt; 계획/);
     assert.match(html, /<th>평판재하시험 기록<\/th><td>선택<\/td><td>포함<\/td><td><\/td><td>&lt;시험&gt;<\/td>/);
-    assert.match(html, /<th>항타기 안정성 참고<\/th><td>선택<\/td><td>제외<\/td>.*계산 보류\(P-02\)/);
+    assert.match(html, /<th>항타기 안정성 참고<\/th><td>선택<\/td><td>제외<\/td>.*장비 계산: 지내력/);
     // Archive: the plan is captured, then accepted by a different manager.
     r = await f.send("post", `/work-plans/${id}/capture`, { version: 1 });
     assert.equal(r.status, 200, r.text);

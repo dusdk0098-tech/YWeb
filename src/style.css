@@ -624,3 +624,14 @@ h3 {
 }
 
 .risk-publication-source { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* P-02: engineering-review warnings are on screen only; print.css never styles them because print routes never emit them. */
+.warning-box {
+  background: #fff6e0;
+  border-left: 4px solid #b26a00;
+  padding: 12px 14px;
+  margin: 8px 0;
+}
+.warning-list {
+  color: #7a4a00;
+  margin: 4px 0 12px;
+}

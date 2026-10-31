@@ -19,6 +19,7 @@ import { registerEducationReviews } from "./education-catalog-review.js";
 import { registerPhotoBoards, isPhotoBoardUpload } from "./photo-board.js";
 import { registerTbmJoin, registerTbmJoinPublic } from "./tbm-join.js";
 import { registerWorkPlanFormChecklists } from "./work-plan-form-checklist.js";
+import { registerWorkPlanCalculations } from "./work-plan-calculations.js";
 import { registerSiteLibrary, isLibraryUpload } from "./site-library.js";
 import { registerAiSuggest, anthropicSuggest, type AiConfig, type AiSuggest } from "./ai-suggest.js";
 import { registerCostBaselines } from "./cost-baseline-routes.js";
@@ -216,6 +217,7 @@ export async function createApp(db: Db, config: AppConfig) {
   registerPhotoBoards(app,db,{access,mutate},attachmentReader);
   registerTbmJoin(app,db,{access,mutate});
   registerWorkPlanFormChecklists(app,db,{access,mutate});
+  registerWorkPlanCalculations(app,db,{access,mutate});
   registerSiteLibrary(app,db,{access,mutate},attachmentReader);
   registerAiSuggest(app,db,{access,mutate},{ env: config.ai, suggest: config.aiSuggest ?? anthropicSuggest(), secret: config.secret });
   registerCostEvidenceRequests(app,db,{access,mutate});

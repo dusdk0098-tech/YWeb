@@ -70,3 +70,16 @@ td {
     padding: 0;
   }
 }
+.photo-page {
+  break-after: page;
+}
+.photo-slot {
+  margin: 0 0 6mm;
+  break-inside: avoid;
+}
+.photo-slot img {
+  display: block;
+  max-width: 100%;
+  max-height: 105mm;
+  margin: 0 auto;
+}

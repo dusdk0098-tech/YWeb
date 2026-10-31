@@ -99,4 +99,5 @@ export function uploadWorkPlanAttachment<T>(path:string,file:File,version:number
 
 export function uploadCostEvidence<T>(path:string,file:File,periodVersion:number,evidenceVersion:number,key:string){return uploadRawImageAttachment<T>(path,file,periodVersion,key,"x-cost-period-version",true,evidenceVersion);}
 
+export function uploadCostPhotoDisplay<T>(path:string,display:Blob,periodVersion:number,key:string){return uploadRawImageAttachment<T>(path,new File([display],"display.jpg",{type:"image/jpeg"}),periodVersion,key,"x-cost-period-version");}
 export function uploadEducationAttachment<T>(path:string,file:File,version:number,key:string){return uploadRawImageAttachment<T>(path,file,version,key,"x-education-version",true);}

@@ -37,6 +37,7 @@ export function EducationCatalogEditor({
     [body, setBody] = useState(initial?.body || empty),
     [reason, setReason] = useState(""),
     [makeJournal, setMake] = useState(false),
+    [readAll, setReadAll] = useState(false),
     [schedule, setSchedule] = useState({
       date: "",
       startTime: "09:00",
@@ -235,7 +236,24 @@ export function EducationCatalogEditor({
               >
                 이 게시본으로 교육일지 초안 작성
               </button>
-              {makeJournal && (
+              {makeJournal && (<>
+                <fieldset disabled={busy}>
+                  <legend>적용할 교육내용 전체 확인</legend>
+                  <p>
+                    판본 ID {record.id} v{record.version} · hash {record.published_hash} · 과정 표시 {record.body.categoryLabel || "없음"}
+                  </p>
+                  <p>적용대상·출처·권리 검수: 미검토 (검수 기록 항목이 아직 없습니다)</p>
+                  <h3>{record.body.title}</h3>
+                  <h4>교육 목표</h4>
+                  <p style={{ whiteSpace: "pre-wrap" }}>{record.body.objectives || "없음"}</p>
+                  <h4>교육내용</h4>
+                  <p style={{ whiteSpace: "pre-wrap" }}>{record.body.contents || "없음"}</p>
+                  {record.body.referenceNote && <><h4>수기 참고 메모</h4><p style={{ whiteSpace: "pre-wrap" }}>{record.body.referenceNote}</p></>}
+                  <label>
+                    <input type="checkbox" checked={readAll} onChange={(e) => setReadAll(e.target.checked)} />
+                    위 내용 전체를 읽었고 이 판본을 새 교육일지에 적용합니다
+                  </label>
+                </fieldset>
                 <fieldset disabled={busy}>
                   <legend>새 교육일지의 수기 일정</legend>
                   <label>
@@ -308,18 +326,18 @@ export function EducationCatalogEditor({
                     같은 날 현지 시각 계획입니다. 참여자는 생성하지 않습니다.
                     출처 내용은 복사 후 편집 가능하며 변경 여부를 표시합니다.
                   </p>
-                  <button disabled={!useStatus||useStatus.useStopped||stopDirty} onClick={() => void run("journals")}>
+                  <button disabled={!useStatus||useStatus.useStopped||stopDirty||!readAll} onClick={() => void run("journals")}>
                     출처를 결속한 일지 초안 생성
                   </button>
                   <button
                     onClick={() => {
-                      if (guard.canLeave()) setMake(false);
+                      if (guard.canLeave()) { setMake(false); setReadAll(false); }
                     }}
                   >
                     일지 생성 취소
                   </button>
                 </fieldset>
-              )}
+              </>)}
             </>
           )}
           {record.status === "published" &&

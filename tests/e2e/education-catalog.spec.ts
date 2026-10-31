@@ -56,6 +56,10 @@ test("own catalog creates a journal with editable copied text and fixed provenan
   await page.getByLabel("일지 날짜", { exact: true }).fill("2026-10-28");
   await page.getByLabel("강사 표시", { exact: true }).fill("합성 담당자");
   await page.getByLabel("장소", { exact: true }).fill("합성 장소");
+  // 교육 재설계 A안: read the whole published content, then apply explicitly.
+  await expect(page.getByText("적용대상·출처·권리 검수: 미검토 (검수 기록 항목이 아직 없습니다)")).toBeVisible();
+  await expect(page.getByRole("button", { name: "출처를 결속한 일지 초안 생성", exact: true })).toBeDisabled();
+  await page.getByLabel("위 내용 전체를 읽었고 이 판본을 새 교육일지에 적용합니다").check();
   await page
     .getByRole("button", { name: "출처를 결속한 일지 초안 생성", exact: true })
     .click();

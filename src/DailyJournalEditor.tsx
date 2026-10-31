@@ -1,3 +1,4 @@
+import { DailyJournalToday } from "./DailyJournalToday";
 import { DailyInspectionReferences,DailyInspectionCaptured } from "./DailyInspectionReferences";
 import { useEffect, useRef, useState } from "react";
 import { api, type Site, type User } from "./api";
@@ -226,6 +227,8 @@ export function DailyJournalEditor({
               onChange={(e) => setDay(e.target.value)}
             />
           </label>
+          {editable && <DailyJournalToday siteId={site.id} date={day} />}
+          <h3>3. 관찰·조치 입력</h3>
           <label>
             작업 요약 · 보관 시 필수
             <textarea
@@ -364,9 +367,11 @@ export function DailyJournalEditor({
               }
             />
           </label>
+          <h3>4. 참조 확인</h3>
           <label><input type="checkbox" checked={body.inspectionReferences!==undefined} onChange={e=>{if(!e.target.checked&&!window.confirm('미저장 점검 선택과 메모를 제거할까요?'))return;const next={...body};if(e.target.checked)next.inspectionReferences=[];else delete next.inspectionReferences;setBody(next);}}/>같은 날 점검 제출본 참조</label>
           {body.inspectionReferences&&<DailyInspectionReferences siteId={site.id} date={day} value={body.inspectionReferences} onChange={v=>setBody({...body,inspectionReferences:v})} onBusy={setInspectionBusy}/>}
         </fieldset>
+        {editable && <h3>5. 저장·보관</h3>}
         {editable && (
           <button disabled={allBusy || actionDirty || (!formDirty && !!record)}>
             일지 초안 저장

@@ -1,0 +1,55 @@
+/* Y웹 디자인 토큰 — "Field Desk" 번안. 사용자 결정(2026-10-31): primary = PEDIT 블루 #005EC4, 제품명 Y웹, Pretendard 자체 호스팅.
+   모든 화면 색·간격·글자는 이 변수만 쓴다. 상태는 색만으로 말하지 않고 아이콘·글자를 함께 쓴다. */
+@font-face {
+  font-family: "Pretendard Variable";
+  src: url("/fonts/PretendardVariable.woff2") format("woff2-variations");
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  /* 바탕 */
+  --bg: #f2f3f1;
+  --chrome: #e7e9e7;
+  --panel: #ffffff;
+  --well: #e9ebe8;
+  /* 글자 */
+  --ink: #171c1f;
+  --ink-muted: #4e5a60;
+  --ink-on-primary: #ffffff;
+  /* 선 */
+  --border: #59666c;
+  --border-quiet: #b9c1c3;
+  /* 주 동작 */
+  --primary: #005ec4;
+  --primary-hover: #004a9c;
+  --primary-soft: #e3eefb;
+  /* 상태 */
+  --signal: #c88800;
+  --signal-ink: #7a4a00;
+  --signal-soft: #fff1c7;
+  --success: #236647;
+  --success-soft: #e4f0e9;
+  --error: #a62924;
+  --error-soft: #f9e5e3;
+  --focus: #0a66c2;
+  /* 모양 */
+  --radius: 2px;
+  --radius-lg: 4px;
+  --control: 40px;
+  --cta: 44px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  /* 글자 */
+  --font: "Pretendard Variable", Pretendard, "Malgun Gothic", "Segoe UI", sans-serif;
+  --font-mono: Consolas, "D2Coding", monospace;
+  --text-title: 22px;
+  --text-section: 16px;
+  --text-body: 14px;
+  --text-meta: 12px;
+}

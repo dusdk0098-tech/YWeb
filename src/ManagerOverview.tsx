@@ -20,7 +20,15 @@ export function ManagerOverview({
     [tick, setTick] = useState(0);
   const [report, setReport] = useState<Report | null>(null),
     [loading, setLoading] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [permissions, setPermissions] = useState<string[]>([]);
+  useEffect(() => {
+    let active = true;
+    api<{ warnings: string[] }>("/local-permissions").then((v) => active && setPermissions(v.warnings)).catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const query = new URLSearchParams({
     asOfDate: day,
     offset: String(offset),
@@ -53,6 +61,13 @@ export function ManagerOverview({
   return (
     <section className="panel">
       <h1>관리 현장 기록 현황</h1>
+      {permissions.length > 0 && (
+        <section role="alert">
+          <h2>이 PC의 데이터 파일 권한 확인 필요 (SEC-LOCAL-01)</h2>
+          <ul>{permissions.map((w) => <li key={w}>{w}</li>)}</ul>
+          <p>앱은 권한을 자동으로 바꾸지 않습니다. 데이터 폴더를 앱을 실행하는 계정만 읽을 수 있게 운영자가 직접 정리하세요(docs/OPERATIONS.md 점검표).</p>
+        </section>
+      )}
       <p>
         현재 관리자 권한이 있는 현장만 조회합니다. 상단 단일 현장 선택과 별도의
         다현장 조회입니다. 기준일 기본값은 브라우저의 현지 달력일이며 직접

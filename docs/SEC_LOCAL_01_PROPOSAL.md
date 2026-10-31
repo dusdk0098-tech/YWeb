@@ -1,6 +1,6 @@
-# SEC-LOCAL-01 대책안 (미승인 제안)
+# SEC-LOCAL-01 대책안 (A안 승인)
 
-**상태: 제안. OS 권한을 바꾸는 코드는 승인 전 넣지 않는다.** 인계문서(00_START_HERE)와 `SECURITY.md`는 SEC-LOCAL-01(P2)을 임의로 해소하지 말라고 정했다.
+**상태: A안 승인·구현(읽기 전용 점검·경고, `server/local-permissions.ts`). B안은 미승인이며 OS 권한을 바꾸는 코드는 넣지 않았다.** 인계문서(00_START_HERE)와 `SECURITY.md`는 SEC-LOCAL-01(P2)을 임의로 해소하지 말라고 정했다.
 
 ## 문제(현재 기록 그대로)
 

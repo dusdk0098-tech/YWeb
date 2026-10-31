@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import express from "express";
 import { openDatabase } from "./db.js";
 import { createApp } from "./app.js";
+import { localPermissionWarnings as localPermissionWarningsFor } from "./local-permissions.js";
 if (existsSync(".env")) process.loadEnvFile(".env");
 if (process.env.NODE_ENV === "production")
   throw new Error(
@@ -15,10 +16,13 @@ if (!Number.isInteger(port) || port < 1024 || port > 65535)
 const databasePath = process.env.DB_PATH || "./data/pedit.sqlite";
 assertRecoveryReady(databasePath);
 const db = openDatabase(databasePath);
+const localPermissionWarnings = localPermissionWarningsFor(databasePath);
+for (const w of localPermissionWarnings) console.warn("SEC-LOCAL-01 경고:", w);
 const app = await createApp(db, {
   secret: process.env.SESSION_SECRET || "",
   origin: process.env.APP_ORIGIN || `http://127.0.0.1:${port}`,
   adsEnabled: process.env.ADS_ENABLED === "true",
+  localPermissionWarnings,
 });
 app.use(express.static(resolve("dist"), { index: false }));
 app.get("/{*path}", (_req, res) => res.sendFile(resolve("dist/index.html")));

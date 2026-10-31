@@ -99,6 +99,8 @@ export type AppConfig = {
   secret: string;
   origin: string;
   adsEnabled?: boolean;
+  // SEC-LOCAL-01 A안: read-only permission findings computed at startup, shown to managers.
+  localPermissionWarnings?: string[];
 };
 export async function createApp(db: Db, config: AppConfig) {
   if (config.secret.length < 32 || config.secret.startsWith("replace-"))
@@ -212,6 +214,11 @@ export async function createApp(db: Db, config: AppConfig) {
   registerDailyMonthlyRecords(app, db, { access, mutate });
   registerDailyJournalRegister(app, db, { access, mutate });
   registerManagerOverview(app, db);
+  app.get("/api/local-permissions", (req, res) => {
+    if (!db.prepare("SELECT 1 FROM memberships WHERE user_id=? AND role='manager' LIMIT 1").get(req.session.userId!))
+      throw new HttpError(403, "관리자만 확인할 수 있습니다.");
+    res.json({ warnings: config.localPermissionWarnings ?? [] });
+  });
   registerEducationTransfer(app, db, { access, mutate });
   registerEducationCatalog(app, db, { access, mutate });
   registerCatalogUse(app, db, { access, mutate });

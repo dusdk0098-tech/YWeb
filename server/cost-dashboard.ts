@@ -68,7 +68,7 @@ export function costDashboard(db: Db, site: string) {
   };
 }
 // PEDIT-SC 출력 전 확인 (state-query.js preflightState), limited to data this app has.
-// Advisory: closing is not blocked here; stock/photo/legal-limit checks are out of scope.
+// Errors block closing (cost-periods.ts); stock/photo/legal-limit checks are out of scope.
 export function costPreflight(db: Db, site: string, id: string) {
   const period = costPeriodView(db, getCostPeriod(db, site, id)),
     items: { level: "error" | "warning"; message: string }[] = [],

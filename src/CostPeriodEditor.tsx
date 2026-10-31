@@ -371,11 +371,10 @@ export function CostPeriodEditor({
         {open ? (
           <>
             <button
-              disabled={formOpen || !!budget || !reason.trim()}
+              disabled={formOpen || !!budget || !reason.trim() || !!preflight?.errorCount}
+              title={preflight?.errorCount ? `출력 전 확인 오류 ${preflight.errorCount}건을 해결해야 마감할 수 있습니다.` : undefined}
               onClick={() => {
                 if (
-                  (!preflight?.errorCount ||
-                    window.confirm(`출력 전 확인 오류 ${preflight.errorCount}건이 남아 있습니다. 원본 SC는 이 상태로 마감하지 않았습니다. 그래도 진행할까요?`)) &&
                   window.confirm(
                     "기록을 마감하여 잠글까요? 법정 인정이나 결재가 아닙니다.",
                   )

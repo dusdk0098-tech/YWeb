@@ -1,4 +1,5 @@
 import { CURRENT_SCHEMA_VERSION } from "../server/schema-version.js";
+import { closeReady } from "./fixtures/cost-close-ready.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, readFile, writeFile, cp, access } from "node:fs/promises";
@@ -117,6 +118,7 @@ test("synthetic quiesced backup restores private bytes and financial snapshots, 
       },
     });
     assert.equal(r.status, 200);
+    closeReady(db);
     r = await post(`${base}/cost-periods/${period}/close`, {
       version: r.body.period.version,
       reason: "Synthetic rehearsal",

@@ -33,6 +33,7 @@ test("manager ledger keeps exact fractions through explicit close and carry", as
   await page.getByLabel("귀속 월").fill("2026-10");
   await page.getByLabel("초기 이월 근거").fill("합성 시작");
   await page.getByLabel("항목명").fill("자체 항목");
+  await page.getByLabel("계획액").fill("100");
   await page.getByRole("button", { name: "생성", exact: true }).click();
   await page.getByRole("button", { name: "지출 행 추가" }).click();
   await page.getByLabel("내용", { exact: true }).fill("합성 비용");
@@ -41,8 +42,21 @@ test("manager ledger keeps exact fractions through explicit close and carry", as
   await page.getByRole("button", { name: "저장", exact: true }).click();
   await expect(page.getByText(/0.25 × 3원 = 0.75원/)).toBeVisible();
   await page.getByLabel("변경 / 마감 / 재개 사유").fill("수기 마감");
-  // 출력 전 확인 errors (no 현장 설정 here) add a second confirm before the close confirm.
-  page.on("dialog", (d) => d.accept());
+  // 출력 전 확인 errors (no 현장 설정 yet) block closing.
+  await expect(page.getByRole("button", { name: "기록 마감", exact: true })).toBeDisabled();
+  page.on("dialog", (d) => d.accept()); // leave-draft confirm here, close confirm below
+  await page.getByRole("button", { name: "현장 설정", exact: true }).click();
+  for (const [label, value] of [
+    ["작성일", "2026-10-31"], ["공사명", "합성 공사"], ["건설업체명", "합성건설"],
+    ["공사기간 시작일", "2026-01-01"], ["공사기간 종료일", "2026-12-31"],
+    ["공사금액 (원, 정수)", "1000000"], ["계상안전관리비 (원, 정수)", "30000"],
+    ["작성자", "작성"], ["작성확인자", "확인"],
+  ])
+    await page.getByLabel(label, { exact: true }).fill(value);
+  await page.getByRole("button", { name: "현장 설정 저장" }).click();
+  await expect(page.getByRole("status")).toBeVisible();
+  await page.getByRole("button", { name: "비용 원장으로 돌아가기" }).click();
+  await page.getByLabel("변경 / 마감 / 재개 사유").fill("수기 마감");
   await page.getByRole("button", { name: "기록 마감", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: /2026-10 비용 원장 · 마감/ }),

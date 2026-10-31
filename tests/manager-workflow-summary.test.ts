@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import { closeReady } from "./fixtures/cost-close-ready.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import argon2 from "argon2";
@@ -19,7 +20,7 @@ test("manager cost optional month separates exact open/closed/reopened sums and 
   r=await get();assert.equal(r.status,200);let value=r.body.sites[0].cost;assert.equal(value.status,"available");assert.equal(value.value.state,"open");assert.equal(value.value.totals.current,"0.000003");assert.equal(value.value.totals.cumulative,"0.000004");assert.doesNotMatch(JSON.stringify(r.body),/PRIVATE|private@example|description|closedBy|created_by/);
   assert.equal((await agent.get("/api/manager-overview?asOfDate=2026-10-28")).body.sites[0].cost,undefined);
   assert.equal((await agent.get("/api/manager-overview?asOfDate=2026-10-28&costMonth=2026-11")).body.sites[0].cost.value.kind,"no_period");
-  r=await post(`/cost-periods/${p.id}/close`,{version:p.version,reason:"Manual close"});assert.equal(r.status,200);p=r.body.period||r.body;
+  closeReady(db);r=await post(`/cost-periods/${p.id}/close`,{version:p.version,reason:"Manual close"});assert.equal(r.status,200);p=r.body.period||r.body;
   r=await get();value=r.body.sites[0].cost;assert.equal(value.status,"available",JSON.stringify(value));assert.equal(value.value.state,"closed");assert.match(value.value.closure.hash,/^[a-f0-9]{64}$/);const before=r.body.fingerprint;
   r=await post(`/cost-periods/${p.id}/reopen`,{version:p.version,reason:"Manual reopen"});assert.equal(r.status,200);
   r=await get();assert.equal(r.body.sites[0].cost.value.state,"open");assert.equal(r.body.sites[0].cost.value.closure,null);assert.notEqual(r.body.fingerprint,before);

@@ -187,6 +187,7 @@ import {
   readRiskDocument,
   assertRiskReportBounds,
   RISK_REPORT_MAX_BYTES,
+  RISK_REPORT_HTML_MAX_BYTES,
 } from "../server/risk-document-report.js";
 test("fixed risk document print separates current summaries, escapes input and refuses stale context", async () => {
   const f = await acceptedSource();
@@ -314,9 +315,11 @@ test("fixed risk document print separates current summaries, escapes input and r
 });
 test("risk report exact byte/count boundaries refuse overflow instead of silent truncation", () => {
   const counts = { hazards: 50, actions: 500, residuals: 100 };
-  assertRiskReportBounds("x".repeat(RISK_REPORT_MAX_BYTES - 2), counts);
+  // Source facts above the 256KiB export limit stay printable/exportable (long action texts).
+  assertRiskReportBounds("x".repeat(RISK_REPORT_MAX_BYTES), counts);
+  assertRiskReportBounds("x".repeat(RISK_REPORT_HTML_MAX_BYTES - 2), counts);
   assert.throws(() =>
-    assertRiskReportBounds("x".repeat(RISK_REPORT_MAX_BYTES - 1), counts),
+    assertRiskReportBounds("x".repeat(RISK_REPORT_HTML_MAX_BYTES - 1), counts),
   );
   for (const key of ["hazards", "actions", "residuals"] as const)
     assert.throws(() =>

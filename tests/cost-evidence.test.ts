@@ -6,6 +6,7 @@ import { costReason } from "../server/cost-validation.js";
 import { evidenceLinkInput } from "../server/cost-evidence-routes.js";
 import { costEvidenceReview, COST_EVIDENCE_MANIFEST_BYTES, serializeCostEvidence } from "../server/cost-evidence-model.js";
 import { attachmentUsage } from "../server/attachment-quota.js";
+import { tooLargeStatus } from "./fixtures/too-large.js";
 test("cost evidence no-evidence request bytes and bounded reference-only inputs",()=>{
  const old={version:3,reason:"same"};assert.equal(JSON.stringify(costReason.parse(old)),JSON.stringify(costReason.extend({evidenceReview:costEvidenceReview.optional()}).parse(old)));
  assert.throws(()=>evidenceLinkInput.parse({periodVersion:1,evidenceVersion:0,targets:Array.from({length:51},()=>({expenseId:randomUUID(),version:1})),reason:"x",confirmReferencesOnly:true}));
@@ -20,7 +21,7 @@ test("real cost raw upload links close sidecar reopen detach and no-copy next mo
   for(const t of Object.keys(financial))assert.deepEqual(f.db.prepare(`SELECT * FROM ${t}`).all(),financial[t]);
   const p=await f.current();assert.equal((await f.send(f.base+"/close",{version:p.version,reason:"legacy no review"})).status,409);
   r=await f.close();assert.equal(r.status,200,r.text);let closed=r.body;const closureId=closed.current_close_id;
-  const closure=f.db.prepare("SELECT * FROM cost_closures WHERE id=?").get(closureId),html=(await f.agent.get(f.siteBase+f.base+"/print")).text;
+  const closure=f.db.prepare("SELECT * FROM cost_closures WHERE id=?").get(closureId),html=(await f.agent.get(f.siteBase+f.base+`/closures/${closureId}/print`)).text;
   r=await f.agent.get(f.siteBase+f.base+`/evidence/closures/${closureId}`);assert.equal(r.status,200,r.text);const fixed=r.body;assert.equal(fixed.recorded,true);assert.equal(fixed.snapshot.evidence.items[0].links.length,2);assert.equal(fixed.closureHash,closed.currentClosure.hash);
   const proof=(await f.agent.get(f.siteBase+f.base+`/evidence/closures/${closureId}/print`)).text;assert.match(proof,/&lt;own&gt;.pdf/);assert.doesNotMatch(proof,/<(?:img|iframe|object|embed)\b/);
   const download=await f.agent.get(f.siteBase+f.base+`/evidence/files/${file.id}/download`);assert.equal(download.status,200);assert.deepEqual(download.body,pdf);assert.equal(download.headers['x-attachment-scan'],'UNSCANNED');assert.equal(download.headers['cache-control'],'no-store');assert.equal(download.headers['x-content-type-options'],'nosniff');assert.match(download.headers['content-disposition'],/^attachment;/);
@@ -59,7 +60,7 @@ test("linked cost edit cancel restore split and undo never allocate or copy evid
 });
 test("cost evidence ordinary stale commands header/role limits and atomic failure leave originals",async()=>{
  const f=await costEvidenceFixture();try{
-  const expense=await f.expense();assert.equal((await f.upload(Buffer.from("not-pdf"))).status,400);assert.equal((await f.upload(Buffer.alloc(5*1024*1024+1))).status,413);
+  const expense=await f.expense();assert.equal((await f.upload(Buffer.from("not-pdf"))).status,400);assert.equal((await tooLargeStatus(f.upload(Buffer.alloc(5*1024*1024+1)))),413);
   assert.equal((await f.upload(pdf,"wrong.png","application/pdf")).status,400);
   f.db.exec("CREATE TRIGGER synthetic_evidence_fail BEFORE INSERT ON cost_evidence_events BEGIN SELECT RAISE(ABORT,'synthetic'); END;");assert.equal((await f.upload()).status,500);assert.equal(f.db.prepare("SELECT count(*) n FROM cost_evidence_files").get()!.n,0);f.db.exec("DROP TRIGGER synthetic_evidence_fail");
   let r=await f.upload();assert.equal(r.status,200);const file=r.body.items[0].file;

@@ -16,8 +16,11 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
   const before = readFileSync(
       new URL("./fixtures/phase31-main.tsx.txt", import.meta.url),
       "utf8",
+    ).replace(/\r\n/g, "\n"),
+    after = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8").replace(
+      /\r\n/g,
+      "\n",
     ),
-    after = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8"),
     printer = ts.createPrinter();
   function bodies(text: string) {
     const file = ts.createSourceFile(
@@ -31,12 +34,16 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
       .filter((s) => !ts.isImportDeclaration(s))
       .map((s) => printer.printNode(ts.EmitHint.Unspecified, s, file));
   }
+  // Normalize checkout line endings before exact fixture substitutions; the
+  // complete non-import AST comparison below still preserves the semantic guard.
   // Phase47 adds only the explicit current user and existing shared draft/busy
   // callbacks to MeetingEditor; keep the Phase31 fixture itself historical.
   assert.equal((before.match(/<MeetingEditor\n/g)||[]).length,1);
   let expected=before.replace("<MeetingEditor\n", "<MeetingEditor\n            user={user}\n            onDirtyChange={setAttendanceDirty}\n            onBusyChange={setAttendanceBusy}\n");
   // Phase67 adds one help entry/branch and replaces a stale display-only badge.
   // Preserve all remaining App state, existing callbacks and navigation guards.
+  // Y웹 rename changes only the visible brand text.
+  expected = expected.replace("<h1>PEDIT</h1>", "<h1>Y웹</h1>").replace("PEDIT<span>", "Y웹<span>");
   expected = expected.replace('LOCAL FOUNDATION · 0.23', '개발용 · 독립 검증 미완료')
     .replace('["home", "현장 홈"],', '["home", "현장 홈"],\n            ["help", "사용 도움말"],')
     .replace('        ) : tab === "home" ? (', `        ) : tab === "help" ? (
@@ -51,6 +58,40 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
             }}
           />
         ) : tab === "home" ? (`);
+  // PC validation adds only the mobile menu state/control and closes it after
+  // the existing navigation guard succeeds. Keep the historical fixture and
+  // compare the entire remaining App AST, including dirty/busy guards.
+  const mobileChanges: Array<[string, string]> = [
+    [
+      '    [tab, setTab] = useState("home"),',
+      '    [tab, setTab] = useState("home"),\n    [mobileMenuOpen, setMobileMenuOpen] = useState(false),',
+    ],
+    [
+      '        <nav aria-label="주 메뉴">',
+      `        <button
+          type="button"
+          className="mobile-menu-toggle secondary"
+          aria-expanded={mobileMenuOpen}
+          aria-controls="primary-navigation"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          {mobileMenuOpen ? "업무 메뉴 닫기" : "업무 메뉴 열기"}
+        </button>
+        <nav
+          id="primary-navigation"
+          aria-label="주 메뉴"
+          className={mobileMenuOpen ? "mobile-menu-open" : ""}
+        >`,
+    ],
+    [
+      '                if (id !== tab && !mayLeaveAttendance()) return;\n                setTab(id);\n                setError("");',
+      '                if (id !== tab && !mayLeaveAttendance()) return;\n                setTab(id);\n                setError("");\n                setMobileMenuOpen(false);',
+    ],
+  ];
+  for (const [source, replacement] of mobileChanges) {
+    assert.equal(expected.split(source).length, 2);
+    expected = expected.replace(source, replacement);
+  }
   assert.deepEqual(bodies(after), bodies(expected));
   const registry = readFileSync(
     new URL("../src/DomainPanels.tsx", import.meta.url),

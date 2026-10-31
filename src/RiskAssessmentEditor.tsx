@@ -492,7 +492,7 @@ export function RiskAssessmentEditor({
           </p>
           {!reuseOpen && !dirty && !busy && !printBusy && (
             <RiskReviewActions
-              key={`${row.id}:${row.version}`}
+              key={`review:${row.id}:${row.version}`}
               site={site}
               user={user}
               row={row}
@@ -512,7 +512,7 @@ export function RiskAssessmentEditor({
           )}
           {row.status !== "draft" && (
             <RiskPrintControl
-              key={`${row.id}:${row.version}`}
+              key={`print:${row.id}:${row.version}`}
               site={site}
               assessmentId={row.id}
               disabled={busy || reviewBusy || reviewDirty}

@@ -91,6 +91,9 @@ export async function registerAuthentication(
     rateLimit({
       windowMs: 15 * 60 * 1000,
       limit: 10,
+      // Loopback-only: every user shares one IP, so count failed attempts per account.
+      keyGenerator: (req) => String(req.body?.email ?? "").toLowerCase(),
+      skipSuccessfulRequests: true,
       standardHeaders: "draft-8",
       legacyHeaders: false,
       message: { error: "로그인 시도가 많습니다. 15분 후 다시 시도해 주세요." },

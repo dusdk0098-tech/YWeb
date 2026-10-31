@@ -56,15 +56,17 @@ test("equipment code normalization and manual use cancellation", async ({
   await page
     .getByRole("button", { name: "사용기록 저장", exact: true })
     .click();
-  await page.getByLabel("기록 상태", { exact: true }).selectOption("cancelled");
+  await page
+    .getByRole("combobox", { name: "기록 상태", exact: true })
+    .selectOption("cancelled");
   await page
     .getByLabel("정정/취소/복원 사유", { exact: true })
     .fill("중복 입력 취소");
   await page
     .getByRole("button", { name: "사용기록 정정 저장", exact: true })
     .click();
-  await expect(page.getByLabel("기록 상태", { exact: true })).toHaveValue(
-    "cancelled",
-  );
+  await expect(
+    page.getByRole("combobox", { name: "기록 상태", exact: true }),
+  ).toHaveValue("cancelled");
   await expect(page.getByText("중복 입력 취소", { exact: true })).toBeVisible();
 });

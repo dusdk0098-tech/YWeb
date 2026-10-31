@@ -196,7 +196,8 @@ test("hazard-level projected and after-confirmation records remain separate, hig
       contextFingerprint: c.fingerprint,
       likelihood: 1,
       severity: 1,
-      basis: "Expected human basis, not observation",
+      // Longer than the 2000-char hazard judgmentReason limit; residual basis allows 5000.
+      basis: "Expected human basis, not observation".padEnd(3000, "."),
       claimedLocalDate: "2026-11-01",
       reason: "Projection",
       confirmManualEvaluation: true,

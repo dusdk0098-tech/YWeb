@@ -196,7 +196,7 @@ test("synthetic quiesced backup restores private bytes and financial snapshots, 
       403,
     );
     assert.equal(
-      (await recovered.agent.get(`${base}/cost-periods/${period}/print`))
+      (await recovered.agent.get(`${base}/cost-periods/${period}/output/prepare`))
         .status,
       200,
     );
@@ -233,6 +233,38 @@ test("synthetic quiesced backup restores private bytes and financial snapshots, 
     } catch {
       /* already closed */
     }
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+test("older-schema backups still verify and restore; the app migrates the restored file", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "pedit-backup-older-"));
+  try {
+    const older = join(dir, "older.sqlite");
+    openDatabase(older).close();
+    // Schema56 is a version fence only, so 55 with every table is a faithful older file.
+    let edit = new DatabaseSync(older);
+    edit.exec(`PRAGMA user_version=${CURRENT_SCHEMA_VERSION - 1}`);
+    edit.close();
+    const manifest = await createBackup(older, join(dir, "bundle"));
+    assert.equal(manifest.schemaVersion, CURRENT_SCHEMA_VERSION - 1);
+    const restored = await restoreBackup(join(dir, "bundle"), join(dir, "restored"));
+    assert.equal(restored.report.schemaVersion, CURRENT_SCHEMA_VERSION - 1);
+    const migrated = openDatabase(restored.databasePath);
+    assert.equal(
+      (migrated.prepare("PRAGMA user_version").get() as { user_version: number }).user_version,
+      CURRENT_SCHEMA_VERSION,
+    );
+    migrated.close();
+    // A table a future schema adds is simply absent from an older file's counts.
+    const missing = join(dir, "missing.sqlite");
+    openDatabase(missing).close();
+    edit = new DatabaseSync(missing);
+    edit.exec("DROP TABLE daily_monthly_records");
+    edit.close();
+    const partial = await createBackup(missing, join(dir, "partial"));
+    assert.equal(partial.counts.daily_monthly_records, undefined);
+    await verifyBackup(join(dir, "partial"));
+  } finally {
     await rm(dir, { recursive: true, force: true });
   }
 });

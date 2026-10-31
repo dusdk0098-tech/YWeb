@@ -1,6 +1,50 @@
 import type { IncomingMessage } from "node:http";
+import { createHash } from "node:crypto";
+import type { Response } from "express";
 import { HttpError } from "./site-operations.js";
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+// Discard only a small, explicitly bounded overshoot so a local client can receive
+// its 413 before Windows closes a socket with unread request bytes. This never
+// returns file content or increases the accepted/retained attachment limit.
+export const MAX_REJECTED_UPLOAD_BYTES = MAX_ATTACHMENT_BYTES + 64 * 1024;
+export function boundedRejectedUploadDrainer(timeoutMs = 1_000) {
+  let active = 0;
+  return function discard(req: IncomingMessage): Promise<void> {
+    const length = req.headers["content-length"];
+    if (
+      active >= 2 || req.readableEnded || req.aborted || req.destroyed ||
+      length === undefined || !/^\d+$/.test(length) ||
+      Number(length) <= MAX_ATTACHMENT_BYTES ||
+      Number(length) > MAX_REJECTED_UPLOAD_BYTES
+    ) return Promise.resolve();
+    active++;
+    return new Promise((resolve) => {
+      let total = 0, done = false;
+      const timer = setTimeout(finish, timeoutMs);
+      function finish() {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        req.off("data", data);
+        req.off("end", finish);
+        req.off("aborted", finish);
+        req.off("error", finish);
+        req.pause();
+        active--;
+        resolve();
+      }
+      function data(chunk: Buffer) {
+        total += chunk.length;
+        if (total > MAX_REJECTED_UPLOAD_BYTES) finish();
+      }
+      req.on("data", data);
+      req.once("end", finish);
+      req.once("aborted", finish);
+      req.once("error", finish);
+      req.resume();
+    });
+  };
+}
 // One reader per app. Limits bytes retained in memory; does NOT decode or scan files.
 export function boundedUploadReader(timeoutMs = 30_000) {
   let active = 0;
@@ -72,4 +116,18 @@ export function boundedUploadReader(timeoutMs = 30_000) {
       if (req.aborted || req.destroyed) aborted();
     });
   };
+}
+// Original is unscanned: verify stored size/hash, then serve only as a download, never inline.
+export function sendAttachment(res: Response, file: Record<string, unknown>, stored: Uint8Array) {
+  const bytes = Buffer.from(stored);
+  if (bytes.length !== Number(file.size) || createHash("sha256").update(bytes).digest("hex") !== file.sha256)
+    throw new HttpError(409, "보존 원본 크기/해시가 일치하지 않습니다.");
+  res.set({
+    "Content-Type": "application/octet-stream",
+    "Content-Disposition": `attachment; filename="attachment-${file.id}.bin"; filename*=UTF-8''${encodeURIComponent(String(file.filename)).replace(/['()*]/g, (c) => "%" + c.charCodeAt(0).toString(16))}`,
+    "X-Content-Type-Options": "nosniff",
+    "Cache-Control": "no-store",
+    "X-Attachment-Scan": "UNSCANNED",
+  });
+  res.send(bytes);
 }

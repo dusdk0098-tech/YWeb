@@ -265,6 +265,16 @@ test("company affiliation snapshots and exact PPE issue/full-return preserve sto
       ).status,
       409,
     );
+    assert.equal(
+      (
+        await f.send("post", `/stock-items/${item.id}/movements/${adjustment}/reverse`, {
+          version: 5,
+          effectiveDate: "2026-10-28",
+          reason: "would orphan the note reference",
+        })
+      ).status,
+      409,
+    );
     const print = await f.agent.get(f.base + path + "/print");
     assert.equal(print.status, 200);
     assert.match(print.text, /&lt;script&gt;/);

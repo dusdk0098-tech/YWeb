@@ -44,12 +44,12 @@ test("manual roster/attendance with cancel guards, correction history and print"
   await expect(page.getByRole("status")).toContainText("출역 1명");
   await page.getByRole("button", { name: "정정 / 취소", exact: true }).click();
   await page
-    .getByLabel("정정 / 취소 사유 *", { exact: true })
+    .getByRole("textbox", { name: "정정 / 취소 사유 *", exact: true })
     .fill("날짜 확인 후 취소");
   page.once("dialog", (d) => d.dismiss());
   await page.getByRole("button", { name: "정정 닫기", exact: true }).click();
   await expect(
-    page.getByLabel("정정 / 취소 사유 *", { exact: true }),
+    page.getByRole("textbox", { name: "정정 / 취소 사유 *", exact: true }),
   ).toHaveValue("날짜 확인 후 취소");
   await page.getByRole("button", { name: "정정 저장", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("출역 0명 · 취소 1건");

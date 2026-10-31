@@ -8,6 +8,7 @@ import {
   getExpense,
   costExpenses,
   costPeriodView,
+  insertExpense,
 } from "./cost-model.js";
 import { costReason } from "./cost-validation.js";
 import {
@@ -127,22 +128,7 @@ export function registerCostSplits(
         );
         const saved = [];
         for (const e of children) {
-          const childId = randomUUID();
-          db.prepare(
-            "INSERT INTO cost_expenses VALUES(?,?,?,?,?,?,?,?,'active',1,?,?,?)",
-          ).run(
-            childId,
-            id,
-            e.categoryId,
-            e.spendDate,
-            e.description,
-            e.quantity,
-            e.unitPriceWon,
-            e.amount,
-            actor.id,
-            now,
-            now,
-          );
+          const childId = insertExpense(db, id, e, actor.id, now);
           const child = getExpense(db, id, childId);
           saved.push(child);
           period = bumpCost(db, period);

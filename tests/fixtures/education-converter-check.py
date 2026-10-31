@@ -14,7 +14,13 @@ NS=c.NS['s']
 def zipbytes(entries):
     out=io.BytesIO()
     with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as z:
-        for name,data in entries:z.writestr(name,data)
+        for name,data in entries:
+            info=zipfile.ZipInfo(name)
+            # Preserve the intended wire name: ZipInfo otherwise sanitizes it
+            # before writing, which hides malformed Windows/NUL fixtures.
+            info.filename=name
+            info.compress_type=zipfile.ZIP_DEFLATED
+            z.writestr(info,data)
     return out.getvalue()
 def entries():
     cells=[]
@@ -50,8 +56,14 @@ class Checks(unittest.TestCase):
     es=entries();es[3]=(es[3][0],es[3][1].replace('합성 내용 50', '한'*10001))
     with self.assertRaises(ValueError):convert(source(es))
  def test_archives_and_caps(self):
-    for name in ['../x','/x','x\\y','x:bad','x//y','extra.zip']:
-      with self.assertRaises(ValueError):c.archive(zipbytes(entries()+[(name,'x')]))
+    for name in ['../x','/x','x\\y','x:bad','x//y','x/./y','bad\x00suffix','extra.zip']:
+      with self.subTest(name=name):
+        data=zipbytes(entries()+[(name,'x')])
+        with zipfile.ZipFile(io.BytesIO(data)) as z:
+          self.assertEqual(z.infolist()[-1].orig_filename,name)
+        with self.assertRaises(ValueError):c.archive(data)
+    with c.archive(zipbytes([('valid/path','x')])) as z:
+      self.assertEqual(z.namelist(),['valid/path'])
     with self.assertRaises(ValueError):c.archive(zipbytes([('same','x'),('same','y')]))
     with self.assertRaises(ValueError):c.archive(zipbytes([('a','x'*1000000)]))
     with self.assertRaises(ValueError):c.archive(zipbytes([(str(i),'x') for i in range(513)]))

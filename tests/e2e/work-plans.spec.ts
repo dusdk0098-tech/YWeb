@@ -53,7 +53,7 @@ test("general work plan requires explicit source capture before manual archive",
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "관리자가 기록 보관" }).click();
   await expect(
-    page.getByRole("heading", { name: "관리자 기록 보관본", exact: true }),
+    page.getByRole("heading", { name: "관리자 기록 보관본 · 문서검토 없음", exact: true }),
   ).toBeVisible();
   await expect(page.getByText(/작업허가\/공학 검토\/안전 인증/)).toBeVisible();
 });

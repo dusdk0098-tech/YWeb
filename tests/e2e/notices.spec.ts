@@ -30,10 +30,15 @@ test("explicit account notice publish acknowledgement and new-version reset", as
     .getByRole("button", { name: "현장 계정 공지 ↗", exact: true })
     .click();
   await page.getByRole("button", { name: "새 공지 초안", exact: true }).click();
+  const recipients = page.getByRole("group", {
+    name: "명시적 수신 계정 (1–200명)",
+    exact: true,
+  });
+  await expect(recipients).toHaveCount(1);
   await page.getByLabel("공지 제목", { exact: true }).fill("통로 변경 안내");
   await page.getByLabel("적용 작업/범위", { exact: true }).fill("A구역");
   await page
-    .getByLabel("공지 본문", { exact: true })
+    .getByRole("textbox", { name: "공지 본문", exact: true })
     .fill("변경된 통로를 확인하세요. 합성 안내입니다.");
   await page.getByRole("checkbox").check();
   page.once("dialog", (d) => d.dismiss());
@@ -46,9 +51,11 @@ test("explicit account notice publish acknowledgement and new-version reset", as
   await page
     .getByRole("button", { name: "공지 초안 저장", exact: true })
     .click();
+  await expect(recipients).toHaveCount(1);
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "공지 게시", exact: true }).click();
   await expect(page.getByLabel("공지 제목", { exact: true })).toBeDisabled();
+  await expect(recipients).toHaveCount(0);
   page.once("dialog", (d) => d.accept());
   await page
     .getByRole("button", { name: "내 계정으로 공지 확인", exact: true })
@@ -59,8 +66,9 @@ test("explicit account notice publish acknowledgement and new-version reset", as
     .getByRole("button", { name: "후속 공지 초안 생성", exact: true })
     .click();
   await expect(page.getByLabel("공지 제목", { exact: true })).toBeEnabled();
+  await expect(recipients).toHaveCount(1);
   await page
-    .getByLabel("공지 본문", { exact: true })
+    .getByRole("textbox", { name: "공지 본문", exact: true })
     .fill("새 안내. 이전 확인은 승계하지 않습니다.");
   await page
     .getByRole("button", { name: "공지 초안 저장", exact: true })
@@ -70,4 +78,5 @@ test("explicit account notice publish acknowledgement and new-version reset", as
   await expect(
     page.getByRole("button", { name: "내 계정으로 공지 확인", exact: true }),
   ).toBeVisible();
+  await expect(recipients).toHaveCount(0);
 });

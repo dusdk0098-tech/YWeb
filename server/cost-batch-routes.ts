@@ -1,8 +1,7 @@
 import type { Express } from "express";
-import { randomUUID } from "node:crypto";
 import { audit, type Db } from "./db.js";
 import { HttpError, type SiteOperations } from "./site-operations.js";
-import { getCostPeriod, getExpense, type CostPeriodRow } from "./cost-model.js";
+import { getCostPeriod, getExpense, insertExpense, type CostPeriodRow } from "./cost-model.js";
 import { bumpCost, costEvent } from "./cost-write.js";
 import {
   costBatchInput,
@@ -66,23 +65,8 @@ export function registerCostBatch(
         let period;
         for (const r of preview.rows) {
           const e = r.expense,
-            expenseId = randomUUID(),
-            now = new Date().toISOString();
-          db.prepare(
-            "INSERT INTO cost_expenses VALUES(?,?,?,?,?,?,?,?,'active',1,?,?,?)",
-          ).run(
-            expenseId,
-            id,
-            e.categoryId,
-            e.spendDate,
-            e.description,
-            e.quantity,
-            e.unitPriceWon,
-            e.amount,
-            req.session.userId!,
-            now,
-            now,
-          );
+            now = new Date().toISOString(),
+            expenseId = insertExpense(db, id, e, req.session.userId!, now);
           row = bumpCost(db, row);
           period = costEvent(
             db,

@@ -34,6 +34,7 @@ function App() {
     [sites, setSites] = useState<Site[]>([]),
     [siteId, setSiteId] = useState(""),
     [tab, setTab] = useState("home"),
+    [mobileMenuOpen, setMobileMenuOpen] = useState(false),
     [ads, setAds] = useState(false),
     [editor, setEditor] = useState<{ initial: Meeting | null } | null>(null);
   const [attendanceDirty, setAttendanceDirty] = useState(false);
@@ -87,7 +88,7 @@ function App() {
   if (loading)
     return (
       <main className="login">
-        <h1>PEDIT</h1>
+        <h1>Y웹</h1>
         <p>연결 중…</p>
       </main>
     );
@@ -105,7 +106,7 @@ function App() {
     <div className="shell">
       <aside className="sidebar">
         <a className="brand" href="#">
-          PEDIT<span>현장 업무의 한곳</span>
+          Y웹<span>현장 업무의 한곳</span>
         </a>
         <span className="badge">개발용 · 독립 검증 미완료</span>
         <label className="site-switch">
@@ -129,7 +130,20 @@ function App() {
             ))}
           </select>
         </label>
-        <nav aria-label="주 메뉴">
+        <button
+          type="button"
+          className="mobile-menu-toggle secondary"
+          aria-expanded={mobileMenuOpen}
+          aria-controls="primary-navigation"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          {mobileMenuOpen ? "업무 메뉴 닫기" : "업무 메뉴 열기"}
+        </button>
+        <nav
+          id="primary-navigation"
+          aria-label="주 메뉴"
+          className={mobileMenuOpen ? "mobile-menu-open" : ""}
+        >
           {[
             ["home", "현장 홈"],
             ["help", "사용 도움말"],
@@ -167,6 +181,7 @@ function App() {
                 if (id !== tab && !mayLeaveAttendance()) return;
                 setTab(id);
                 setError("");
+                setMobileMenuOpen(false);
               }}
             >
               {title}

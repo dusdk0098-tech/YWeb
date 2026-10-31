@@ -67,7 +67,7 @@ test("company affiliation source and PPE full return update one stock ledger", a
     .getByRole("button", { name: "업체 · 소속 · 보호구 ↗", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "보호구 지급·전량 반납", exact: true })
+    .getByRole("button", { name: "보호구 지급·반납", exact: true })
     .click();
   await page
     .getByRole("button", { name: "새 보호구 지급 기록", exact: true })
@@ -98,14 +98,16 @@ test("company affiliation source and PPE full return update one stock ledger", a
     .getByRole("button", { name: "수기 지급·재고 출고 함께 기록", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: /전량 지급 상태/ }),
+    page.getByRole("heading", { name: /미반납 또는 일부 반납/ }),
   ).toBeVisible();
-  await page.getByLabel("기록 동작", { exact: true }).selectOption("return");
+  await page
+    .getByRole("combobox", { name: "기록 동작", exact: true })
+    .selectOption("return");
   await page.getByLabel("사유", { exact: true }).fill("합성 전량 반납");
   await page.getByLabel("반납 효력일", { exact: true }).fill("2026-10-28");
   await page.getByRole("checkbox", { name: /전량 반납과 재고 증가/ }).check();
   await page
-    .getByRole("button", { name: "전량 반납·재고 증가 함께 기록", exact: true })
+    .getByRole("button", { name: "반납·재고 증가 함께 기록", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: /전량 반납 기록됨/ }),

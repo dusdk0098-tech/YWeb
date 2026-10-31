@@ -25,10 +25,11 @@ export function assertRiskReportBounds(
       400,
       "인쇄 행 한도를 초과했습니다. 일부만 생략하여 인쇄하지 않습니다.",
     );
-  if (Buffer.byteLength(JSON.stringify(value), "utf8") > RISK_REPORT_MAX_BYTES)
+  // Source facts include full action/residual texts that export omits; each output keeps its own tighter limit.
+  if (Buffer.byteLength(JSON.stringify(value), "utf8") > RISK_REPORT_HTML_MAX_BYTES)
     throw new HttpError(
       400,
-      "인쇄 자료256KiB 한도를 초과했습니다. 일부 내용을 생략하지 않습니다.",
+      "인쇄 자료1MiB 한도를 초과했습니다. 일부 내용을 생략하지 않습니다.",
     );
 }
 function buildRiskDocument(db: Db, site: string, id: string) {

@@ -73,6 +73,6 @@ test("JSON route inherits bounded report read and rejects oversize without parti
   assert.equal(remaining,0);assert.equal(Buffer.byteLength(JSON.stringify(body)),255000);
   let r=await f.send("post","/risk-assessments",{body,criteriaId:f.doc.criteria_id});assert.equal(r.status,200,JSON.stringify(r.body));const id=r.body.id;
   r=await f.send("post",path(id)+"/submit",{version:1,reason:"Own",confirmRecordOnly:true});assert.equal(r.status,200);
-  r=await f.agent.get(f.base+path(id)+`/export.json?expectedFingerprint=${"a".repeat(64)}`);assert.equal(r.status,400);assert.match(r.body.error,/256KiB/);assert.equal(r.headers["content-disposition"],undefined);assert.equal(r.body.fixedSource,undefined);
+  const fingerprint=(await f.agent.get(f.base+path(id)+"/print-context")).body.fingerprint;r=await f.agent.get(f.base+path(id)+`/export.json?expectedFingerprint=${fingerprint}`);assert.equal(r.status,400);assert.match(r.body.error,/JSON 내보내기256KiB/);assert.equal(r.headers["content-disposition"],undefined);assert.equal(r.body.fixedSource,undefined);
  }finally{f.db.close();}
 });

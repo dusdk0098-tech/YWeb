@@ -2,7 +2,7 @@ import { persistedAccountSession } from "./account-session.js";
 import type { Express, Request } from "express";
 import { randomUUID } from "node:crypto";
 import { audit, type Db } from "./db.js";
-import { HttpError, type SiteOperations } from "./site-operations.js";
+import { HttpError, canWriteSite, type SiteOperations } from "./site-operations.js";
 import {
   workStopInput,
   workStopReason,
@@ -51,11 +51,7 @@ export function registerWorkStops(
   }
   function eligible(site: string, id: string) {
     if (
-      !db
-        .prepare(
-          "SELECT 1 FROM memberships WHERE site_id=? AND user_id=? AND role IN('editor','manager')",
-        )
-        .get(site, id)
+      !canWriteSite(db, site, id)
     )
       throw new HttpError(
         400,

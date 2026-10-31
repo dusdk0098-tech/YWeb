@@ -60,7 +60,7 @@ test("report → assignment → assigned staff remediation → manager review �
     .getByLabel("관리자 처리 사유 *", { exact: true })
     .fill("담당자 지정");
   await page
-    .getByLabel("배정할 현장 계정", { exact: true })
+    .getByRole("combobox", { name: "배정할 현장 계정", exact: true })
     .selectOption("00000000-0000-4000-8000-000000000002");
   await page.getByLabel("조치 기한", { exact: true }).fill("2026-10-29");
   page.once("dialog", (d) => d.accept());
@@ -108,7 +108,7 @@ test("report → assignment → assigned staff remediation → manager review �
     page.getByRole("heading", { name: "검토 요청", exact: true }),
   ).toBeVisible();
   await page
-    .getByLabel("관리자 처리 사유 *", { exact: true })
+    .getByRole("textbox", { name: "관리자 처리 사유 *", exact: true })
     .fill("조치 기록 독립 검토");
   page.once("dialog", (d) => d.accept());
   await page
@@ -126,10 +126,10 @@ test("report → assignment → assigned staff remediation → manager review �
     "실제 위험 제거·작업 안전을 보증하지 않습니다",
   );
   await page
-    .getByLabel("관리자 처리 사유 *", { exact: true })
+    .getByRole("textbox", { name: "관리자 처리 사유 *", exact: true })
     .fill("추가 관찰로 재개");
   await page
-    .getByLabel("배정할 현장 계정", { exact: true })
+    .getByRole("combobox", { name: "배정할 현장 계정", exact: true })
     .selectOption("00000000-0000-4000-8000-000000000002");
   await page.getByLabel("조치 기한", { exact: true }).fill("2026-11-02");
   page.once("dialog", (d) => d.accept());

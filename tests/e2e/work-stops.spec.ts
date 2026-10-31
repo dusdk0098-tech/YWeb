@@ -55,7 +55,7 @@ test("manual stop request preserves dirty input and terminal correction notes", 
     page.getByRole("heading", { name: /요청 접수 기록 · v1/ }),
   ).toBeVisible();
   await page
-    .getByLabel("기록 동작", { exact: true })
+    .getByRole("combobox", { name: "기록 동작", exact: true })
     .selectOption("close-without-stop");
   await page
     .getByLabel("사유 / 정정 메모", { exact: true })
@@ -66,7 +66,7 @@ test("manual stop request preserves dirty input and terminal correction notes", 
   await expect(
     page.getByRole("heading", { name: /중지 기록 없이 요청 종결 · v2/ }),
   ).toBeVisible();
-  await page.getByLabel("기록 동작", { exact: true }).selectOption("annotate");
+  await page.getByRole("combobox", { name: "기록 동작", exact: true }).selectOption("annotate");
   await page
     .getByLabel("사유 / 정정 메모", { exact: true })
     .fill("이전 기록 보존하는 정정 메모");

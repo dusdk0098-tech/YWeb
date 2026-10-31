@@ -337,7 +337,7 @@ export function registerRiskResiduals(
         } else {
           if (original.body.method !== "product" || current.facts.criteria.body.method !== "product")
             throw new HttpError(400, "수치 입력은 고정된 수치형 문서에서만 사용하세요. 3단계를 점수로 변환하지 않습니다.");
-          const h = { ...current.facts.hazard, likelihood: v.likelihood, severity: v.severity, judgmentReason: v.basis };
+          const h = { ...current.facts.hazard, likelihood: v.likelihood, severity: v.severity };
           const r = riskResults(
             riskAssessmentInput.parse({ ...original.body, hazards: [riskHazardInput.parse(h)] }),
             current.facts.criteria.body,

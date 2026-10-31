@@ -6,6 +6,8 @@ import { openDatabase } from "./db.js";
 import { createApp } from "./app.js";
 import { localPermissionWarnings as localPermissionWarningsFor } from "./local-permissions.js";
 if (existsSync(".env")) process.loadEnvFile(".env");
+// SEC-LOCAL-01 B안: files this process creates (DB WAL/SHM) are owner-only on POSIX; Windows uses ACLs instead.
+if (process.platform !== "win32") process.umask(0o077);
 if (process.env.NODE_ENV === "production")
   throw new Error(
     "Production deployment is not supported by this foundation. Complete HANDOFF gates first.",

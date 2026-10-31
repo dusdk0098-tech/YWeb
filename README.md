@@ -78,10 +78,10 @@ E2E는 로컬3107포트·메모리DB·합성 계정만 사용합니다. 테스�
 
 ## 문서
 
-[남은 작업](HANDOFF.md) · [보안](SECURITY.md) · [로컬 운영](docs/OPERATIONS.md) · [백업](docs/LOCAL_BACKUP_CLI.md) · [검증](docs/VALIDATION.md) · [공개 구성/제외](docs/PUBLICATION_SCOPE.md) · [의존성](docs/DEPENDENCIES.md) · [라이선스 상태](LICENSE-PROPOSAL.md)
+[남은 작업](HANDOFF.md) · [보안](SECURITY.md) · [로컬 운영](docs/OPERATIONS.md) · [백업](docs/LOCAL_BACKUP_CLI.md) · [검증](docs/VALIDATION.md) · [공개 구성/제외](docs/PUBLICATION_SCOPE.md) · [의존성](docs/DEPENDENCIES.md) · [라이선스](LICENSE)
 
 추가 Windows 수정과 실제 검사 범위는 [PC 검증 기록](docs/PC_VALIDATION.md)에 별도로 기록했습니다. 알PDF·Android 실제 검증 및 남은 보안 gate 완료를 뜻하지 않습니다.
 
 ## 라이선스
 
-현재 **source-available / 라이선스 미선택**입니다. 소스 열람용 공개이며 MIT/Apache 등 오픈소스 라이선스를 부여하지 않았습니다. `private: true` / `UNLICENSED`를 유지합니다. 공개 저장소라는 이유만으로 자유 이용·재배포 허락이 부여되지는 않습니다. 의존성에는 각각 별도 라이선스가 적용됩니다.
+[MIT 라이선스](LICENSE), Copyright (c) 2026 JO YEONG JIN. 소스 코드와 문서에 적용되며 사용자 원자료·교육 본문·개인 문서·실제 DB 권리는 포함하지 않습니다. 의존성에는 각각의 라이선스가 적용됩니다. `private: true`는 npm 게시 방지용으로 유지합니다. 결정 기록: [LICENSE-PROPOSAL.md](LICENSE-PROPOSAL.md).

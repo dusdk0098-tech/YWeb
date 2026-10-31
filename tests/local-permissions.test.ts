@@ -39,3 +39,23 @@ test("local permission warnings reach logged-in managers only", async () => {
     db.close();
   }
 });
+test("secure plan: owner-only icacls on Windows, 0700/0600 elsewhere; apply leaves no other readers", async () => {
+  const { mkdtempSync, writeFileSync, mkdirSync, readFileSync, rmSync } = await import("node:fs"), { tmpdir } = await import("node:os"), { join } = await import("node:path");
+  const { securePlan, secureApply, secureTargets } = await import("../server/local-permissions.js");
+  const root = mkdtempSync(join(tmpdir(), "pedit-secure-")), data = join(root, "data"), backup = join(root, "backup");
+  try {
+    mkdirSync(data); mkdirSync(join(backup, "set1"), { recursive: true });
+    writeFileSync(join(data, "pedit.sqlite"), "synthetic"); writeFileSync(join(data, "pedit.sqlite-wal"), ""); writeFileSync(join(backup, "set1", "pedit.sqlite"), "synthetic");
+    writeFileSync(join(root, ".env"), "SESSION_SECRET=synthetic");
+    const targets = secureTargets(join(data, "pedit.sqlite"), join(root, ".env"), backup);
+    assert.deepEqual(targets.length, 7); // data dir + 2 files, .env, backup dir + subdir + file
+    const win = securePlan(targets, "win32", "PC-1\\me");
+    assert.deepEqual(win[0], { path: data, command: [data, "/inheritance:r", "/grant:r", "PC-1\\me:(OI)(CI)F", "*S-1-5-18:(OI)(CI)F", "*S-1-5-32-544:(OI)(CI)F"] });
+    assert.deepEqual((win[1] as { command: string[] }).command.slice(3), ["PC-1\\me:F", "*S-1-5-18:F", "*S-1-5-32-544:F"]);
+    assert.deepEqual(securePlan(targets, "linux").map((s) => (s as { mode: number }).mode.toString(8)), ["700", "600", "600", "600", "700", "700", "600"]);
+    assert.deepEqual(secureApply(securePlan(targets)), []); // real run on synthetic temp files only
+    assert.equal(readFileSync(join(data, "pedit.sqlite"), "utf8"), "synthetic"); // owner can still read
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

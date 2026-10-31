@@ -1,6 +1,6 @@
-# SEC-LOCAL-01 대책안 (A안 승인)
+# SEC-LOCAL-01 대책안 (A·B안 승인)
 
-**상태: A안 승인·구현(읽기 전용 점검·경고, `server/local-permissions.ts`). B안은 미승인이며 OS 권한을 바꾸는 코드는 넣지 않았다.** 인계문서(00_START_HERE)와 `SECURITY.md`는 SEC-LOCAL-01(P2)을 임의로 해소하지 말라고 정했다.
+**상태: A안 승인·구현(읽기 전용 점검·경고, `server/local-permissions.ts`). B안 승인·구현(`scripts/secure-data.ts`, `npm run secure-data`, 미리보기 기본·`--apply` 때만 변경, POSIX umask 077). 실제 데이터에는 운영자가 직접 실행한다.** 인계문서(00_START_HERE)와 `SECURITY.md`는 SEC-LOCAL-01(P2)을 임의로 해소하지 말라고 정했다.
 
 ## 문제(현재 기록 그대로)
 

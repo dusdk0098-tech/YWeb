@@ -1,3 +1,4 @@
+import { migrateCostLabor } from "./cost-labor-schema.js";
 import { migrateCostSettings } from "./cost-settings-schema.js";
 import { migrateDailyInspectionReferences } from "./daily-inspection-migration.js";
 import { migrateWorkPlanHazardReferences } from "./work-plan-hazard-reference-migration.js";
@@ -201,6 +202,7 @@ PRAGMA user_version=1;`);
       if (version < 55) migrateWorkPlanHazardReferences(db);
       if (version < 56) migrateDailyInspectionReferences(db);
       if (version < 57) migrateCostSettings(db);
+      if (version < 58) migrateCostLabor(db);
     });
   } catch (error) {
     db.close();

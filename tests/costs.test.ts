@@ -146,6 +146,20 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
     db.prepare("SELECT COUNT(*) n FROM cost_events").get()!.n,
     before,
   );
+  const row0 = (await m.agent.get(`${base}/${id}/expenses`)).body.items[0];
+  const putExpense = (laborKind: unknown) =>
+    m.agent.put(`${base}/${id}/expenses/${row0.id}`).set("Origin", origin).set("x-csrf-token", m.csrf).set("idempotency-key", randomUUID())
+      .send({ version: p.version, reason: "구분 지정", laborKind,
+        expense: { categoryId: row0.category_id, spendDate: row0.spend_date, description: row0.description, quantity: row0.quantity, unitPriceWon: row0.unit_price_won } });
+  assert.equal((await putExpense("신호수")).status, 400);
+  r = await putExpense("타워신호수");
+  assert.equal(r.status, 200, r.text);
+  p = r.body.period;
+  assert.equal(p.laborKinds[row0.id], "타워신호수");
+  const labor = (await m.agent.get(`/api/sites/${site}/cost-labor?month=2026-02`)).body;
+  assert.deepEqual([labor.items.length, labor.total, labor.byKind.find((k: { kind: string }) => k.kind === "타워신호수").amount], [1, "0.5", "0.5"]);
+  assert.equal((await m.agent.get(`/api/sites/${site}/cost-labor?q=없는내역`)).body.items.length, 0);
+  assert.equal((await ed.agent.get(`/api/sites/${site}/cost-labor`)).status, 403);
   const settings = {
     writtenDate: "2026-02-27", projectName: "<합성> 공사", contractor: "합성건설", location: "", representative: "",
     client: "", projectStart: "2026-01-01", projectEnd: "2026-12-31", summarySameAsProject: true, summaryStart: "",
@@ -174,6 +188,7 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
   assert.ok(print.text.includes("&lt;합성&gt; 공사") && print.text.includes("30000000"));
   assert.equal((await putSettings({ version: p.version, settings })).status, 409);
   assert.throws(() => db.prepare("UPDATE cost_period_settings SET body='{}' WHERE period_id=?").run(id));
+  assert.throws(() => db.prepare("DELETE FROM cost_expense_labor WHERE expense_id=?").run(row0.id));
   const carry = await post(`/${id}/carry`, { version: p.version });
   assert.equal(carry.status, 200, carry.text);
   assert.equal(carry.body.month, "2026-03");

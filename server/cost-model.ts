@@ -155,6 +155,7 @@ export function costPeriodView(db: Db, row: CostPeriodRow) {
     ...row,
     categories,
     settings: readCostSettings(db, row.id),
+    laborKinds: costLaborKinds(db, row.id),
     totals,
     currentClosure: closure,
     successor: child || null,
@@ -163,6 +164,21 @@ export function costPeriodView(db: Db, row: CostPeriodRow) {
 export function readCostSettings(db: Db, periodId: string): CostSettings | null {
   const row = db.prepare("SELECT body FROM cost_period_settings WHERE period_id=?").get(periodId) as { body: string } | undefined;
   return row ? (JSON.parse(row.body) as CostSettings) : null;
+}
+export function costLaborKinds(db: Db, periodId: string): Record<string, string> {
+  const rows = db
+    .prepare("SELECT l.expense_id,l.kind FROM cost_expense_labor l JOIN cost_expenses e ON e.id=l.expense_id WHERE e.period_id=?")
+    .all(periodId) as { expense_id: string; kind: string }[];
+  return Object.fromEntries(rows.map((r) => [r.expense_id, r.kind]));
+}
+// undefined = leave as is, null = clear.
+export function saveLaborKind(db: Db, expenseId: string, kind: string | null | undefined, now: string) {
+  if (kind === undefined) return;
+  if (kind === null) db.prepare("DELETE FROM cost_expense_labor WHERE expense_id=?").run(expenseId);
+  else
+    db.prepare(
+      "INSERT INTO cost_expense_labor VALUES(?,?,?) ON CONFLICT(expense_id) DO UPDATE SET kind=excluded.kind,updated_at=excluded.updated_at",
+    ).run(expenseId, kind, now);
 }
 export type CostPeriod = ReturnType<typeof costPeriodView>;
 export type CostSnapshot = {

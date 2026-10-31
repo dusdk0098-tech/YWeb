@@ -1,5 +1,6 @@
 import type { CostExpenseSelection } from "./CostSelectedExpense";
 import { CostSearch } from "./CostSearch";
+import { CostLabor } from "./CostLabor";
 import { useEffect, useState } from "react";
 import { api, type Site } from "./api";
 import type { Page } from "./attendance-types";
@@ -44,6 +45,7 @@ export function CostPanel({
     [loading, setLoading] = useState(false),
     [error, setError] = useState("");
   const [selectedExpense,setSelectedExpense]=useState<CostExpenseSelection|undefined>(undefined);
+  const [labor, setLabor] = useState(false);
   const [search, setSearch] = useState(false),
     [searchBusy, setSearchBusy] = useState(false);
   const guard = useDraftGuard(
@@ -116,6 +118,7 @@ export function CostPanel({
         }}
       />
     );
+  if (labor) return <CostLabor site={site} onClose={() => setLabor(false)} />;
   if (search)
     return (
       <CostSearch
@@ -144,6 +147,17 @@ export function CostPanel({
         }}
       >
         전체 월 지출 검색
+      </button>
+      <button
+        disabled={busy}
+        onClick={() => {
+          if (guard.canLeave()) {
+            setCreating(false);
+            setLabor(true);
+          }
+        }}
+      >
+        인건비 조회
       </button>
       {error && <p role="alert">{error}</p>}
       {creating ? (

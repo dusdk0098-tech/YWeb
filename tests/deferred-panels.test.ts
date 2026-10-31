@@ -94,6 +94,8 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
     ['            "사진대지 N",\n', ''],
     ['        ) : site && tab === "daily" ? (', '        ) : site && tab === "photoboard" ? (\n          <PhotoBoardPanel\n            key={site.id}\n            site={site}\n            onDirtyChange={setAttendanceDirty}\n            onBusyChange={setAttendanceBusy}\n          />\n        ) : site && tab === "daily" ? ('],
   );
+  // MOB-01 1단계: the no-login /join page is chosen at the root render only.
+  mobileChanges.push(['    <App />\n  </React.StrictMode>', '    {location.pathname === "/join" ? <JoinPage /> : <App />}\n  </React.StrictMode>']);
   for (const [source, replacement] of mobileChanges) {
     assert.equal(expected.split(source).length, 2);
     expected = expected.replace(source, replacement);

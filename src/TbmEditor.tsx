@@ -2,6 +2,7 @@ import { TbmRiskReferenceView } from "./TbmRiskReferenceView";
 import { TbmRiskReferencePicker } from "./TbmRiskReferencePicker";
 import { useEffect, useRef, useState } from "react";
 import { api, type Site } from "./api";
+import { TbmInvitations } from "./TbmInvitations";
 import type { Worker, Page } from "./attendance-types";
 import type { TbmDetails, TbmFull, TbmParticipant } from "./tbm-types";
 const empty = (): TbmDetails => ({
@@ -304,6 +305,7 @@ export function TbmEditor({
           {fixedSource!==null && <pre className="risk-publication-source">{JSON.stringify(fixedSource,null,2)}</pre>}
           {writable && site.role==="manager" && <TbmRiskReferencePicker key={record.id+":"+record.version} siteId={site.id} disabled={busy||detailsDirty} onDirtyChange={setReferenceDirty} onBusyChange={setReferenceBusy} onSave={source=>void mutate("/risk-reference","PUT",{source})}/>}
           <button disabled={allBusy || dirty} onClick={()=>void openLinked(record.id)}>최신 저장본 다시 열기</button>
+          <TbmInvitations key={record.id + ":" + record.version} path={`/sites/${site.id}/tbm/${record.id}/invitations`} draft={record.status === "draft"} writable={writable} />
           <h3>참가 대상 · {participants.length}명</h3>
           <p className="muted">
             명부 추가 시 항상 미확인으로 시작합니다. 출역/다른 기록의 참여

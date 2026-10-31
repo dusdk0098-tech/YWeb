@@ -1,4 +1,4 @@
-import { deleteDraft, loadDraft, saveDraft } from "./offline-draft";
+import { useOfflineDraft } from "./useOfflineDraft";
 import { DailyJournalToday } from "./DailyJournalToday";
 import { DailyInspectionReferences,DailyInspectionCaptured } from "./DailyInspectionReferences";
 import { useEffect, useRef, useState } from "react";
@@ -71,21 +71,8 @@ export function DailyJournalEditor({
   const allBusy=busy||inspectionBusy;
   const guard = useDraftGuard(dirty, allBusy, onDirtyChange, onBusyChange);
   // 오프라인 초안: an encrypted copy on this device while the form differs from the server (cleared after a successful save).
-  const draftId = `journal:${site.id}:${user.id}:${record?.id ?? "new"}`,
-    [localDraft, setLocalDraft] = useState<{ value: { body: typeof body; day: string }; savedAt: string } | null>(null);
-  useEffect(() => {
-    if (!editable) return;
-    let active = true;
-    void loadDraft<{ body: typeof body; day: string }>(draftId).then((d) => {
-      if (active && d && JSON.stringify(d.value.body) !== JSON.stringify(record?.body || initialBody.current)) setLocalDraft(d);
-    });
-    return () => { active = false; };
-  }, [draftId]); // checked once per opened record
-  useEffect(() => {
-    if (!editable || !formDirty) return;
-    const t = setTimeout(() => void saveDraft(draftId, { body, day }), 800);
-    return () => clearTimeout(t);
-  }, [editable, formDirty, draftId, body, day]);
+  const offline = useOfflineDraft(`journal:${site.id}:${user.id}:${record?.id ?? "new"}`, { body, day },
+    { body: record?.body || initialBody.current, day: record?.date || initialDay.current }, editable, () => void save());
   useEffect(() => {
     if (!manager) return;
     let active = true;
@@ -127,8 +114,8 @@ export function DailyJournalEditor({
     setAuthorId("");
     setEventOffset(0);
   }
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(e?: React.FormEvent) {
+    e?.preventDefault();
     if (busy) return;
     const path = record ? base + "/" + record.id : base,
       value = record ? { version: record.version, body } : { date: day, body };
@@ -143,12 +130,9 @@ export function DailyJournalEditor({
           guard.key(path, value),
         ),
       );
-      void deleteDraft(draftId);
-      setLocalDraft(null);
+      offline.saved();
     } catch (e) {
-      setError(e instanceof TypeError
-        ? "통신이 끊겨 서버에 저장하지 못했습니다. 입력은 이 기기에 암호화해 7일간 보관합니다. 연결되면 다시 저장하세요."
-        : (e as Error).message);
+      setError(offline.failed(e));
     } finally {
       setBusy(false);
     }
@@ -236,13 +220,14 @@ export function DailyJournalEditor({
           {error}
         </p>
       )}
-      {localDraft && (
+      {offline.local && (
         <p role="status">
-          이 기기에 저장 안 된 초안이 있습니다({new Date(localDraft.savedAt).toLocaleString()}).
-          <button type="button" onClick={() => { setBody(localDraft.value.body); if (!record) setDay(localDraft.value.day); setLocalDraft(null); }}>기기 초안 복원</button>
-          <button type="button" onClick={() => { void deleteDraft(draftId); setLocalDraft(null); }}>기기 초안 버리기</button>
+          이 기기에 저장 안 된 초안이 있습니다({new Date(offline.local.savedAt).toLocaleString()}).
+          <button type="button" onClick={() => { setBody(offline.local!.value.body); if (!record) setDay(offline.local!.value.day); offline.discard(); }}>기기 초안 복원</button>
+          <button type="button" onClick={() => offline.discard()}>기기 초안 버리기</button>
         </p>
       )}
+      {offline.waiting && <p role="status">연결되면 자동으로 다시 저장합니다.</p>}
       <form onSubmit={save}>
         <fieldset disabled={!editable || allBusy}>
           <label>

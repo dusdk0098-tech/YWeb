@@ -23,7 +23,7 @@ export function WorkPlanFormChecklist({ path, editable, onDirty }: { path: strin
   }
   return <section>
     <h3>양식사용 체크리스트 (원본 P 시트 1)</h3>
-    <p className="muted">원본 P 앱의 17개 양식 중 이 작업계획에 쓸 양식을 고릅니다. 필수 양식은 제외할 수 없습니다. 법적 필수 서류 판정이 아니며, 계산 양식은 공학 검토 전까지 계산하지 않습니다.{saved && !saved.saved ? " 아직 저장 전(기본값)입니다." : ""}</p>
+    <p className="muted">원본 P 앱의 17개 양식 중 이 작업계획에 쓸 양식을 고릅니다. 필수 양식은 제외할 수 없습니다. 법적 필수 서류 판정이 아니며, 계산 양식은 아래 장비 계산에서 입력합니다.{saved && !saved.saved ? " 아직 저장 전(기본값)입니다." : ""}</p>
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {saved && <table>

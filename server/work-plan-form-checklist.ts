@@ -68,7 +68,7 @@ export function registerWorkPlanFormChecklists(app: Express, db: Db, { access, m
     res.type("html").send(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>양식사용 체크리스트</title><link rel="stylesheet" href="/print.css"></head><body><main>
 <section class="form-page"><h1>양식사용 체크리스트</h1><p>작업계획: ${e(title)} · ${row.status === "draft" ? "작성 중" : "보관본"} · ${list.saved ? `v${list.version} 저장 ${e(list.updatedAt)}` : "저장 전 기본값"} · 정책 ${e(list.policyVersion)}</p>
 <table><thead><tr><th>원본 시트</th><th>양식</th><th>구분</th><th>포함</th><th>제외 사유</th><th>메모</th><th>이 앱</th></tr></thead><tbody>${rows}</tbody></table>
-<p>원본 P 앱의 양식 구성 기준입니다. 포함 여부는 작성자의 선택이며 법적 필수 서류 판정이 아닙니다. 계산 양식은 공학 검토(P-02) 전까지 이 앱에서 계산하지 않습니다.</p></section>
+<p>원본 P 앱의 양식 구성 기준입니다. 포함 여부는 작성자의 선택이며 법적 필수 서류 판정이 아닙니다. 계산 양식은 작업계획의 장비 계산에서 입력합니다.</p></section>
 </main></body></html>`);
   });
 }

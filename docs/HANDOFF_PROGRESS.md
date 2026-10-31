@@ -24,6 +24,7 @@
 | UX-SC / SC-01 | 원본 9개 화면 대조표, 9개 법정 항목 채우기, 항목별 상세, 현장 설정, 인건비 구분·조회, 월마감 대시보드(다음 작업 포함), 연속 입력·복사·중복 경고, 출력 전 확인, 항목별 추가필드 | #7~#13, #16 | 아래 "결정 필요" |
 | MT-01 | 현장 전체 후속조치 보드(내 담당·미확인 필터, 기한 표시) | #15 | 실제 서명·법적 역할 |
 | 회귀 | 위 변경으로 생긴 E2E 실패 4건 수정 | #17 | — |
+| P-02 1단계 / 작업계획 장비 계산 | 사용자 결정(2026-10-31): 기술사 검토 없이 제공하되 앱 화면에만 경고. 원본 엑셀 수식을 KOSHA C-99-2015 원문·산안규칙 제163조와 대조해 확인된 오류를 고친 식 사용(크롤러 한쪽 궤도 면적·면적 1회 나눗셈·3식 최대, 줄걸이 장력계수 1/cos(θ/2)로 나눔). 지내력(트럭크레인·고소작업차·붐형지게차·사다리차·크롤러·항타기), 인양 능력(작업하중 비율), 줄걸이(법정 최소 안전계수 검증), 샤클·달기구. 근거 없는 계수는 기본값+직접 입력, 제작사 반력 입력 시 우선. 입력값만 저장(schema 69 `work_plan_calculations`, 작성자·작성 중만 수정, 보관 후 고정), 인쇄 계산서에는 경고 없음 | 이 PR | 기술사 검토, 알PDF·인쇄 확인 |
 | SC-04 2단계 / AI 키 직접 등록 | 기본 꺼짐 유지. 앱 "AI 문구 설정"에서 사용 방식(끄기·이 PC 공용 키·계정별 키)과 모델 선택, 키는 SESSION_SECRET 기반 AES-GCM 암호화 저장·화면 재표시 없음, 키별 월 상한·사용량. PC 공용 설정은 설치 PC에서 직접 접속(루프백 주소+루프백 Host, 프록시 헤더 없음)일 때만 변경. `.env` 설정이 있으면 그것이 우선 (schema 68) | 이 PR | 실제 API 호출 확인 |
 | SC-04 1단계 / AI 문구 제안 | 기본 꺼짐(`AI_ENABLED`+월 요청 상한 필요), 공식 SDK로 Claude에 내용 문구만 전송(숫자 마스킹), 제안 표시 후 사용자 적용, 관리자만, 월 사용량 (schema 67) | 이 PR | 월 상한 값, 실제 API 호출 확인 |
 | 오프라인 1단계 / 일지 초안 | 일지 입력을 기기에 AES-GCM 암호화 보관(추출 불가 키), 통신 실패 안내, 다시 열 때 복원/버리기 선택, 저장 성공·7일·로그인·로그아웃 시 삭제, 서버 DB 변경 없음 | 이 PR | 다른 화면, 자동 재전송, 기기 철회, 실기기 |
@@ -35,14 +36,14 @@
 | N-01 일부 / SC 사진대지 | 정책 A안 승인([PHOTO_BOARD_POLICY_PROPOSAL.md](PHOTO_BOARD_POLICY_PROPOSAL.md)). 브라우저 표시본(EXIF 제거)만 표시, 원본은 다운로드만. 분류4종·촬영일·내용·포함, 분류별 1쪽 2칸 인쇄, 출력 전 확인 경고 | 이 PR | 독립 사진 보드(N: 원형 강조·undo·PNG), 회전·순서, 실제 8방향 EXIF 사진·알PDF·모바일 확인 |
 | UX-SC / 마감 차단 | 사용자 결정에 따라 출력 전 확인 오류가 있으면 서버가 마감 거부(409), 화면 마감 버튼 비활성. 기존 마감 시험은 합성 현장 설정을 넣는 공통 도우미(`tests/fixtures/cost-close-ready.ts`)로 유지 | 이 PR | — |
 
-DB 버전: 56 → 62 (`cost_period_settings`, `cost_expense_labor`, `cost_expense_details`, `cost_evidence_displays`, `education_catalog_reviews`, `photo_boards`·`photo_board_photos`) → 63 (`worker_identities`, `activity_invitations`, `participation_events`) → 64 (`consent_records`, `signature_records`) → 65 (`work_plan_form_checklists`) → 66 (`library_files`) → 67 (`ai_usage`) → 68 (`ai_settings`, `ai_keys`, `ai_key_usage`). 앞의 세 테이블 모두 지출 행·마감본 바이트를 바꾸지 않는 옆 테이블이며, 작성 중 원장에서만 쓰기가 가능하다(트리거).
+DB 버전: 56 → 62 (`cost_period_settings`, `cost_expense_labor`, `cost_expense_details`, `cost_evidence_displays`, `education_catalog_reviews`, `photo_boards`·`photo_board_photos`) → 63 (`worker_identities`, `activity_invitations`, `participation_events`) → 64 (`consent_records`, `signature_records`) → 65 (`work_plan_form_checklists`) → 66 (`library_files`) → 67 (`ai_usage`) → 68 (`ai_settings`, `ai_keys`, `ai_key_usage`) → 69 (`work_plan_calculations`). 앞의 세 테이블 모두 지출 행·마감본 바이트를 바꾸지 않는 옆 테이블이며, 작성 중 원장에서만 쓰기가 가능하다(트리거).
 
 ## 결정 필요 (구현 보류)
 
 1. **법정 서식 출력** — A안 승인, 1·2단계(표지·집계표·갑·총괄·을·항목 1~9 상세) 구현. 원본 셀 채움 생성기와 합성 입력 1회 대조: 법정 서식 값 일치(표지 날짜 표시 형식만 다름, LEGAL_FORMS_PROPOSAL.md). 남은 것: 알PDF 육안 확인. — 원본 xlsm 양식과의 동등성 기준(문서 순서·쪽 나눔·셀 위치·허용 차이)이 필요하다. 원본 내역집계표의 8번(본사) 열 누락이 의도인지도 확인 필요. 기준안: [LEGAL_FORMS_PROPOSAL.md](LEGAL_FORMS_PROPOSAL.md) (미승인).
 2. **교육·일지 재설계** — A안(화면 흐름)과 B안(교육내용 검수 기록, schema 61, 관리자 기록·미검수 시 경고) 구현. — 인계문서의 제안은 현재 v1에 없는 메타데이터(적용대상·권리 검수)나 전면 화면 재설계를 수반한다. 재설계안: [EDU_JOURNAL_REDESIGN_PROPOSAL.md](EDU_JOURNAL_REDESIGN_PROPOSAL.md) (미승인).
 3. **SEC-LOCAL-01** — A안(읽기 전용 점검·경고)과 B안(운영자 실행 권한 정리 명령·umask 077) 구현: [SEC_LOCAL_01_PROPOSAL.md](SEC_LOCAL_01_PROPOSAL.md). 실제 운영 PC 적용·재검증은 운영자 몫.
-4. **2026-10-31 남은 결정** — ① 서명 동의 문구: 권장안 확정, 버전 `tbm-signature-v1`. ② AI 월 사용 상한: 권장안(기본 꺼짐) + 사용자가 본인 API 키를 등록해 쓸 수 있게(계정별·PC 공용 중 설치자가 선택, 2026-10-31 추가 결정). 상한은 키마다 등록자가 정한다. ③ 서명 3년 경과 파기 절차: 권장안 확정 — 첫 만료가 2029년이므로 2028년에 절차를 정한다(그 전까지 서명 기록은 추가 전용·삭제 차단 유지). ④ 운영 배포: 보류(휴대폰 QR 참여 불가 상태 유지). ⑤ P-02 공학 계산: 보류(검토 전문가 미정, 계수 추정 금지).
+4. **2026-10-31 남은 결정** — ① 서명 동의 문구: 권장안 확정, 버전 `tbm-signature-v1`. ② AI 월 사용 상한: 권장안(기본 꺼짐) + 사용자가 본인 API 키를 등록해 쓸 수 있게(계정별·PC 공용 중 설치자가 선택, 2026-10-31 추가 결정). 상한은 키마다 등록자가 정한다. ③ 서명 3년 경과 파기 절차: 권장안 확정 — 첫 만료가 2029년이므로 2028년에 절차를 정한다(그 전까지 서명 기록은 추가 전용·삭제 차단 유지). ④ 운영 배포: 보류(휴대폰 QR 참여 불가 상태 유지). ⑤ P-02 공학 계산: 기술사 검토는 현재 불가 → 앱에서 제공하되 "무작정 믿지 않도록" 앱 화면에만 경고, 인쇄물에는 경고 없음(2026-10-31 추가 결정). 오류 고친 식, 근거 없는 계수는 기본값+직접 입력.
 
 ## 남은 영역 사양안
 

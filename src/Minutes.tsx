@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, type Meeting, type Site } from "./api";
+import { MinutesFollowupBoard } from "./MinutesFollowupBoard";
 export function Minutes({
   site,
   open,
@@ -11,7 +12,8 @@ export function Minutes({
     [offset, setOffset] = useState(0),
     [more, setMore] = useState(false),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(true);
+    [busy, setBusy] = useState(true),
+    [board, setBoard] = useState(false);
   const request = useRef(0);
   useEffect(() => {
     setOffset(0);
@@ -40,6 +42,7 @@ export function Minutes({
       request.current++;
     };
   }, [site.id, offset]);
+  if (board) return <MinutesFollowupBoard site={site} onClose={() => setBoard(false)} />;
   return (
     <>
       <div className="section-head page-heading">
@@ -48,6 +51,9 @@ export function Minutes({
           <h1>회의록</h1>
           <p>회의의 결정을 다음 행동으로 이어갑니다.</p>
         </div>
+        <button className="secondary" onClick={() => setBoard(true)}>
+          후속조치 보드
+        </button>
         {site.role !== "viewer" && (
           <button onClick={() => open(null)}>+ 새 회의록</button>
         )}

@@ -1,3 +1,4 @@
+import { AiDescriptionSuggest } from "./AiDescriptionSuggest";
 import { CostCategoryDetail } from "./CostCategoryDetail";
 import { CostSettingsForm } from "./CostSettingsForm";
 import { CostOutputControl } from "./CostOutputControl";
@@ -572,6 +573,7 @@ export function CostPeriodEditor({
               }
             />
           </label>
+          <AiDescriptionSuggest siteId={site.id} text={form.description} onApply={(v) => setForm({ ...form, description: v })} />
           <label>
             수량 (양수, 소수 6자리까지)
             <input

@@ -5,6 +5,7 @@ import express from "express";
 import { openDatabase } from "./db.js";
 import { createApp } from "./app.js";
 import { localPermissionWarnings as localPermissionWarningsFor } from "./local-permissions.js";
+import { aiConfigFromEnv } from "./ai-suggest.js";
 if (existsSync(".env")) process.loadEnvFile(".env");
 // SEC-LOCAL-01 B안: files this process creates (DB WAL/SHM) are owner-only on POSIX; Windows uses ACLs instead.
 if (process.platform !== "win32") process.umask(0o077);
@@ -25,6 +26,7 @@ const app = await createApp(db, {
   origin: process.env.APP_ORIGIN || `http://127.0.0.1:${port}`,
   adsEnabled: process.env.ADS_ENABLED === "true",
   localPermissionWarnings,
+  ai: aiConfigFromEnv(),
 });
 app.use(express.static(resolve("dist"), { index: false }));
 app.get("/{*path}", (_req, res) => res.sendFile(resolve("dist/index.html")));

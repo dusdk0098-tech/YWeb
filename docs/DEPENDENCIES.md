@@ -6,6 +6,8 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 
 | Package path | Version | Declared license | Class |
 |---|---|---|---|
+| @anthropic-ai/sdk | 1.3.0 | Apache-2.0 | runtime/optional |
+| @babel/runtime | 7.29.10 | MIT | runtime/optional |
 | @cacheable/memory | 2.2.0 | MIT | development |
 | @cacheable/utils | 2.5.0 | MIT | development |
 | @epic-web/invariant | 1.0.0 | MIT | runtime/optional |
@@ -52,6 +54,7 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | @keyv/bigmap | 1.3.1 | MIT | development |
 | @keyv/serialize | 1.1.1 | MIT | development |
 | @noble/hashes | 1.8.0 | MIT | development |
+| @opentelemetry/api | 1.10.0 | Apache-2.0 | runtime/optional |
 | @oxc-project/types | 0.155.0 | MIT | development |
 | @paralleldrive/cuid2 | 2.3.1 | MIT | development |
 | @phc/format | 1.0.0 | MIT | runtime/optional |
@@ -72,6 +75,7 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | @rolldown/binding-win32-arm64-msvc | 1.2.15 | MIT | development |
 | @rolldown/binding-win32-x64-msvc | 1.2.15 | MIT | development |
 | @rolldown/pluginutils | 1.0.1 | MIT | development |
+| @stablelib/base64 | 1.0.1 | MIT | runtime/optional |
 | @types/body-parser | 1.19.6 | MIT | development |
 | @types/connect | 3.4.38 | MIT | development |
 | @types/cookiejar | 2.1.5 | MIT | development |
@@ -173,6 +177,7 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | fast-json-stable-stringify | 2.1.0 | MIT | development |
 | fast-levenshtein | 2.0.6 | MIT | development |
 | fast-safe-stringify | 2.1.1 | MIT | development |
+| fast-sha256 | 1.3.0 | Unlicense | runtime/optional |
 | fdir | 6.5.0 | MIT | development |
 | file-entry-cache | 11.1.5 | MIT | development |
 | finalhandler | 2.1.1 | MIT | runtime/optional |
@@ -210,6 +215,7 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | is-glob | 4.0.3 | MIT | development |
 | is-promise | 4.0.0 | MIT | runtime/optional |
 | isexe | 2.0.0 | ISC | runtime/optional |
+| json-schema-to-ts | 3.1.1 | MIT | runtime/optional |
 | json-schema-traverse | 0.4.1 | MIT | development |
 | json-stable-stringify-without-jsonify | 1.0.1 | MIT | development |
 | keyv | 5.6.0 | MIT | development |
@@ -290,6 +296,7 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | side-channel-map | 1.0.1 | MIT | runtime/optional |
 | side-channel-weakmap | 1.0.2 | MIT | runtime/optional |
 | source-map-js | 1.2.2 | BSD-3-Clause | development |
+| standardwebhooks | 1.1.1 | MIT | runtime/optional |
 | statuses | 2.0.2 | MIT | runtime/optional |
 | string-width | 4.2.3 | MIT | runtime/optional |
 | strip-ansi | 6.0.1 | MIT | runtime/optional |
@@ -297,6 +304,7 @@ Regenerate: node scripts/license-inventory.mjs. Integrity hashes are in package-
 | supertest | 7.3.1 | MIT | development |
 | tinyglobby | 0.2.17 | MIT | development |
 | toidentifier | 1.0.1 | MIT | runtime/optional |
+| ts-algebra | 2.0.0 | MIT | runtime/optional |
 | ts-api-utils | 2.5.0 | MIT | development |
 | tsx | 4.23.15 | MIT | development |
 | type-check | 0.4.0 | MIT | development |

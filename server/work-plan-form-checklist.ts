@@ -37,6 +37,12 @@ export function formChecklist(db: Db, planId: string) {
     ? { saved: true, version: row.version, policyVersion: row.policy_version, updatedAt: row.updated_at, choices: JSON.parse(row.body) as FormChoice[] }
     : { saved: false, version: 0, policyVersion: FORM_POLICY_VERSION, updatedAt: null, choices: defaultFormChoices() };
 }
+// A revision draft starts from the archived plan's choices (same policy only; otherwise the defaults apply).
+export function copyFormChecklist(db: Db, fromPlan: string, toPlan: string, site: string, userId: string) {
+  const row = db.prepare("SELECT body,policy_version FROM work_plan_form_checklists WHERE plan_id=?").get(fromPlan) as { body: string; policy_version: string } | undefined;
+  if (row?.policy_version !== FORM_POLICY_VERSION || formChoiceProblem(JSON.parse(row.body) as FormChoice[])) return;
+  db.prepare("INSERT INTO work_plan_form_checklists VALUES(?,?,?,?,1,?,?)").run(toPlan, site, FORM_POLICY_VERSION, row.body, userId, new Date().toISOString());
+}
 export function registerWorkPlanFormChecklists(app: Express, db: Db, { access, mutate }: SiteOperations) {
   const base = "/api/sites/:siteId/work-plans/:id/form-checklist";
   const plan = (req: Request) => getWorkPlan(db, String(req.params.siteId), String(req.params.id));

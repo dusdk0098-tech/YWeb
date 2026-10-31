@@ -82,6 +82,14 @@ test("calculation API: draft edits, version conflicts, frozen after archive, pri
     assert.equal((await f.send("put", path, { version: c.version, body })).status, 409);
     assert.throws(() => f.db.prepare("UPDATE work_plan_calculations SET body='{}'").run());
     assert.throws(() => f.db.prepare("DELETE FROM work_plan_calculations").run());
+    // A revision draft starts from the archived inputs, editable again; the archived copy stays as it was.
+    const archived = (await f.agent.get(f.base + `/work-plans/${id}`)).body;
+    r = await f.send("post", `/work-plans/${id}/revise`, { version: archived.version, authorId: f.manager, reason: "개정" });
+    assert.equal(r.status, 200, r.text);
+    const child = (await f.agent.get(f.base + `/work-plans/${r.body.id}/calculations`)).body;
+    assert.deepEqual([child.saved, child.version, child.body, child.result.checks[0].ok], [true, 1, body, false]);
+    assert.equal((await f.send("put", `/work-plans/${r.body.id}/calculations`, { version: 1, body: { ...body, loadT: 5 } })).status, 200);
+    assert.equal((await f.agent.get(f.base + path)).body.body.loadT, 4);
   } finally {
     f.db.close();
   }

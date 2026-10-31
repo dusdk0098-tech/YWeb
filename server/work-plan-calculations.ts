@@ -30,6 +30,13 @@ export function workPlanCalculation(db: Db, planId: string) {
   const body = row ? (JSON.parse(row.body) as CalcBody) : EMPTY;
   return { saved: !!row, version: row?.version ?? 0, formulaVersion: row?.formula_version ?? CALC_FORMULA_VERSION, updatedAt: row?.updated_at ?? null, body, result: evaluateCalc(body) };
 }
+// A revision draft starts from the archived plan's inputs when they still fit the current formulas; results are recomputed.
+export function copyWorkPlanCalculation(db: Db, fromPlan: string, toPlan: string, site: string, userId: string) {
+  const row = db.prepare("SELECT body FROM work_plan_calculations WHERE plan_id=?").get(fromPlan) as { body: string } | undefined;
+  const body = row ? calcBody.safeParse(JSON.parse(row.body)) : null;
+  if (!body?.success) return;
+  db.prepare("INSERT INTO work_plan_calculations VALUES(?,?,?,?,1,?,?)").run(toPlan, site, CALC_FORMULA_VERSION, JSON.stringify(body.data), userId, new Date().toISOString());
+}
 const save = z.object({ version: z.number().int().min(0), body: calcBody }).strict();
 export function registerWorkPlanCalculations(app: Express, db: Db, { access, mutate }: SiteOperations) {
   const base = "/api/sites/:siteId/work-plans/:id/calculations";

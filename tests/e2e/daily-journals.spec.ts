@@ -31,6 +31,10 @@ test("manual daily journal explicit capture, archive, preserved prior and fresh 
     .getByRole("button", { name: "새 안전업무일지", exact: true })
     .click();
   await page.getByLabel("일지 날짜 (저장 후 고정)").fill("2026-10-28");
+  // 재설계 A안: read-only 1·2단계 summary for the chosen date.
+  await expect(page.getByRole("heading", { name: "1. 오늘 현장 요약 (2026-10-28)" })).toBeVisible();
+  await expect(page.getByText("이 날짜 기록일 점검 0건")).toBeVisible();
+  await expect(page.getByText(/예정일이 지났는데 수락되지 않은 점검 일정 0건/)).toBeVisible();
   await page.getByLabel("작업 요약 · 보관 시 필수").fill("합성 작업");
   await page.getByLabel("안전 안내 기록 · 보관 시 필수").fill("합성 안내");
   page.once("dialog", (d) => d.dismiss());

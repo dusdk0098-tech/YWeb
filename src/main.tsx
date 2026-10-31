@@ -17,6 +17,7 @@ import {
   HazardsPanel,
   TbmPanel,
   WorkersAttendance,
+  PhotoBoardPanel,
 } from "./DomainPanels";
 import { Login } from "./Login";
 import { Minutes } from "./Minutes";
@@ -161,6 +162,7 @@ function App() {
             ["workstops", "중지 요청 · 수기 기록"],
             ["inspections", "자체 양식 · 점검"],
             ["daily", "안전업무일지"],
+            ["photoboard", "사진 보드"],
             ...(site?.role === "manager"
               ? [
                   ["costs", "수기 비용 원장"],
@@ -190,7 +192,6 @@ function App() {
           ))}
           <p className="nav-label">통합 예정 · 현재 사용할 수 없음</p>
           {[
-            "사진대지 N",
             "비용 법정 기준·분할·원본 가져오기",
             "원본 C 서식 동등성",
             "원본 P 작업계획·계산",
@@ -345,6 +346,13 @@ function App() {
           />
         ) : site && tab === "costs" && site.role === "manager" ? (
           <CostPanel
+            key={site.id}
+            site={site}
+            onDirtyChange={setAttendanceDirty}
+            onBusyChange={setAttendanceBusy}
+          />
+        ) : site && tab === "photoboard" ? (
+          <PhotoBoardPanel
             key={site.id}
             site={site}
             onDirtyChange={setAttendanceDirty}

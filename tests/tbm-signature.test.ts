@@ -47,7 +47,7 @@ test("TBM signature: consent version, grant needs a PNG, deny has none, append-o
     assert.equal((await m.get(`${url}/participation/${list[1].id}/signature`)).status, 404);
     assert.equal((await anon.get(`${url}/participation/${list[0].id}/signature`)).status, 401); // login required
     const consent = db.prepare("SELECT text_version,at,retain_until FROM consent_records WHERE decision='grant'").get() as { text_version: string; at: string; retain_until: string };
-    assert.equal(consent.text_version, "tbm-signature-v1-draft");
+    assert.equal(consent.text_version, "tbm-signature-v1");
     assert.equal(Number(consent.retain_until.slice(0, 4)) - Number(consent.at.slice(0, 4)), 3);
     assert.throws(() => db.prepare("INSERT INTO signature_records VALUES('x',?,?,'h',11,'s',?,'t','t')").run(list[1].id, site, png)); // deny cannot get a signature
     assert.throws(() => db.prepare("DELETE FROM signature_records").run());

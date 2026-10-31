@@ -1,4 +1,5 @@
 import { CURRENT_SCHEMA_VERSION } from "../server/schema-version.js";
+import { closeReady } from "./fixtures/cost-close-ready.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -42,7 +43,7 @@ test("new route exact receipt, immutable finance source, duplicate and consumed 
 });
 test("closed cost source is preserved and stock/link failure rolls back atomically",async()=>{
  const f=await fixture();try{
-  let r=await f.send(`/cost-periods/${f.period.id}/close`,{version:f.period.version,reason:"Own close"});assert.equal(r.status,200);const period=r.body;
+  closeReady(f.db);let r=await f.send(`/cost-periods/${f.period.id}/close`,{version:f.period.version,reason:"Own close"});assert.equal(r.status,200);const period=r.body;
   r=await f.send(`/cost-periods/${period.id}/carry`,{version:period.version});assert.equal(r.status,200);
   assert.equal((await f.send(`/cost-periods/${period.id}/reopen`,{version:period.version,reason:"Cannot reopen carried source"})).status,409);
   const source=f.db.prepare("SELECT * FROM cost_closures").all(),expense=f.db.prepare("SELECT * FROM cost_expenses").all(),base=`/cost-periods/${period.id}/expenses/${f.expense.id}/stock-receipts`,input={periodVersion:period.version,expenseVersion:f.expense.version,itemId:f.item.id,itemVersion:f.item.version,quantity:"0.1",effectiveDate:"2026-10-28",reason:"Separate physical receipt",confirmSeparatePhysicalQuantity:true};

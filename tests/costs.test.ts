@@ -180,6 +180,9 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
   let pre = (await m.agent.get(`${base}/${id}/preflight`)).body;
   assert.equal(pre.errorCount, 7);
   assert.equal((await m.agent.get(`/api/sites/${site}/cost-dashboard`)).body.next, "현장 설정 입력");
+  const blocked = await post(`/${id}/close`, { version: p.version, reason: "record close" });
+  assert.equal(blocked.status, 409); // errors block closing; warnings (이전 월 지출일) alone do not
+  assert.match(blocked.text, /출력 전 확인 오류 7건.*작성일/);
   assert.ok(pre.items.some((i: { level: string; message: string }) => i.level === "warning" && i.message.includes("이전 월 지출일")));
   r = await putSettings({ version: p.version, settings });
   assert.equal(r.status, 200, r.text);

@@ -1,4 +1,5 @@
 import { CURRENT_SCHEMA_VERSION } from "../server/schema-version.js";
+import { closeReady } from "./fixtures/cost-close-ready.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -31,7 +32,7 @@ test('real app close baseline statement reopen exact changes reclose and indepen
   try {
     let r=await post('',{month:'2026-10',openingNote:'manual opening',categories:[{label:'same name',plan:'10',opening:'0.1'},{label:'other',plan:'20',opening:'0.2'}]});assert.equal(r.status,200,r.text);let p=r.body;const id=p.id;
     r=await post(`/${id}/expenses`,{version:p.version,expense:{categoryId:p.categories[0].id,spendDate:'2026-10-02',description:'<script>same title</script>',quantity:'0.3',unitPriceWon:'1'}});assert.equal(r.status,200,r.text);p=r.body.period;const expense=r.body.expense;
-    r=await post(`/${id}/close`,{version:p.version,reason:'close one'});assert.equal(r.status,200,r.text);p=r.body;
+    closeReady(db);r=await post(`/${id}/close`,{version:p.version,reason:'close one'});assert.equal(r.status,200,r.text);p=r.body;
     const original=(await get(`/${id}/closures/${p.current_close_id}/print`)).text,closureBody=db.prepare('SELECT body FROM cost_closures WHERE id=?').get(p.current_close_id)!.body;
     const create={version:p.version,closureId:p.current_close_id,closureHash:p.currentClosure.hash,memo:'<baseline>'},key=randomUUID();
     r=await post(`/${id}/baselines`,create,key);assert.equal(r.status,200,r.text);const b=r.body;
@@ -52,7 +53,7 @@ test('real app close baseline statement reopen exact changes reclose and indepen
     compare=await get(`/${id}/baselines/${b.id}/compare`);assert.equal(compare.body.available,true);assert.ok(compare.body.changes.some((x:{kind:string;field:string;delta:string})=>x.kind==='expense'&&x.field==='amount'&&x.delta==='0.000001'));
     assert.ok(compare.body.changes.some((x:{field:string})=>x.field==='category_id'));
     assert.ok(compare.body.changes.some((x:{kind:string;field:string;delta:string})=>x.kind==='category'&&x.field==='opening'&&x.delta==='0.000001'));
-    r=await post(`/${id}/close`,{version:p.version,reason:'close two'});assert.equal(r.status,200,r.text);p=r.body;
+    closeReady(db);r=await post(`/${id}/close`,{version:p.version,reason:'close two'});assert.equal(r.status,200,r.text);p=r.body;
     r=await post(`/${id}/baselines`,{version:p.version,closureId:p.current_close_id,closureHash:p.currentClosure.hash,memo:'new baseline'});assert.equal(r.status,200,r.text);assert.notEqual(r.body.id,b.id);const second=r.body;
     assert.equal((await get(`/${id}/baselines/${second.id}/compare`)).body.changed,false);
     assert.equal((await get(`/${id}/baselines/${second.id}/statements`)).body.items.length,0);
@@ -68,7 +69,7 @@ test('baseline comparison preserves split ancestry even when exact total stays e
   const {db,post,get}=await fixture();try{
     let r=await post('',{month:'2026-10',openingNote:'opening',categories:[{label:'a',plan:'10',opening:'0'}]});let p=r.body;const id=p.id;
     r=await post(`/${id}/expenses`,{version:p.version,expense:{categoryId:p.categories[0].id,spendDate:'2026-10-01',description:'same',quantity:'1',unitPriceWon:'1'}});p=r.body.period;const expense=r.body.expense;
-    r=await post(`/${id}/close`,{version:p.version,reason:'close'});p=r.body;
+    closeReady(db);r=await post(`/${id}/close`,{version:p.version,reason:'close'});p=r.body;
     r=await post(`/${id}/baselines`,{version:p.version,closureId:p.current_close_id,closureHash:p.currentClosure.hash,memo:'before split'});assert.equal(r.status,200,r.text);const b=r.body;
     r=await post(`/${id}/reopen`,{version:p.version,reason:'split'});p=r.body;
     r=await post(`/${id}/expenses/${expense.id}/split`,{version:p.version,reason:'split exact',children:[{description:'same',quantity:'0.3',unitPriceWon:'1'},{description:'same',quantity:'0.7',unitPriceWon:'1'}]});assert.equal(r.status,200,r.text);
@@ -78,7 +79,7 @@ test('baseline comparison preserves split ancestry even when exact total stays e
 test('baseline unavailable is distinct from no changes and ordinary role/hash/idempotency checks',async()=>{
   const {db,base,post,get,ed}=await fixture();try{
     let r=await post('',{month:'2026-10',openingNote:'opening',categories:[{label:'a',plan:'10',opening:'0'}]});let p=r.body;const id=p.id;
-    r=await post(`/${id}/close`,{version:p.version,reason:'close'});p=r.body;
+    closeReady(db);r=await post(`/${id}/close`,{version:p.version,reason:'close'});p=r.body;
     const v={version:p.version,closureId:p.current_close_id,closureHash:p.currentClosure.hash,memo:'fixed'};
     assert.equal((await post(`/${id}/baselines`,{...v,closureHash:'0'.repeat(64)})).status,409);
     db.exec("CREATE TRIGGER baseline_test_abort BEFORE INSERT ON cost_baselines BEGIN SELECT RAISE(ABORT,'ordinary insert failure'); END;");
@@ -101,7 +102,7 @@ test('exact 1000 retained cost rows produce full baseline; 1001 fails comparison
   const actor=db.prepare("SELECT user_id FROM memberships WHERE site_id=? AND role='manager'").get(site)!.user_id;
   const insert=db.prepare("INSERT INTO cost_expenses VALUES(?,?,?,?,?,?,?,?, 'active',1,?,?,?)");
   for(let i=0;i<1000;i++)insert.run(randomUUID(),id,p.categories[0].id,'2026-10-01',`expense-${i}`,'0.000001','1','0.000001',actor,'2026-10-01','2026-10-01');
-  r=await post(`/${id}/close`,{version:p.version,reason:'full retained ledger'});assert.equal(r.status,200,r.text);p=r.body;
+  closeReady(db);r=await post(`/${id}/close`,{version:p.version,reason:'full retained ledger'});assert.equal(r.status,200,r.text);p=r.body;
   r=await post(`/${id}/baselines`,{version:p.version,closureId:p.current_close_id,closureHash:p.currentClosure.hash,memo:'all 1000 rows'});assert.equal(r.status,200,r.text);const b=r.body;
   assert.equal(b.body.closure.expenses.length,1000);assert.equal(b.body.closure.totals.total.current,'0.001');
   assert.equal((await get(`/${id}/baselines/${b.id}/compare`)).body.changed,false);
@@ -109,7 +110,7 @@ test('exact 1000 retained cost rows produce full baseline; 1001 fails comparison
   r=await post(`/${id}/reopen`,{version:p.version,reason:'cap overflow synthetic fixture'});assert.equal(r.status,200);p=r.body;
   insert.run(randomUUID(),id,p.categories[0].id,'2026-10-01','overflow','0.000001','1','0.000001',actor,'2026-10-01','2026-10-01');
   r=await get(`/${id}/baselines/${b.id}/compare`);assert.equal(r.status,200,r.text);assert.equal(r.body.available,false);assert.equal('changed' in r.body,false);
-  assert.equal((await post(`/${id}/close`,{version:p.version,reason:'must not truncate'})).status,400);
+  closeReady(db);assert.equal((await post(`/${id}/close`,{version:p.version,reason:'must not truncate'})).status,400);
   assert.equal((await get(`/${id}/baselines/${b.id}/print`)).text,html.text);
  }finally{db.close();}
 });
@@ -117,7 +118,7 @@ test('schema37 closures stay unlabelled and byte-identical; schema38 backup rest
  const {mkdtemp,rm}=await import('node:fs/promises'),{join}=await import('node:path'),{tmpdir}=await import('node:os'),{backup,DatabaseSync}=await import('node:sqlite'),{createBackup,restoreBackup}=await import('../scripts/local-backup.js'),{printCostPeriod}=await import('../server/cost-print.js');
  const {db,post,get}=await fixture(),dir=await mkdtemp(join(tmpdir(),'cost-baselines-'));try{
   let r=await post('',{month:'2026-10',openingNote:'legacy',categories:[{label:'a',plan:'1',opening:'0'}]});let p=r.body;const id=p.id;
-  r=await post(`/${id}/close`,{version:p.version,reason:'legacy closed'});p=r.body;
+  closeReady(db);r=await post(`/${id}/close`,{version:p.version,reason:'legacy closed'});p=r.body;
   const original=db.prepare('SELECT * FROM cost_closures WHERE id=?').get(p.current_close_id),html=(await get(`/${id}/closures/${p.current_close_id}/print`)).text;
   const oldFile=join(dir,'prior.sqlite');await backup(db,oldFile);const old=new DatabaseSync(oldFile);old.exec('DROP TABLE IF EXISTS education_archive_attachments; DROP TABLE IF EXISTS education_attachment_events; DROP TABLE IF EXISTS education_attachments; DROP TABLE IF EXISTS cost_close_evidence; DROP TABLE IF EXISTS cost_evidence_events; DROP TABLE IF EXISTS cost_evidence_links; DROP TABLE IF EXISTS cost_evidence_files; DROP TABLE IF EXISTS cost_expense_preset_sources; DROP TABLE IF EXISTS cost_input_presets; DROP TABLE IF EXISTS stock_minimum_events; DROP TABLE IF EXISTS daily_monthly_records; DROP TABLE IF EXISTS work_plan_attachment_events; DROP TABLE IF EXISTS work_plan_attachments; DROP TABLE IF EXISTS minutes_attachment_events; DROP TABLE IF EXISTS minutes_attachments; DROP TABLE IF EXISTS inspection_template_use_stops; DROP TABLE IF EXISTS education_catalog_use_stops; DROP TABLE cost_baseline_statements; DROP TABLE cost_baselines; PRAGMA user_version=37');old.close();
   const migrated=openDatabase(oldFile);try{
@@ -133,7 +134,7 @@ test('manual statements are paginated actual rows and bounded at 1000 without tr
  const {db,post,get}=await fixture();try{
   const {journalHash}=await import('../server/daily-journal-sources.js');
   let r=await post('',{month:'2026-10',openingNote:'opening',categories:[{label:'a',plan:'1',opening:'0'}]});let p=r.body;const id=p.id;
-  p=(await post(`/${id}/close`,{version:p.version,reason:'close'})).body;
+  closeReady(db);p=(await post(`/${id}/close`,{version:p.version,reason:'close'})).body;
   r=await post(`/${id}/baselines`,{version:p.version,closureId:p.current_close_id,closureHash:p.currentClosure.hash,memo:'statements'});const b=r.body;
   const input={baselineHash:b.hash,submittedDate:'2026-10-28',memo:'statement',correctsId:null,confirmHumanStatement:true};
   r=await post(`/${id}/baselines/${b.id}/statements`,input);assert.equal(r.status,200);const first=r.body.body;

@@ -26,6 +26,7 @@ import {
 import { expectedCost, bumpCost, costEvent } from "./cost-write.js";
 import { journalHash } from "./daily-journal-sources.js";
 import { printCostPeriod } from "./cost-print.js";
+import { costPreflight } from "./cost-dashboard.js";
 export function registerCostPeriods(
   app: Express,
   db: Db,
@@ -227,6 +228,10 @@ export function registerCostPeriods(
       () => {
         const row = getCostPeriod(db, site, id);
         expectedCost(row, v.version);
+        // Like PEDIT-SC: 출력 전 확인 오류가 남으면 마감하지 않는다 (warnings do not block).
+        const errors = costPreflight(db, site, id).items.filter((i) => i.level === "error");
+        if (errors.length)
+          throw new HttpError(409, `출력 전 확인 오류 ${errors.length}건을 해결한 뒤 마감하세요: ${errors.slice(0, 3).map((i) => i.message).join(" / ")}${errors.length > 3 ? " 외" : ""}`);
         assertCostEvidenceReview(db, id, v.evidenceReview);
         const categories = JSON.parse(row.categories) as CostCategory[],
           expenses = costExpenses(db, id),

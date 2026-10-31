@@ -4,6 +4,7 @@ import argon2 from "argon2";
 import request from "supertest";
 import { openDatabase } from "../../server/db.js";
 import { createApp } from "../../server/app.js";
+import { closeReady } from "./cost-close-ready.js";
 export const pdf=Buffer.from("%PDF-1.7\nSYNTHETIC NOT A VALID PDF BODY"); export const png=Buffer.from([137,80,78,71,13,10,26,10,0]); const origin="http://127.0.0.1:3000";
 export async function costEvidenceFixture(){
  const db=openDatabase(":memory:"),site=randomUUID(),manager=randomUUID(),password=randomUUID();
@@ -20,6 +21,6 @@ export async function costEvidenceFixture(){
  async function links(fileId:string,targets:{expenseId:string;version:number}[],key:string=randomUUID()){
   const c=await context();return send(base+`/evidence/files/${fileId}/links`,{periodVersion:c.period.version,evidenceVersion:c.evidenceVersion,targets,reason:"사용자 지정 참조",confirmReferencesOnly:true},key);
  }
- async function close(){const p=await current(),c=await context();return send(base+"/close",{version:p.version,reason:"합성 마감",...(c.evidenceVersion?{evidenceReview:{version:c.evidenceVersion,confirmUnverified:true}}:{})});}
+ async function close(){closeReady(db);const p=await current(),c=await context();return send(base+"/close",{version:p.version,reason:"합성 마감",...(c.evidenceVersion?{evidenceReview:{version:c.evidenceVersion,confirmUnverified:true}}:{})});}
  return {db,site,manager,agent,siteBase,base,send,current,context,expense,upload,links,close,csrf};
 }

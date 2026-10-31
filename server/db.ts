@@ -4,6 +4,7 @@ import { migrateEducationReviews } from "./education-catalog-review.js";
 import { migratePhotoBoards } from "./photo-board.js";
 import { migrateTbmJoin, migrateTbmSignatures } from "./tbm-join.js";
 import { migrateWorkPlanFormChecklists } from "./work-plan-form-checklist.js";
+import { migrateSiteLibrary } from "./site-library.js";
 import { migrateCostLabor } from "./cost-labor-schema.js";
 import { migrateCostSettings } from "./cost-settings-schema.js";
 import { migrateDailyInspectionReferences } from "./daily-inspection-migration.js";
@@ -216,6 +217,7 @@ PRAGMA user_version=1;`);
       if (version < 63) migrateTbmJoin(db);
       if (version < 64) migrateTbmSignatures(db);
       if (version < 65) migrateWorkPlanFormChecklists(db);
+      if (version < 66) migrateSiteLibrary(db);
     });
   } catch (error) {
     db.close();

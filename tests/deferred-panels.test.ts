@@ -94,6 +94,11 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
     ['            "사진대지 N",\n', ''],
     ['        ) : site && tab === "daily" ? (', '        ) : site && tab === "photoboard" ? (\n          <PhotoBoardPanel\n            key={site.id}\n            site={site}\n            onDirtyChange={setAttendanceDirty}\n            onBusyChange={setAttendanceBusy}\n          />\n        ) : site && tab === "daily" ? ('],
   );
+  // WEB-01 1단계 adds one menu entry and panel branch.
+  mobileChanges.push(
+    ['            ["daily", "안전업무일지"],\n            ["photoboard", "사진 보드"],', '            ["daily", "안전업무일지"],\n            ["photoboard", "사진 보드"],\n            ["library", "현장 자료실"],'],
+    ['        ) : site && tab === "photoboard" ? (', '        ) : site && tab === "library" ? (\n          <LibraryPanel key={site.id} site={site} />\n        ) : site && tab === "photoboard" ? ('],
+  );
   // MOB-01 1단계: the no-login /join page is chosen at the root render only.
   mobileChanges.push(['    <App />\n  </React.StrictMode>', '    {location.pathname === "/join" ? <JoinPage /> : <App />}\n  </React.StrictMode>']);
   for (const [source, replacement] of mobileChanges) {
@@ -105,8 +110,8 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
     new URL("../src/DomainPanels.tsx", import.meta.url),
     "utf8",
   );
-  assert.equal((registry.match(/export const /g) || []).length, 17);
-  assert.equal((registry.match(/\bimport\("\.\//g) || []).length, 34); // 17 type imports +17 dynamic expressions
+  assert.equal((registry.match(/export const /g) || []).length, 18);
+  assert.equal((registry.match(/\bimport\("\.\//g) || []).length, 36); // 18 type imports +18 dynamic expressions
 });
 test("panel download retry is explicit, props preserved, and business render errors are not hidden", async () => {
   let calls = 0;

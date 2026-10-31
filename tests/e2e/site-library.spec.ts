@@ -1,0 +1,30 @@
+import { test, expect } from "@playwright/test";
+import { randomUUID } from "node:crypto";
+test("현장 자료실: manager uploads with rights check, downloads, withdraws", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("이메일", { exact: true }).fill("test@example.test");
+  await page.getByLabel("비밀번호", { exact: true }).fill("synthetic-e2e-password");
+  await page.getByRole("button", { name: "로그인", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /오늘의 기록을/ })).toBeVisible();
+  const s = await (await page.request.get("/api/session")).json();
+  const site = await (await page.request.post("/api/sites", { headers: { Origin: "http://127.0.0.1:3107", "x-csrf-token": s.csrf, "idempotency-key": randomUUID() }, data: { name: "자료 합성 " + randomUUID() } })).json();
+  await page.reload();
+  await page.getByLabel("작업 현장").selectOption(site.id);
+  await page.getByRole("button", { name: "현장 자료실 ↗", exact: true }).click();
+  await expect(page.getByText("자료가 없습니다.")).toBeVisible();
+  await page.getByLabel("자료 제목").fill("작업 전 점검 지침");
+  await page.getByLabel("판 표시(예: 2026-10판)").fill("2026-10판");
+  await page.getByLabel("파일").setInputFiles({ name: "지침.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7\nSYNTHETIC") });
+  await expect(page.getByRole("button", { name: "자료 올리기" })).toBeDisabled(); // rights not confirmed yet
+  await page.getByLabel("이 자료의 저작권·사용 허락을 확인했습니다").check();
+  await page.getByRole("button", { name: "자료 올리기" }).click();
+  await expect(page.getByText(/작업 전 점검 지침 · 2026-10판 · 지침\.pdf/)).toBeVisible();
+  const download = page.waitForEvent("download");
+  await page.getByRole("link", { name: "미검사 원본 내려받기" }).click();
+  expect((await download).suggestedFilename()).toBe("지침.pdf");
+  await page.getByRole("button", { name: "게시 중지", exact: true }).click();
+  await page.getByLabel("게시 중지 사유").fill("개정판 예정");
+  await page.getByRole("button", { name: "게시 중지 확정" }).click();
+  await expect(page.getByText("게시 중지: 개정판 예정")).toBeVisible();
+  await expect(page.getByRole("link", { name: "미검사 원본 내려받기" })).toHaveCount(0);
+});

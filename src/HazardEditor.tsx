@@ -1,4 +1,5 @@
 import { HazardAttachments } from "./HazardAttachments";
+import { Notice, TechDetails } from "./ui";
 import { HazardInspectionSource } from "./HazardInspectionSource";
 import { useEffect, useRef, useState } from "react";
 import { api, type Site, type User } from "./api";
@@ -206,20 +207,17 @@ export function HazardEditor({
     <section className="panel">
       <div className="section-head">
         <div>
-          <p className="eyebrow">
-            HAZARD REPORT · {record ? "VERSION " + record.version : "NEW DRAFT"}
-          </p>
           <h2>{record ? statusLabel[record.status] : "신고 초안"}</h2>
         </div>
         <button className="secondary" disabled={busy} onClick={close}>
           {closeLabel}
         </button>
       </div>
-      <p className="notice">
+      <Notice summary="기록상 종결은 실제 위험 제거를 뜻하지 않습니다.">
         초안 작성자는 PNG/JPEG 미검사 원본을 첨부할 수 있습니다. 위험 점수/등급
         평가는 없습니다. 기록상 종결은 실제 위험 제거·작업 안전을 보증하지
         않습니다.
-      </p>
+      </Notice>
       {error && (
         <p className="error" role="alert">
           {error}
@@ -300,9 +298,9 @@ export function HazardEditor({
       </form>
       {record && (
         <>
-          <p className="muted">
-            신고 ID {record.id} · 작성 계정 ID {record.owner_id}
-          </p>
+          <TechDetails>
+            <p>신고 ID {record.id} · 작성 계정 ID {record.owner_id}</p>
+          </TechDetails>
           {record.submitted_snapshot && (
             <p className="muted">
               제출 당시 원문 보존 · {record.submitted_snapshot.site.name} ·{" "}

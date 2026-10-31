@@ -1,4 +1,5 @@
 import { TbmRiskReferenceView } from "./TbmRiskReferenceView";
+import { Notice, TechDetails } from "./ui";
 import { TbmRiskReferencePicker } from "./TbmRiskReferencePicker";
 import { useEffect, useRef, useState } from "react";
 import { api, type Site } from "./api";
@@ -195,9 +196,6 @@ export function TbmEditor({
     <section className="panel">
       <div className="section-head">
         <div>
-          <p className="eyebrow">
-            TBM · {record ? "VERSION " + record.version : "NEW DRAFT"}
-          </p>
           <h2>
             {record?.status === "finalized"
               ? "관리자가 확정한 TBM 기록"
@@ -213,15 +211,17 @@ export function TbmEditor({
           TBM 목록으로
         </button>
       </div>
-      <p className="notice">
+      <Notice summary="담당자가 참여를 기록하고 관리자가 확정합니다.">
         담당자가 참여 사실을 수기로 기록하며 관리자가 기록을 확정합니다. 대상자
         신원·전자서명·법정 교육 이수 인증이 아닙니다.
-      </p>
+      </Notice>
       {record?.parent_id && (
-        <p className="muted">
-          이전 확정본 ID: {record.parent_id} · 정정 사유:{" "}
-          {record.revision_reason}
-        </p>
+        <p className="muted">정정 사유: {record.revision_reason}</p>
+      )}
+      {record && (
+        <TechDetails>
+          <p>기록 {record.id} · v{record.version}{record.parent_id ? ` · 이전 확정본 ID: ${record.parent_id}` : ""}</p>
+        </TechDetails>
       )}
       {error && (
         <p className="error" role="alert">
@@ -477,14 +477,16 @@ export function TbmEditor({
           {record.snapshot && (
             <section>
               <p className="muted">
-                기록 확정 관리자: {record.snapshot.body.finalizedBy.name} (계정
-                ID {record.snapshot.body.finalizedBy.id}) ·{" "}
+                기록 확정 관리자: {record.snapshot.body.finalizedBy.name} ·{" "}
                 {record.snapshot.body.finalizedAt}
               </p>
-              <p className="record-hash">
-                내용 SHA-256: {record.snapshot.hash} · 내용 비교용이며
-                전자서명/법적 인증 아님.
-              </p>
+              <TechDetails>
+                <p>확정 관리자 계정 ID {record.snapshot.body.finalizedBy.id}</p>
+                <p className="record-hash">
+                  내용 SHA-256: {record.snapshot.hash} · 내용 비교용이며
+                  전자서명/법적 인증 아님.
+                </p>
+              </TechDetails>
               {record.successorId ? (
                 <button
                   className="secondary"

@@ -1,4 +1,5 @@
 import { EducationAttachments } from "./EducationAttachments";
+import { Notice, TechDetails } from "./ui";
 import { CatalogCurrentWarning } from "./CatalogCurrentWarning";
 import { EducationCatalogProvenance } from "./EducationCatalogProvenance";
 import { useEffect, useRef, useState } from "react";
@@ -151,16 +152,18 @@ export function EducationEditor({
           교육일지 목록으로
         </button>
       </div>
-      <p className="notice">
+      <Notice summary="교육 내용과 참여를 직접 기록합니다. 이수증이 아닙니다.">
         직접 작성 교육내용과 담당자 수기 참여 기록입니다. 법정 과정
         카탈로그·본인 확인·서명·교육 이수증·안전 인증이 아닙니다. 관리자 보관은
         내용 보존이며 독립 승인이나 법적 이수 판정이 아닙니다.
-      </p>
+      </Notice>
       {record && (
-        <p>
-          기록 {record.id} · v{record.version} · 원 작성 계정 {record.author_id}{" "}
-          · 이전 보관본 {record.parent_id || "없음"}
-        </p>
+        <TechDetails>
+          <p>
+            기록 {record.id} · v{record.version} · 원 작성 계정 {record.author_id}{" "}
+            · 이전 보관본 {record.parent_id || "없음"}
+          </p>
+        </TechDetails>
       )}
       {error && (
         <p role="alert" className="error">

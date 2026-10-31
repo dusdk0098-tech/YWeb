@@ -1,4 +1,5 @@
 import {useEffect,useState} from "react";
+import { Notice } from "./ui";
 import {api,type Site,type User} from "./api";
 import {InspectionTasksPanel} from "./InspectionTasksPanel";
 import {InspectionTemplateEditor} from "./InspectionTemplateEditor";
@@ -21,7 +22,7 @@ export function InspectionsPanel({site,user,onDirtyChange,onBusyChange}:{site:Si
  if(open?.kind==="template")return <InspectionTemplateEditor key={open.record?.id||"new-template"} {...common} initial={open.record}/>;
  if(open?.kind==="inspection")return <InspectionEditor key={open.record?.id||"new-inspection"} {...common} user={user} initial={open.record} template={open.template}/>;
  const page=tab==="templates"?templates:records;
- return <><h1>자체 양식 · 점검</h1><p>게시 버전 선택 → 일정 배정/직접 초안 → 작성자 제출 → 다른 관리자의 기록 검토. 법정 양식·안전 인증이 아닙니다.</p>
+ return <><h1>자체 양식 · 점검</h1><Notice summary="게시된 양식으로 점검을 쓰고, 제출하면 다른 관리자가 검토합니다.">게시 버전 선택 → 일정 배정/직접 초안 → 작성자 제출 → 다른 관리자의 기록 검토. 법정 양식·안전 인증이 아닙니다.</Notice>
  <div className="actions"><button disabled={busy} onClick={()=>setOpen({kind:"tasks"})}>점검 일정 / 배정 · 내 일정 업무</button><button disabled={busy} onClick={()=>{setTab("records");setStatus("");setOffset(0);}}>점검 기록</button><button disabled={busy} onClick={()=>{setTab("templates");setStatus("");setOffset(0);}}>양식 / 새 점검</button>{tab==="templates"&&site.role==="manager"&&<button disabled={busy} onClick={()=>setOpen({kind:"template",record:null})}>새 자체 양식</button>}</div>
  <fieldset disabled={busy}><label>{tab==="templates"?"제목·안내·항목 문자 검색":"양식 제목·장소·점검자 표시 문자 검색"}<input maxLength={200} value={keyword} onChange={e=>{setKeyword(e.target.value);setOffset(0);}}/></label>
  <label>문서 상태<select value={status} onChange={e=>{setStatus(e.target.value);setOffset(0);}}><option value="">전체</option>{(tab==="templates"?[["draft","양식 초안"],["published","게시본"]]:Object.entries(inspectionStatus)).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>

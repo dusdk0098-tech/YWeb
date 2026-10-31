@@ -20,7 +20,7 @@ export function costDashboard(db: Db, site: string) {
     return { id: p.id, month: p.month, status: p.status, current: totals.total.current, count: totals.activeCount, totals };
   });
   const latest = months.at(-1);
-  if (!latest) return { months: [], latest: null };
+  if (!latest) return { next: "최초 원장 만들기", months: [], latest: null };
   const settings = readCostSettings(db, latest.id),
     budget = settings?.safetyBudgetWon ? moneyUnits(settings.safetyBudgetWon) : null,
     used = months.map((m) => moneyUnits(m.current)).filter((v) => v > 0n),
@@ -31,7 +31,19 @@ export function costDashboard(db: Db, site: string) {
       tenths = left <= 0n ? 0n : (left * 10n * BigInt(used.length)) / used.reduce((a, b) => a + b, 0n);
     monthsLeft = `${tenths / 10n}.${tenths % 10n}`;
   }
+  // PEDIT-SC "다음 작업": first unfinished step of 현장 설정 → 예산 → 사용내역 → 마감 → 이월.
+  const pre = latest.status === "open" ? costPreflight(db, site, latest.id) : null,
+    next = !pre
+      ? "마감됨 · 원장에서 다음 월 이월 생성"
+      : pre.items.some((i) => i.message.startsWith("현장 설정") || i.message.startsWith("계상안전관리비"))
+        ? "현장 설정 입력"
+        : pre.items.some((i) => i.message.startsWith("항목별 계획금액"))
+          ? "예산(계획금액) 입력"
+          : latest.count === 0
+            ? "금월 사용내역 입력"
+            : "출력 전 확인 후 기록 마감";
   return {
+    next,
     months: months.map(({ totals: _totals, ...m }) => m),
     latest: {
       id: latest.id,

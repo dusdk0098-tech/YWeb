@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type Site } from "./api";
 type Dashboard = {
+  next: string;
   months: { id: string; month: string; status: string; current: string; count: number }[];
   latest: {
     month: string;
@@ -32,6 +33,7 @@ export function CostDashboard({ site, onClose }: { site: Site; onClose: () => vo
       <button onClick={onClose}>원장 목록으로 돌아가기</button>
       <h2>월마감 대시보드{l && ` · ${l.month} (${l.status === "open" ? "작성 중" : "마감"})`}</h2>
       {error && <p role="alert">{error}</p>}
+      {data && <p className="notice">다음 작업: {data.next}</p>}
       {!data ? (
         <p>조회 중</p>
       ) : !l ? (

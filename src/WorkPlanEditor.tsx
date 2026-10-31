@@ -1,4 +1,5 @@
 import { WorkPlanFormChecklist } from "./WorkPlanFormChecklist";
+import { Notice, TechDetails } from "./ui";
 import { WorkPlanCalculations } from "./WorkPlanCalculations";
 import { WorkPlanHazardReferenceFields } from "./WorkPlanHazardReferenceFields";
 import { WorkPlanLiftingFields,blankLifting } from "./WorkPlanLiftingFields";
@@ -151,12 +152,12 @@ export function WorkPlanEditor({
           ? (record.documentReview.review ? "작성자 고정 제출본 · 문서검토 별도" : "관리자 기록 보관본 · 문서검토 없음")
           : "자체 일반 작업계획 초안"}
       </h2>
-      <p>{workPlanWarning}</p>
+      <Notice summary="직접 쓰는 작업계획서입니다. 작업허가나 공학 검토가 아닙니다.">{workPlanWarning}</Notice>
       {!record&&<label>새 문서 형식 (저장 후 변경 불가)<select disabled={allBusy||!editable} value={body.documentForm?.kind||'legacy'} onChange={e=>{if(body.documentForm&&!window.confirm('형식을 바꾸면 미저장 전용 입력이 초기화됩니다. 계속할까요?'))return;const legacy={...body};delete legacy.documentForm;setBody(e.target.value==='legacy'?legacy:{...legacy,documentForm:blankPlanForm(e.target.value as 'general_machine'|'excavator_lift')});}}><option value="legacy">기존 자체 일반 메모형</option><option value="general_machine">차량계·중량물 일반 입력형식</option><option value="excavator_lift">굴착기 중량물 취급 입력형식</option></select></label>}
       {record && (
-        <p>
-          ID {record.id} · v{record.version} · 작성계정 {record.author_id}
-        </p>
+        <TechDetails>
+          <p>ID {record.id} · v{record.version} · 작성계정 {record.author_id}</p>
+        </TechDetails>
       )}
       {record && <button disabled={allBusy} onClick={()=>{if(guard.canLeave()){adopt(record);setReviewDirty(false);setAttachmentsOpen(true);}}}>저장된 작업계획 원본 첨부 · 다운로드만</button>}
       {!record && <p>원본 첨부는 초안을 먼저 저장한 뒤 추가합니다.</p>}

@@ -1,4 +1,5 @@
 import { RiskRegisterPanel } from "./RiskRegisterPanel";
+import { Notice } from "./ui";
 import { RiskInboxPanel } from "./RiskInboxPanel";
 import { RiskPublicationsPanel } from "./RiskPublicationsPanel";
 import { RiskOverviewPanel } from "./RiskOverviewPanel";
@@ -100,12 +101,12 @@ export function RiskCorePanel({
   return (
     <section>
       <h1>위험성평가 · 방법별 기록</h1>
-      <p>
+      <Notice summary="평가 방법(수치형·3단계·체크리스트·서술형)마다 따로 기록합니다.">
         수치형·사람 선택3단계·체크리스트·서술형 기준/문서를 제공하는 개발본입니다. 수치
         재평가와 다른 방법을 혼동하지 않습니다. 계정 의견은 근로자 참여 증명이
         아닙니다. 전체 방법·참여/서명과 독립 보안·실제 브라우저 검증은
         미완료입니다.
-      </p>
+      </Notice>
       <button disabled={loading} onClick={() => setOpened({ kind: "inbox" })}>내 위험성평가 업무</button>
       <button disabled={loading} onClick={() => setOpened({ kind: "publications" })}>고정 평가 게시본·내 계정 확인</button>
       <button disabled={loading} onClick={() => setOpened({ kind: "overview" })}>현장 위험성평가 업무 현황</button>

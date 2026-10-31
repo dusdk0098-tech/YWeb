@@ -1,4 +1,5 @@
 import { NoticeHistory } from "./NoticeHistory";
+import { Notice, TechDetails } from "./ui";
 import { useRef, useState } from "react";
 import { api, type Site } from "./api";
 import {
@@ -148,16 +149,18 @@ export function NoticeEditor({
           공지 목록으로
         </button>
       </div>
-      <p className="notice">
+      <Notice summary="지정한 계정에게만 게시됩니다. 계정 확인은 숙지·서명 증명이 아닙니다.">
         게시 대상은 명시적으로 지정한 로그인 계정입니다. 계정 확인은 근로자
         신원·숙지·서명·안전 보증이 아닙니다. 적용일은 정보 표시이며 예약 게시나
         외부 알림을 보내지 않습니다.
-      </p>
+      </Notice>
       {record && (
-        <p>
-          공지 {record.id} · 현재 버전 {record.version} · 게시본문 버전{" "}
-          {record.publication?.publishedVersion || "미게시"}
-        </p>
+        <TechDetails>
+          <p>
+            공지 {record.id} · 현재 버전 {record.version} · 게시본문 버전{" "}
+            {record.publication?.publishedVersion || "미게시"}
+          </p>
+        </TechDetails>
       )}
       {error && (
         <p role="alert" className="error">

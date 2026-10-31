@@ -49,9 +49,7 @@ test("login → site → meeting create/edit/list/print → logout; desktop and 
     .getByLabel("제목 *", { exact: true })
     .fill("안전보건협의체 정기회의 수정");
   await page.getByRole("button", { name: "초안 저장", exact: true }).click();
-  await expect(
-    page.getByText("MEETING MINUTES · VERSION 2", { exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".ui-tech").first()).toContainText(" · v2");
   const popup = page.waitForEvent("popup");
   await page
     .getByRole("link", { name: "저장본 인쇄 / PDF", exact: true })

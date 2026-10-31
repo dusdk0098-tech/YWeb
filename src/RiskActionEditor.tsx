@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Notice } from "./ui";
 import { api, type Site, type User } from "./api";
 import { useDraftGuard } from "./useDraftGuard";
 import { WorkPlanPicker } from "./WorkPlanPicker";
@@ -122,11 +123,11 @@ export function RiskActionEditor({
         현재 상태 다시 조회
       </button>
       <h2>{riskActionStatus[row.status]}</h2>
-      <p>
+      <Notice summary="사람이 보고·확인한 기록입니다. 작업 재개 허가가 아닙니다.">
         사람이 보고/확인했다고 기록한 내용이며 소프트웨어가 실물 완료를 관측한
         것이 아닙니다. 위험행별 별도 재평가는 평가 문서에서 조회합니다. 이 조치
         기록은 전체 위험 해소나 작업 재개 허가를 뜻하지 않습니다.
-      </p>
+      </Notice>
       {error && <p role="alert">{error}</p>}
       <p>
         담당: {row.assignee.name} / {row.assignee_id} · 예정일 {row.due} ·

@@ -19,6 +19,7 @@ import { registerEducationReviews } from "./education-catalog-review.js";
 import { registerPhotoBoards, isPhotoBoardUpload } from "./photo-board.js";
 import { registerTbmJoin, registerTbmJoinPublic } from "./tbm-join.js";
 import { registerWorkPlanFormChecklists } from "./work-plan-form-checklist.js";
+import { registerSiteLibrary, isLibraryUpload } from "./site-library.js";
 import { registerCostBaselines } from "./cost-baseline-routes.js";
 import { registerPpeReturns } from "./ppe-return-routes.js";
 import { registerWorkPlanReview } from "./work-plan-review.js";
@@ -129,7 +130,7 @@ export async function createApp(db: Db, config: AppConfig) {
     }),
   );
   const isUpload = (method: string, path: string) =>
-    isHazardUpload(method, path) || isMinutesUpload(method, path) || isWorkPlanUpload(method, path) || isCostEvidenceUpload(method, path) || isCostPhotoUpload(method, path) || isPhotoBoardUpload(method, path) || isEducationUpload(method, path);
+    isHazardUpload(method, path) || isMinutesUpload(method, path) || isWorkPlanUpload(method, path) || isCostEvidenceUpload(method, path) || isCostPhotoUpload(method, path) || isPhotoBoardUpload(method, path) || isLibraryUpload(method, path) || isEducationUpload(method, path);
   app.use("/api", (_req, res, next) => {
     res.set("Cache-Control", "no-store");
     if (isUpload(_req.method, _req.originalUrl.split("?")[0]))
@@ -211,6 +212,7 @@ export async function createApp(db: Db, config: AppConfig) {
   registerPhotoBoards(app,db,{access,mutate},attachmentReader);
   registerTbmJoin(app,db,{access,mutate});
   registerWorkPlanFormChecklists(app,db,{access,mutate});
+  registerSiteLibrary(app,db,{access,mutate},attachmentReader);
   registerCostEvidenceRequests(app,db,{access,mutate});
   registerCostEvidenceComparison(app,db,{access,mutate});
   registerCostOutput(app,db,{access,mutate});
@@ -517,7 +519,7 @@ export async function createApp(db: Db, config: AppConfig) {
     async (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
       if (error instanceof HttpError && error.status === 413 &&
         (isHazardUpload(_req.method, _req.path) || isMinutesUpload(_req.method, _req.path) ||
-          isWorkPlanUpload(_req.method, _req.path) || isCostEvidenceUpload(_req.method, _req.path) || isCostPhotoUpload(_req.method, _req.path) || isPhotoBoardUpload(_req.method, _req.path) ||
+          isWorkPlanUpload(_req.method, _req.path) || isCostEvidenceUpload(_req.method, _req.path) || isCostPhotoUpload(_req.method, _req.path) || isPhotoBoardUpload(_req.method, _req.path) || isLibraryUpload(_req.method, _req.path) ||
           isEducationUpload(_req.method, _req.path)))
         await discardRejectedUpload(_req);
       if (error instanceof z.ZodError)

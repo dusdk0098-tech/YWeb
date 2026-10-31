@@ -18,6 +18,7 @@ import {
   TbmPanel,
   WorkersAttendance,
   PhotoBoardPanel,
+  LibraryPanel,
 } from "./DomainPanels";
 import { Login } from "./Login";
 import { JoinPage } from "./JoinPage";
@@ -164,6 +165,7 @@ function App() {
             ["inspections", "자체 양식 · 점검"],
             ["daily", "안전업무일지"],
             ["photoboard", "사진 보드"],
+            ["library", "현장 자료실"],
             ...(site?.role === "manager"
               ? [
                   ["costs", "수기 비용 원장"],
@@ -352,6 +354,8 @@ function App() {
             onDirtyChange={setAttendanceDirty}
             onBusyChange={setAttendanceBusy}
           />
+        ) : site && tab === "library" ? (
+          <LibraryPanel key={site.id} site={site} />
         ) : site && tab === "photoboard" ? (
           <PhotoBoardPanel
             key={site.id}

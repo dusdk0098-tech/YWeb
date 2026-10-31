@@ -68,9 +68,10 @@ async function uploadRawImageAttachment<T>(
   file: File,
   version: number,
   key: string,
-  versionHeader: "x-hazard-version"|"x-minutes-version"|"x-work-plan-version"|"x-cost-period-version"|"x-education-version"|"x-photo-board-version",
+  versionHeader: "x-hazard-version"|"x-minutes-version"|"x-work-plan-version"|"x-cost-period-version"|"x-education-version"|"x-photo-board-version"|"x-library-revision",
   allowPdfOriginal = false,
   evidenceVersion?: number,
+  extraHeaders: Record<string, string> = {},
 ): Promise<T> {
   const format = allowPdfOriginal && /\.pdf$/i.test(file.name) ? "application/pdf" : /\.png$/i.test(file.name) ? "image/png" : "image/jpeg";
   const response = await fetch("/api" + path, {
@@ -84,6 +85,7 @@ async function uploadRawImageAttachment<T>(
       "x-file-type": format,
       [versionHeader]: String(version),
       ...(evidenceVersion === undefined ? {} : { "x-cost-evidence-version": String(evidenceVersion) }),
+      ...extraHeaders,
     },
     body: file,
   });
@@ -102,4 +104,5 @@ export function uploadCostEvidence<T>(path:string,file:File,periodVersion:number
 export function uploadCostPhotoDisplay<T>(path:string,display:Blob,periodVersion:number,key:string){return uploadRawImageAttachment<T>(path,new File([display],"display.jpg",{type:"image/jpeg"}),periodVersion,key,"x-cost-period-version");}
 export function uploadPhotoBoardPhoto<T>(path:string,file:File,version:number,key:string){return uploadRawImageAttachment<T>(path,file,version,key,"x-photo-board-version");}
 export function uploadPhotoBoardDisplay<T>(path:string,display:Blob,version:number,key:string){return uploadRawImageAttachment<T>(path,new File([display],"display.jpg",{type:"image/jpeg"}),version,key,"x-photo-board-version");}
+export function uploadLibraryFile<T>(path:string,file:File,revision:number,title:string,edition:string,key:string){return uploadRawImageAttachment<T>(path,file,revision,key,"x-library-revision",true,undefined,{"x-library-title":encodeURIComponent(title),"x-library-edition":encodeURIComponent(edition),"x-rights-confirmed":"1"});}
 export function uploadEducationAttachment<T>(path:string,file:File,version:number,key:string){return uploadRawImageAttachment<T>(path,file,version,key,"x-education-version",true);}

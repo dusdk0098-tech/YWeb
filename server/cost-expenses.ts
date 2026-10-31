@@ -10,7 +10,8 @@ import { inspectionPage } from "./inspection-validation.js";
 import { expenseCreate, expenseEdit, costReason, laborKinds } from "./cost-validation.js";
 import { journalMonth } from "./daily-monthly-report.js";
 import { moneyUnits, decimalText } from "./cost-money.js";
-import { getCostPeriod, getExpense, costExpenses, insertExpense, saveLaborKind } from "./cost-model.js";
+import { getCostPeriod, getExpense, costExpenses, insertExpense, saveLaborKind, saveExpenseDetails, type CostCategory, type CostPeriodRow } from "./cost-model.js";
+import { detailProblem } from "./cost-detail-fields.js";
 import { expectedCost, bumpCost, costEvent } from "./cost-write.js";
 export function registerCostExpenses(
   app: Express,
@@ -71,7 +72,7 @@ export function registerCostExpenses(
     access(req, true, true);
     const input = expenseCreate.extend({presetSource:presetReference.optional()}).parse(req.body),
       expense = normalizedExpense(input.expense),
-      v = { version: input.version, expense, ...(input.presetSource ? {presetSource:input.presetSource} : {}), ...(input.laborKind !== undefined ? { laborKind: input.laborKind } : {}) },
+      v = { version: input.version, expense, ...(input.presetSource ? {presetSource:input.presetSource} : {}), ...(input.laborKind !== undefined ? { laborKind: input.laborKind } : {}), ...(input.details ? { details: input.details } : {}) },
       site = String(req.params.siteId),
       id = String(req.params.id);
     mutate(
@@ -83,10 +84,12 @@ export function registerCostExpenses(
         const row = getCostPeriod(db, site, id);
         expectedCost(row, v.version);
         validForPeriod(row, expense);
+        checkDetails(row, expense.categoryId, v.details);
         const selectedPreset = v.presetSource ? exactActivePreset(db,site,v.presetSource) : null;
         const now = new Date().toISOString(),
           nextId = insertExpense(db, id, expense, req.session.userId!, now);
         saveLaborKind(db, nextId, v.laborKind, now);
+        saveExpenseDetails(db, nextId, v.details, now);
         if(selectedPreset)saveExpensePresetSource(db,site,getExpense(db,id,nextId),selectedPreset,now);
         const saved = getExpense(db, id, nextId),
           period = costEvent(
@@ -124,6 +127,7 @@ export function registerCostExpenses(
           throw new HttpError(409, "취소 지출은 복원 후 수정하세요.");
         assertCostStockAcknowledgment(db,expenseId,v.stockAcknowledgment);
         validForPeriod(row, v.expense);
+        checkDetails(row, v.expense.categoryId, v.details);
         db.prepare(
           "UPDATE cost_expenses SET category_id=?,spend_date=?,description=?,quantity=?,unit_price_won=?,amount=?,version=version+1,updated_at=? WHERE id=?",
         ).run(
@@ -137,6 +141,7 @@ export function registerCostExpenses(
           expenseId,
         );
         saveLaborKind(db, expenseId, v.laborKind, new Date().toISOString());
+        saveExpenseDetails(db, expenseId, v.details, new Date().toISOString());
         const saved = getExpense(db, id, expenseId),
           period = costEvent(
             db,
@@ -196,4 +201,10 @@ export function registerCostExpenses(
         },
       );
     });
+}
+function checkDetails(row: CostPeriodRow, categoryId: string, details: Record<string, string> | undefined) {
+  if (!details) return;
+  const code = (JSON.parse(row.categories) as CostCategory[]).find((c) => c.id === categoryId)?.scCode,
+    problem = detailProblem(code, details);
+  if (problem) throw new HttpError(400, problem);
 }

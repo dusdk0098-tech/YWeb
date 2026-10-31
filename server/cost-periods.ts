@@ -59,6 +59,8 @@ export function registerCostPeriods(
         .size !== v.categories.length
     )
       throw new HttpError(400, "비용 항목 이름을 중복 없이 지정하세요.");
+    const codes = v.categories.flatMap((c) => (c.scCode ? [c.scCode] : []));
+    if (new Set(codes).size !== codes.length) throw new HttpError(400, "SC 항목 번호가 중복되었습니다.");
     mutate(
       req,
       res,
@@ -374,6 +376,7 @@ export function registerCostPeriods(
           label: c.label,
           plan: c.plan,
           opening: c.cumulative,
+          ...(c.scCode ? { scCode: c.scCode } : {}),
         }));
         costTotals(categories, []);
         const nextId = randomUUID(),

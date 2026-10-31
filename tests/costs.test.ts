@@ -1,3 +1,4 @@
+import { missingRequired } from "../server/cost-detail-fields.js";
 import { percentText } from "../server/cost-dashboard.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -100,11 +101,13 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
       .set("x-csrf-token", m.csrf)
       .set("idempotency-key", key)
       .send(body);
+  assert.equal((await post("", { month: "2026-02", openingNote: "dup", categories: [
+    { label: "x", plan: "0", opening: "0", scCode: 2 }, { label: "y", plan: "0", opening: "0", scCode: 2 }] })).status, 400);
   let r = await post("", {
     month: "2026-02",
     openingNote: "independent opening",
     categories: [
-      { label: "a", plan: "0", opening: "0" },
+      { label: "a", plan: "0", opening: "0", scCode: 2 },
       { label: "b", plan: "1", opening: "0" },
     ],
   });
@@ -148,15 +151,18 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
     before,
   );
   const row0 = (await m.agent.get(`${base}/${id}/expenses`)).body.items[0];
-  const putExpense = (laborKind: unknown) =>
+  const putExpense = (laborKind: unknown, details: object = { spec: "H 1.2m", unit: "m", paymentDetails: "설치" }) =>
     m.agent.put(`${base}/${id}/expenses/${row0.id}`).set("Origin", origin).set("x-csrf-token", m.csrf).set("idempotency-key", randomUUID())
-      .send({ version: p.version, reason: "구분 지정", laborKind,
+      .send({ version: p.version, reason: "구분 지정", laborKind, details,
         expense: { categoryId: row0.category_id, spendDate: row0.spend_date, description: row0.description, quantity: row0.quantity, unitPriceWon: row0.unit_price_won } });
   assert.equal((await putExpense("신호수")).status, 400);
+  for (const bad of [{ people: "3" }, { laborUnitPrice: "1.5" }, { spec: "x".repeat(201) }])
+    assert.equal((await putExpense("타워신호수", bad)).status, 400, JSON.stringify(bad));
   r = await putExpense("타워신호수");
   assert.equal(r.status, 200, r.text);
   p = r.body.period;
   assert.equal(p.laborKinds[row0.id], "타워신호수");
+  assert.deepEqual(p.details[row0.id], { spec: "H 1.2m", unit: "m", paymentDetails: "설치" });
   const labor = (await m.agent.get(`/api/sites/${site}/cost-labor?month=2026-02`)).body;
   assert.deepEqual([labor.items.length, labor.total, labor.byKind.find((k: { kind: string }) => k.kind === "타워신호수").amount], [1, "0.5", "0.5"]);
   assert.equal((await m.agent.get(`/api/sites/${site}/cost-labor?q=없는내역`)).body.items.length, 0);
@@ -182,6 +188,7 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
   p = r.body;
   assert.equal(p.settings.summaryStart, "2026-01-01"); // same-as-project copied on the server
   assert.equal((await putSettings({ version: p.version - 1, settings })).status, 409);
+  assert.deepEqual([missingRequired(2, { spec: "a" }), missingRequired(3, {}), missingRequired(undefined, {})], [["단위", "지급내역"], [], []]);
   assert.deepEqual([percentText(1n, 3n), percentText(2n, 3n), percentText(5n, 4n), percentText(1n, 0n)], ["33.3", "66.6", "125.0", null]);
   const dash = (await m.agent.get(`/api/sites/${site}/cost-dashboard`)).body;
   assert.deepEqual(
@@ -204,6 +211,7 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
   assert.equal((await putSettings({ version: p.version, settings })).status, 409);
   assert.throws(() => db.prepare("UPDATE cost_period_settings SET body='{}' WHERE period_id=?").run(id));
   assert.throws(() => db.prepare("DELETE FROM cost_expense_labor WHERE expense_id=?").run(row0.id));
+  assert.throws(() => db.prepare("DELETE FROM cost_expense_details WHERE expense_id=?").run(row0.id));
   const carry = await post(`/${id}/carry`, { version: p.version });
   assert.equal(carry.status, 200, carry.text);
   assert.equal(carry.body.month, "2026-03");
@@ -212,6 +220,7 @@ test("manager ledger exact carry, retained rows, closures and rollback", async (
     ["0.5", "0.5"],
   );
   assert.equal(carry.body.totals.total.opening, "1");
+  assert.equal(carry.body.categories[0].scCode, 2);
   assert.deepEqual(carry.body.settings, { ...p.settings, writtenDate: "2026-03-31" });
   assert.equal(
     (

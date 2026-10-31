@@ -3,6 +3,7 @@ import type { Db } from "./db.js";
 import type { SiteOperations } from "./site-operations.js";
 import { costExpenses, costTotals, readCostSettings, getCostPeriod, costPeriodView, type CostCategory } from "./cost-model.js";
 import { currentCostEvidence } from "./cost-evidence-model.js";
+import { missingRequired } from "./cost-detail-fields.js";
 import { moneyUnits } from "./cost-money.js";
 // Ratio a/b as a percent string with one decimal, truncated (no rounding up).
 export function percentText(a: bigint, b: bigint) {
@@ -79,9 +80,13 @@ export function costPreflight(db: Db, site: string, id: string) {
     if (!s?.[key]) items.push({ level: "error", message: `현장 설정의 ${label}을(를) 입력하세요.` });
   if (s?.safetyBudgetWon === "0") items.push({ level: "error", message: "계상안전관리비는 0보다 커야 합니다." });
   if (!period.categories.some((c) => moneyUnits(c.plan) > 0n)) items.push({ level: "error", message: "항목별 계획금액을 입력하세요." });
-  for (const e of costExpenses(db, id))
-    if (e.status === "active" && e.spend_date < period.month + "-01")
+  for (const e of costExpenses(db, id)) {
+    if (e.status !== "active") continue;
+    if (e.spend_date < period.month + "-01")
       items.push({ level: "warning", message: `${e.description}은(는) 이전 월 지출일(${e.spend_date})로 입력되었습니다.` });
+    const missing = missingRequired(period.categories.find((c) => c.id === e.category_id)?.scCode, period.details[e.id] ?? {});
+    if (missing.length) items.push({ level: "error", message: `${e.description}의 ${missing.join(", ")} 항목을 입력하세요.` });
+  }
   const noEvidence = currentCostEvidence(db, site, id).warnings.activeExpensesWithoutLink.length;
   if (noEvidence) items.push({ level: "warning", message: `증빙 연결이 없는 지출이 ${noEvidence}건 있습니다.` });
   for (const c of period.totals.byCategory)

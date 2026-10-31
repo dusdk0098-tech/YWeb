@@ -11,6 +11,7 @@ export type CostPeriod = {
   categories: CostCategory[];
   settings: CostSettings | null;
   laborKinds: Record<string, string>;
+  details: Record<string, Record<string, string>>;
   parent_period_id: string | null;
   source_close_id: string | null;
   successor: { id: string; month: string } | null;

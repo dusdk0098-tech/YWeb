@@ -1,3 +1,4 @@
+import { WorkPlanFormChecklist } from "./WorkPlanFormChecklist";
 import { WorkPlanHazardReferenceFields } from "./WorkPlanHazardReferenceFields";
 import { WorkPlanLiftingFields,blankLifting } from "./WorkPlanLiftingFields";
 import { WorkPlanPlateReportFields } from "./WorkPlanPlateReportFields";
@@ -61,11 +62,12 @@ export function WorkPlanEditor({
   const [plateBusy,setPlateBusy]=useState(false);
   const [liftingBusy,setLiftingBusy]=useState(false);
   const [referenceBusy,setReferenceBusy]=useState(false);
+  const [checklistDirty,setChecklistDirty]=useState(false);
   const allBusy=busy||reviewBusy||attachmentBusy||packetBusy||plateBusy||liftingBusy||referenceBusy;
   const baseline = useRef(JSON.stringify(body)),
     changed = JSON.stringify(body) !== baseline.current,
     guard = useDraftGuard(
-      changed || !!reason || !!authorId || reviewDirty || attachmentDirty,
+      changed || !!reason || !!authorId || reviewDirty || attachmentDirty || checklistDirty,
       allBusy,
       onDirtyChange,
       onBusyChange,
@@ -292,6 +294,7 @@ export function WorkPlanEditor({
           단계 추가
         </button>
       </fieldset>
+      {record && <WorkPlanFormChecklist key={record.id} path={`${base}/${record.id}/form-checklist`} editable={editable && !allBusy} onDirty={setChecklistDirty} />}
       <h3>선택 장비 · 담당 업무 메모</h3>
       <p>
         각 최대10개, 선택은 선택사항입니다. 명부 항목을 지정해도 본인

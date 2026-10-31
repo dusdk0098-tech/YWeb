@@ -18,6 +18,7 @@ import { registerCatalogUse } from "./education-catalog-use-routes.js";
 import { registerEducationReviews } from "./education-catalog-review.js";
 import { registerPhotoBoards, isPhotoBoardUpload } from "./photo-board.js";
 import { registerTbmJoin, registerTbmJoinPublic } from "./tbm-join.js";
+import { registerWorkPlanFormChecklists } from "./work-plan-form-checklist.js";
 import { registerCostBaselines } from "./cost-baseline-routes.js";
 import { registerPpeReturns } from "./ppe-return-routes.js";
 import { registerWorkPlanReview } from "./work-plan-review.js";
@@ -209,6 +210,7 @@ export async function createApp(db: Db, config: AppConfig) {
   registerLegalForms(app,db,{access,mutate});
   registerPhotoBoards(app,db,{access,mutate},attachmentReader);
   registerTbmJoin(app,db,{access,mutate});
+  registerWorkPlanFormChecklists(app,db,{access,mutate});
   registerCostEvidenceRequests(app,db,{access,mutate});
   registerCostEvidenceComparison(app,db,{access,mutate});
   registerCostOutput(app,db,{access,mutate});

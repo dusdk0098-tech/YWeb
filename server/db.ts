@@ -1,3 +1,4 @@
+import { migrateCostSettings } from "./cost-settings-schema.js";
 import { migrateDailyInspectionReferences } from "./daily-inspection-migration.js";
 import { migrateWorkPlanHazardReferences } from "./work-plan-hazard-reference-migration.js";
 import { migrateWorkPlanLifting } from "./work-plan-lifting-migration.js";
@@ -199,6 +200,7 @@ PRAGMA user_version=1;`);
       if (version < 54) migrateWorkPlanLifting(db);
       if (version < 55) migrateWorkPlanHazardReferences(db);
       if (version < 56) migrateDailyInspectionReferences(db);
+      if (version < 57) migrateCostSettings(db);
     });
   } catch (error) {
     db.close();

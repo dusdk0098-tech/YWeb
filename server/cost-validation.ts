@@ -45,3 +45,42 @@ export const expenseInput = z
   .strict();
 export const expenseCreate = costVersion.extend({ expense: expenseInput });
 export const expenseEdit = costReason.extend({ expense: expenseInput });
+// SC 현장 설정 (original PEDIT-SC settings form). Empty string = not entered yet.
+const settingText = z.string().trim().max(200),
+  settingDate = z.union([z.literal(""), date]),
+  settingWon = z.union([z.literal(""), z.string().regex(/^(0|[1-9]\d{0,14})$/, "원 단위 정수로 입력하세요.")]),
+  settingPercent = z.union([z.literal(""), z.string().regex(/^(100(\.0{1,2})?|\d{1,2}(\.\d{1,2})?)$/, "0~100 사이, 소수 2자리까지 입력하세요.")]);
+export const costSettings = z
+  .object({
+    writtenDate: settingDate,
+    projectName: settingText,
+    contractor: settingText,
+    location: settingText,
+    representative: settingText,
+    client: settingText,
+    projectStart: settingDate,
+    projectEnd: settingDate,
+    summarySameAsProject: z.boolean(),
+    summaryStart: settingDate,
+    summaryEnd: settingDate,
+    contractAmountWon: settingWon,
+    coverProgress: settingPercent,
+    cumulativeProgress: settingPercent,
+    safetyBudgetWon: settingWon,
+    author: settingText,
+    reviewer: settingText,
+  })
+  .strict()
+  .superRefine((s, ctx) => {
+    for (const [a, b, label] of [
+      ["projectStart", "projectEnd", "공사기간"],
+      ["summaryStart", "summaryEnd", "내역집계표 공사기간"],
+    ] as const) {
+      if (!s[a] !== !s[b])
+        ctx.addIssue({ code: "custom", path: [a], message: `${label}은 시작일과 종료일을 모두 입력하세요.` });
+      else if (s[a] > s[b])
+        ctx.addIssue({ code: "custom", path: [a], message: `${label} 시작일은 종료일보다 늦을 수 없습니다.` });
+    }
+  });
+export type CostSettings = z.infer<typeof costSettings>;
+export const costSettingsSave = costVersion.extend({ settings: costSettings });

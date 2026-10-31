@@ -10,6 +10,7 @@ import {
   costBudget,
   costReason,
   costVersion,
+  costSettingsSave,
 } from "./cost-validation.js";
 import { moneyUnits, decimalText } from "./cost-money.js";
 import {
@@ -18,6 +19,7 @@ import {
   costExpenses,
   costTotals,
   nextCostMonth,
+  readCostSettings,
   type CostCategory,
   type CostSnapshot,
 } from "./cost-model.js";
@@ -184,6 +186,32 @@ export function registerCostPeriods(
       },
     );
   });
+  app.put(base + "/:id/settings", (req, res) => {
+    access(req, true, true);
+    const v = costSettingsSave.parse(req.body),
+      site = String(req.params.siteId),
+      id = String(req.params.id),
+      settings = v.settings.summarySameAsProject
+        ? { ...v.settings, summaryStart: v.settings.projectStart, summaryEnd: v.settings.projectEnd }
+        : v.settings;
+    mutate(
+      req,
+      res,
+      `cost:settings:${site}:${id}`,
+      { ...v, settings },
+      () => {
+        const row = getCostPeriod(db, site, id);
+        expectedCost(row, v.version);
+        db.prepare(
+          "INSERT INTO cost_period_settings VALUES(?,?,?) ON CONFLICT(period_id) DO UPDATE SET body=excluded.body,updated_at=excluded.updated_at",
+        ).run(id, JSON.stringify(settings), new Date().toISOString());
+        return costEvent(db, req, bumpCost(db, row), "settings_updated", "현장 설정 저장");
+      },
+      () => {
+        access(req, true, true);
+      },
+    );
+  });
   app.post(base + "/:id/close", (req, res) => {
     access(req, true, true);
     const v = costReason.extend({ evidenceReview: costEvidenceReview.optional() }).parse(req.body),
@@ -237,6 +265,7 @@ export function registerCostPeriods(
           closedAt: now,
           reason: v.reason,
           policy: "exact-six-decimal-whole-won-price-v1",
+          settings: readCostSettings(db, id),
         };
         db.prepare("INSERT INTO cost_closures VALUES(?,?,?,?,?,?)").run(
           closeId,
@@ -363,6 +392,16 @@ export function registerCostPeriods(
           now,
           now,
         );
+        // Like PEDIT-SC 익월 생성: copy the closed settings, 작성일 moves to the new month's last day.
+        if (source.settings)
+          db.prepare("INSERT INTO cost_period_settings VALUES(?,?,?)").run(
+            nextId,
+            JSON.stringify({
+              ...source.settings,
+              writtenDate: lastDayOfMonth(month),
+            }),
+            now,
+          );
         return costEvent(
           db,
           req,
@@ -430,4 +469,10 @@ export function registerCostPeriods(
       throw new HttpError(409, "마감본 해시가 일치하지 않습니다.");
     res.type("html").send(printCostPeriod(snapshot, stored.hash));
   });
+}
+// setUTCFullYear avoids Date.UTC's 0-99 → 1900s year mapping.
+function lastDayOfMonth(month: string) {
+  const d = new Date(0);
+  d.setUTCFullYear(Number(month.slice(0, 4)), Number(month.slice(5)), 0);
+  return d.toISOString().slice(0, 10);
 }

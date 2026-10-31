@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { z } from "zod";
 import type { Db } from "./db.js";
 import { HttpError, type SiteOperations } from "./site-operations.js";
-import { getCostPeriod, costTotals, type CostSnapshot } from "./cost-model.js";
+import { getCostPeriod, costTotals, readCostSettings, type CostSnapshot } from "./cost-model.js";
 import { baselineView, currentBaselineSource } from "./cost-baseline-model.js";
 import { printCostPeriod } from "./cost-print.js";
 import { printCostBaseline } from "./cost-baseline-print.js";
@@ -36,7 +36,7 @@ export function costOutput(db:Db,site:string,periodId:string,selection:OutputSel
     if(selection.baselineId){const baseline=baselineView(db,site,periodId,selection.baselineId);sourceHash=baseline.hash;html=printCostBaseline(baseline.body,baseline.hash);}
     else html=printCostPeriod(stored.body,stored.hash);
     if(closureId===period.current_close_id&&(JSON.stringify(stored.body.period)!==JSON.stringify(current.period)||JSON.stringify(stored.body.expenses)!==JSON.stringify(current.expenses)||JSON.stringify(stored.body.totals)!==JSON.stringify(current.totals)))throw new HttpError(409,'현재 마감과 원장 불일치: 최신 여부 확인 불가.');
-  }else html=printCostPeriod({site:{id:site,name:siteName},period:current.period,expenses:current.expenses,totals:current.totals},null);
+  }else html=printCostPeriod({site:{id:site,name:siteName},period:current.period,expenses:current.expenses,totals:current.totals,settings:readCostSettings(db,periodId)},null);
   const status=closureId&&closureId!==period.current_close_id?'historical' as const:'current' as const;
   const facts={selection,siteId:site,periodId,month:period.month,sourceHash,closureId:closureId||null,currentVersion:period.version,currentStatus:period.status,currentCloseId:period.current_close_id,status};
   boundedCostOutput(html);

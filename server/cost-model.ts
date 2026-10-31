@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Db } from "./db.js";
+import type { CostSettings } from "./cost-validation.js";
 import { HttpError } from "./site-operations.js";
 import {
   moneyUnits,
@@ -153,10 +154,15 @@ export function costPeriodView(db: Db, row: CostPeriodRow) {
   return {
     ...row,
     categories,
+    settings: readCostSettings(db, row.id),
     totals,
     currentClosure: closure,
     successor: child || null,
   };
+}
+export function readCostSettings(db: Db, periodId: string): CostSettings | null {
+  const row = db.prepare("SELECT body FROM cost_period_settings WHERE period_id=?").get(periodId) as { body: string } | undefined;
+  return row ? (JSON.parse(row.body) as CostSettings) : null;
 }
 export type CostPeriod = ReturnType<typeof costPeriodView>;
 export type CostSnapshot = {
@@ -171,6 +177,8 @@ export type CostSnapshot = {
   closedAt: string;
   reason: string;
   policy: "exact-six-decimal-whole-won-price-v1";
+  // SC 현장 설정; absent before schema 57. Kept out of period so period comparisons stay byte-identical.
+  settings?: CostSettings | null;
 };
 export function nextCostMonth(month: string) {
   const [year, m] = month.split("-").map(Number);

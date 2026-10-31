@@ -1,5 +1,7 @@
 import type { CostExpense, CostCategory } from "../server/cost-model";
 export type { CostExpense, CostCategory };
+import type { CostSettings } from "../server/cost-validation";
+export type { CostSettings };
 export type CostPeriod = {
   id: string;
   month: string;
@@ -7,6 +9,7 @@ export type CostPeriod = {
   version: number;
   opening_note: string;
   categories: CostCategory[];
+  settings: CostSettings | null;
   parent_period_id: string | null;
   source_close_id: string | null;
   successor: { id: string; month: string } | null;

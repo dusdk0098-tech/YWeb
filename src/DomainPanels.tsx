@@ -64,3 +64,6 @@ export const WorkersAttendance = deferredPanel<
 >(() =>
   import("./WorkersAttendance").then((m) => ({ default: m.WorkersAttendance })),
 );
+export const PhotoBoardPanel = deferredPanel<
+  ComponentProps<(typeof import("./PhotoBoardPanel"))["PhotoBoardPanel"]>
+>(() => import("./PhotoBoardPanel").then((m) => ({ default: m.PhotoBoardPanel })));

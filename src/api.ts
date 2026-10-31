@@ -68,7 +68,7 @@ async function uploadRawImageAttachment<T>(
   file: File,
   version: number,
   key: string,
-  versionHeader: "x-hazard-version"|"x-minutes-version"|"x-work-plan-version"|"x-cost-period-version"|"x-education-version",
+  versionHeader: "x-hazard-version"|"x-minutes-version"|"x-work-plan-version"|"x-cost-period-version"|"x-education-version"|"x-photo-board-version",
   allowPdfOriginal = false,
   evidenceVersion?: number,
 ): Promise<T> {
@@ -100,4 +100,6 @@ export function uploadWorkPlanAttachment<T>(path:string,file:File,version:number
 export function uploadCostEvidence<T>(path:string,file:File,periodVersion:number,evidenceVersion:number,key:string){return uploadRawImageAttachment<T>(path,file,periodVersion,key,"x-cost-period-version",true,evidenceVersion);}
 
 export function uploadCostPhotoDisplay<T>(path:string,display:Blob,periodVersion:number,key:string){return uploadRawImageAttachment<T>(path,new File([display],"display.jpg",{type:"image/jpeg"}),periodVersion,key,"x-cost-period-version");}
+export function uploadPhotoBoardPhoto<T>(path:string,file:File,version:number,key:string){return uploadRawImageAttachment<T>(path,file,version,key,"x-photo-board-version");}
+export function uploadPhotoBoardDisplay<T>(path:string,display:Blob,version:number,key:string){return uploadRawImageAttachment<T>(path,new File([display],"display.jpg",{type:"image/jpeg"}),version,key,"x-photo-board-version");}
 export function uploadEducationAttachment<T>(path:string,file:File,version:number,key:string){return uploadRawImageAttachment<T>(path,file,version,key,"x-education-version",true);}

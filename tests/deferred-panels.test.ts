@@ -88,6 +88,12 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
       '                if (id !== tab && !mayLeaveAttendance()) return;\n                setTab(id);\n                setError("");\n                setMobileMenuOpen(false);',
     ],
   ];
+  // 사진 보드(N) 1단계 adds one menu entry and panel branch, and drops it from the planned list.
+  mobileChanges.push(
+    ['            ["daily", "안전업무일지"],', '            ["daily", "안전업무일지"],\n            ["photoboard", "사진 보드"],'],
+    ['            "사진대지 N",\n', ''],
+    ['        ) : site && tab === "daily" ? (', '        ) : site && tab === "photoboard" ? (\n          <PhotoBoardPanel\n            key={site.id}\n            site={site}\n            onDirtyChange={setAttendanceDirty}\n            onBusyChange={setAttendanceBusy}\n          />\n        ) : site && tab === "daily" ? ('],
+  );
   for (const [source, replacement] of mobileChanges) {
     assert.equal(expected.split(source).length, 2);
     expected = expected.replace(source, replacement);
@@ -97,8 +103,8 @@ test("lazy maintenance preserves App state/navigation/dirty/busy functions", () 
     new URL("../src/DomainPanels.tsx", import.meta.url),
     "utf8",
   );
-  assert.equal((registry.match(/export const /g) || []).length, 16);
-  assert.equal((registry.match(/\bimport\("\.\//g) || []).length, 32); // 16 type imports +16 dynamic expressions
+  assert.equal((registry.match(/export const /g) || []).length, 17);
+  assert.equal((registry.match(/\bimport\("\.\//g) || []).length, 34); // 17 type imports +17 dynamic expressions
 });
 test("panel download retry is explicit, props preserved, and business render errors are not hidden", async () => {
   let calls = 0;

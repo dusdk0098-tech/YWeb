@@ -96,7 +96,7 @@ test("all shared mutation callsites declare an explicit synchronous authorizatio
   }
   assert.equal(
     count,
-    156, // Phase69 education upload + attach-state; SC 현장 설정 PUT; SC 사진대지 표시본·항목; 교육내용 검수 기록.
+    160, // Phase69 education upload + attach-state; SC 현장 설정 PUT; SC 사진대지 표시본·항목; 교육내용 검수 기록; 사진 보드 생성·저장·사진·표시본.
     "Re-inventory changed mutation routes; this is a callsite count, not route coverage percentage.",
   );
 });

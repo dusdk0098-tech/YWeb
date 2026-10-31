@@ -1,4 +1,5 @@
 import { migrateCostDetails } from "./cost-detail-schema.js";
+import { migrateCostPhotos } from "./cost-photo-schema.js";
 import { migrateCostLabor } from "./cost-labor-schema.js";
 import { migrateCostSettings } from "./cost-settings-schema.js";
 import { migrateDailyInspectionReferences } from "./daily-inspection-migration.js";
@@ -205,6 +206,7 @@ PRAGMA user_version=1;`);
       if (version < 57) migrateCostSettings(db);
       if (version < 58) migrateCostLabor(db);
       if (version < 59) migrateCostDetails(db);
+      if (version < 60) migrateCostPhotos(db);
     });
   } catch (error) {
     db.close();

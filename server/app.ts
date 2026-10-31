@@ -4,6 +4,7 @@ import { registerHazardInbox } from "./hazard-inbox.js";
 import { registerCostEvidenceComparison } from "./cost-evidence-comparison-routes.js";
 import { registerCostEvidenceRequests } from "./cost-evidence-request-routes.js";
 import { registerCostEvidence, isCostEvidenceUpload } from "./cost-evidence-routes.js";
+import { registerCostPhotos, isCostPhotoUpload } from "./cost-photo-routes.js";
 import { registerCostPresets } from "./cost-preset-routes.js";
 import { registerDailyMonthlyRecords } from "./daily-monthly-record-routes.js";
 import { registerDailyJournalRegister } from "./daily-journal-register.js";
@@ -121,7 +122,7 @@ export async function createApp(db: Db, config: AppConfig) {
     }),
   );
   const isUpload = (method: string, path: string) =>
-    isHazardUpload(method, path) || isMinutesUpload(method, path) || isWorkPlanUpload(method, path) || isCostEvidenceUpload(method, path) || isEducationUpload(method, path);
+    isHazardUpload(method, path) || isMinutesUpload(method, path) || isWorkPlanUpload(method, path) || isCostEvidenceUpload(method, path) || isCostPhotoUpload(method, path) || isEducationUpload(method, path);
   app.use("/api", (_req, res, next) => {
     res.set("Cache-Control", "no-store");
     if (isUpload(_req.method, _req.originalUrl.split("?")[0]))
@@ -197,6 +198,7 @@ export async function createApp(db: Db, config: AppConfig) {
   registerWorkPlanAttachments(app,db,{access,mutate},attachmentReader);
   registerEducationAttachments(app,db,{access,mutate},attachmentReader);
   registerCostEvidence(app,db,{access,mutate},attachmentReader);
+  registerCostPhotos(app,db,{access,mutate},attachmentReader);
   registerCostEvidenceRequests(app,db,{access,mutate});
   registerCostEvidenceComparison(app,db,{access,mutate});
   registerCostOutput(app,db,{access,mutate});
@@ -497,7 +499,7 @@ export async function createApp(db: Db, config: AppConfig) {
     async (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
       if (error instanceof HttpError && error.status === 413 &&
         (isHazardUpload(_req.method, _req.path) || isMinutesUpload(_req.method, _req.path) ||
-          isWorkPlanUpload(_req.method, _req.path) || isCostEvidenceUpload(_req.method, _req.path) ||
+          isWorkPlanUpload(_req.method, _req.path) || isCostEvidenceUpload(_req.method, _req.path) || isCostPhotoUpload(_req.method, _req.path) ||
           isEducationUpload(_req.method, _req.path)))
         await discardRejectedUpload(_req);
       if (error instanceof z.ZodError)

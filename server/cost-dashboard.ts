@@ -3,6 +3,7 @@ import type { Db } from "./db.js";
 import type { SiteOperations } from "./site-operations.js";
 import { costExpenses, costTotals, readCostSettings, getCostPeriod, costPeriodView, type CostCategory } from "./cost-model.js";
 import { currentCostEvidence } from "./cost-evidence-model.js";
+import { photoBoard } from "./cost-photo-routes.js";
 import { missingRequired } from "./cost-detail-fields.js";
 import { moneyUnits } from "./cost-money.js";
 // Ratio a/b as a percent string with one decimal, truncated (no rounding up).
@@ -68,7 +69,7 @@ export function costDashboard(db: Db, site: string) {
   };
 }
 // PEDIT-SC 출력 전 확인 (state-query.js preflightState), limited to data this app has.
-// Errors block closing (cost-periods.ts); stock/photo/legal-limit checks are out of scope.
+// Errors block closing (cost-periods.ts); stock/legal-limit checks are out of scope.
 export function costPreflight(db: Db, site: string, id: string) {
   const period = costPeriodView(db, getCostPeriod(db, site, id)),
     items: { level: "error" | "warning"; message: string }[] = [],
@@ -89,6 +90,13 @@ export function costPreflight(db: Db, site: string, id: string) {
   }
   const noEvidence = currentCostEvidence(db, site, id).warnings.activeExpensesWithoutLink.length;
   if (noEvidence) items.push({ level: "warning", message: `증빙 연결이 없는 지출이 ${noEvidence}건 있습니다.` });
+  // Original SC (state-query.js) photo checks are warnings.
+  const photos = photoBoard(db, site, id);
+  if (photos.missingDisplay) items.push({ level: "warning", message: `사진대지 표시본이 없는 사진이 ${photos.missingDisplay}장 있습니다.` });
+  for (const p of photos.photos.filter((x) => x.included)) {
+    if (!p.takenDate.startsWith(period.month + "-")) items.push({ level: "warning", message: `${p.description || p.filename}의 촬영일자를 확인하세요.` });
+    if (!p.description) items.push({ level: "warning", message: `사진대지 내용이 비어 있습니다(${p.filename}).` });
+  }
   for (const c of period.totals.byCategory)
     if (c.overPlan) items.push({ level: "warning", message: `${c.label} 항목이 계획금액을 초과했습니다.` });
   return { items, errorCount: items.filter((i) => i.level === "error").length };

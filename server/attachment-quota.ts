@@ -30,9 +30,12 @@ export function attachmentUsage(
       "SELECT count(*) AS count,coalesce(sum(size),0) AS bytes FROM (SELECT size FROM hazard_attachments WHERE site_id=? UNION ALL SELECT size FROM minutes_attachments WHERE site_id=? UNION ALL SELECT size FROM work_plan_attachments WHERE site_id=? UNION ALL SELECT size FROM cost_evidence_files WHERE site_id=? UNION ALL SELECT size FROM education_attachments WHERE site_id=?)",
     )
     .get(site, site, site, site, site) as { count: number; bytes: number };
+  // SC 사진대지 표시본 bytes share the storage limits but not the file-count limits.
+  const displayBytes = (where: string, ...args: string[]) =>
+    (db.prepare("SELECT coalesce(sum(size),0) AS n FROM cost_evidence_displays" + where).get(...args) as { n: number }).n;
   return {
     siteCount: siteUsage.count,
-    siteBytes: siteUsage.bytes,
+    siteBytes: siteUsage.bytes + displayBytes(" WHERE site_id=?", site),
     reportCount: (
       db
         .prepare(
@@ -44,7 +47,7 @@ export function attachmentUsage(
       db
         .prepare("SELECT coalesce(sum(size),0) AS n FROM (SELECT size FROM hazard_attachments UNION ALL SELECT size FROM minutes_attachments UNION ALL SELECT size FROM work_plan_attachments UNION ALL SELECT size FROM cost_evidence_files UNION ALL SELECT size FROM education_attachments)")
         .get() as { n: number }
-    ).n,
+    ).n + displayBytes(""),
   };
 }
 // Route uses the fixed default. Optional lower limits are for small deterministic tests,

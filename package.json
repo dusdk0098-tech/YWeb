@@ -20,8 +20,8 @@
     "backup:local": "node --import tsx scripts/local-backup-cli.ts"
   },
   "keywords": [],
-  "author": "",
-  "license": "UNLICENSED",
+  "author": "JO YEONG JIN",
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "argon2": "^0.45.1",

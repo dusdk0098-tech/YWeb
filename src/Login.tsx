@@ -1,3 +1,4 @@
+import { clearOfflineDrafts } from "./offline-draft";
 import React, { useState } from "react";
 import { api, setCsrf, type User } from "./api";
 export function Login({
@@ -21,6 +22,7 @@ export function Login({
         password: data.get("password"),
       });
       setCsrf(s.csrf);
+      await clearOfflineDrafts(); // new login → new device key, old drafts gone
       onLogin(s.user);
     } catch (e) {
       setError((e as Error).message);

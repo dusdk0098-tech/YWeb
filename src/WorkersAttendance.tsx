@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { PageHeader } from "./ui";
 import type { Site } from "./api";
 import { WorkersPanel } from "./WorkersPanel";
 import { AttendancePanel } from "./AttendancePanel";
@@ -58,8 +59,7 @@ export function WorkersAttendance({
   return (
     <>
       <div className="page-heading">
-        <h1>명부 · 출역</h1>
-        <p>현장별 최소정보 명부와 담당자 수기 출역 기록.</p>
+        <PageHeader level={1} title="명부 · 출역" />
         <div className="form-actions">
           <button
             disabled={busy}

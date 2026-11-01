@@ -1067,3 +1067,4 @@ nav#primary-navigation button.nav-home { min-height: 40px; }
 .expense-row[data-status="cancelled"] h4 { text-decoration: line-through; color: var(--ink-muted); }
 .expense-row button { margin: 4px 8px 0 0; }
 .risk-editor .ui-section { margin-top: 16px; }
+button.secondary[aria-pressed="true"] { background: var(--primary-soft); border-color: var(--primary); color: var(--primary-hover); }

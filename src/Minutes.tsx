@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PageHeader } from "./ui";
 import { api, type Meeting, type Site } from "./api";
 import { MinutesFollowupBoard } from "./MinutesFollowupBoard";
 export function Minutes({
@@ -45,18 +46,14 @@ export function Minutes({
   if (board) return <MinutesFollowupBoard site={site} onClose={() => setBoard(false)} />;
   return (
     <>
-      <div className="section-head page-heading">
-        <div>
-          <h1>회의록</h1>
-          <p>회의의 결정을 다음 행동으로 이어갑니다.</p>
-        </div>
+      <PageHeader level={1} title="회의록">
+        <button className="secondary" onClick={() => setBoard(true)}>
+          후속조치 보드
+        </button>
         {site.role !== "viewer" && (
           <button onClick={() => open(null)}>+ 새 회의록</button>
         )}
-      </div>
-      <button className="secondary" onClick={() => setBoard(true)}>
-        후속조치 보드
-      </button>
+      </PageHeader>
       <section className="panel">
         {error && (
           <p className="error" role="alert">

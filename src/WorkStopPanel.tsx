@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Notice } from "./ui";
+import { Notice, PageHeader } from "./ui";
 import { api, type Site, type User } from "./api";
 import type { Page } from "./attendance-types";
 import {
@@ -91,17 +91,13 @@ export function WorkStopPanel({
     );
   return (
     <>
-      <div className="section-head page-heading">
-        <div>
-          <h1>작업중지 요청 · 수기 기록</h1>
-          <p>요청/확인/중지/개선/재개에 관한 수기 기록입니다.</p>
-        </div>
+      <PageHeader level={1} title="작업 중지 요청">
         {site.role !== "viewer" && (
           <button disabled={opening} onClick={() => setOpen({ record: null })}>
             + 요청 접수 기록
           </button>
         )}
-      </div>
+      </PageHeader>
       <section className="panel">
         <Notice tone="warning" summary="긴급 상황은 현장의 실제 대응 절차를 별도로 따르세요.">
           실제 작업중지/재개 명령·안전 허가·외부 알림이 아닙니다. 긴급 상황은

@@ -1,5 +1,5 @@
 import { EquipmentDuePanel } from "./EquipmentDuePanel";
-import { Notice } from "./ui";
+import { Notice, PageHeader } from "./ui";
 import { useEffect, useState } from "react";
 import { api, type Site, type User } from "./api";
 import type { Page } from "./attendance-types";
@@ -146,7 +146,7 @@ export function EquipmentPanel({
     );
   return (
     <>
-      <h1>장비 대장 · 수기 사용</h1>
+      <PageHeader level={1} title="장비" />
       <Notice summary="장비 목록과 사용 이력을 기록합니다.">
         장비 식별과 변경/사용 이력만 관리합니다. 안전 판정·작업 허가·보험/검사
         적합성·공학 계산·파일 증빙은 지원하지 않습니다.

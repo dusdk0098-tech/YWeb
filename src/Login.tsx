@@ -1,12 +1,17 @@
 import { clearOfflineDrafts } from "./offline-draft";
 import React, { useState } from "react";
 import { api, setCsrf, type User } from "./api";
+import { StatusBar } from "./ui";
 export function Login({
   onLogin,
   error: outerError,
+  notice = "",
+  keepDraftsFor = null,
 }: {
   onLogin: (u: User) => void;
   error: string;
+  notice?: string;
+  keepDraftsFor?: string | null; // the account whose device drafts survive this login (after a session expiry)
 }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -22,7 +27,7 @@ export function Login({
         password: data.get("password"),
       });
       setCsrf(s.csrf);
-      await clearOfflineDrafts(); // new login → new device key, old drafts gone
+      if (s.user.id !== keepDraftsFor) await clearOfflineDrafts(); // another account → new device key, old drafts gone
       onLogin(s.user);
     } catch (e) {
       setError((e as Error).message);
@@ -40,6 +45,7 @@ export function Login({
       </div>
       <section className="login-form panel">
         <h2>로그인</h2>
+        {notice && <StatusBar tone="warning" role="status">{notice}</StatusBar>}
         <p>운영 담당자가 발급한 계정을 입력하세요.</p>
         <form onSubmit={submit}>
           <label>

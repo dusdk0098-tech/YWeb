@@ -30,9 +30,9 @@ import { SiteManagement } from "./SiteManagement";
 import { PasswordChange } from "./PasswordChange";
 import { AiSettings } from "./AiSettings";
 import { PublicAccessSettings } from "./PublicAccessSettings";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { api, setCsrf, type Meeting, type Site, type User } from "./api";
+import { api, setCsrf, setSessionLostHandler, type Meeting, type Site, type User } from "./api";
 import { MeetingEditor } from "./MeetingEditor";
 import "./style.css";
 function App() {
@@ -43,7 +43,10 @@ function App() {
     [siteId, setSiteId] = useState(""),
     [tab, setTab] = useState("home"),
     [ads, setAds] = useState(false),
-    [editor, setEditor] = useState<{ initial: Meeting | null } | null>(null);
+    [editor, setEditor] = useState<{ initial: Meeting | null } | null>(null),
+    [expiredUserId, setExpiredUserId] = useState<string | null>(null); // who was signed in when the session died
+  const userRef = useRef(user);
+  userRef.current = user;
   const [attendanceDirty, setAttendanceDirty] = useState(false);
   const [attendanceBusy, setAttendanceBusy] = useState(false);
   function mayLeaveAttendance() {
@@ -72,6 +75,21 @@ function App() {
   useEffect(() => {
     if (user) refreshSites().catch((e) => setError(e.message));
   }, [user]);
+  useEffect(() => {
+    // Back to the login screen with a notice; tab and site are kept, device drafts survive a same-account login.
+    // shortcut: expiredUserId lives in memory only — a page reload before the next login clears the drafts as before.
+    setSessionLostHandler(() => {
+      const lost = userRef.current;
+      if (!lost) return;
+      setExpiredUserId(lost.id);
+      setUser(null);
+      setSites([]);
+      setEditor(null);
+      setError("");
+      api<{ csrf: string }>("/session").then((s) => setCsrf(s.csrf)).catch(() => {});
+    });
+    return () => setSessionLostHandler(null);
+  }, []);
   async function logout() {
     if (!mayLeaveAttendance()) return;
     if (
@@ -105,9 +123,12 @@ function App() {
       <Login
         onLogin={(u) => {
           setUser(u);
+          setExpiredUserId(null);
           setError("");
         }}
         error={error}
+        notice={expiredUserId ? "로그인이 만료되어 로그인 화면으로 돌아왔습니다. 다시 로그인하세요. 작성 중이던 일지·TBM·점검 입력은 같은 계정으로 로그인하면 이 기기 초안에서 복원할 수 있습니다." : ""}
+        keepDraftsFor={expiredUserId}
       />
     );
   return (

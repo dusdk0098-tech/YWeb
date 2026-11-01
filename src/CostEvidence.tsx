@@ -81,7 +81,7 @@ export function CostEvidence({ base, onClose, onDirtyChange, onBusyChange }: {
     {loading && <p>조회 중</p>}
     <button disabled={busy || loading} onClick={() => { setConfirm(false); setTick(v => v + 1); }}>입력 유지·최신 조회</button>
     {view && <><p>{view.period.month} · 비용 v{view.period.version} · 증빙 v{view.evidenceVersion} · {view.period.status === "open" ? "작성 중" : "마감됨: 원본·연결 변경 불가"}</p><CostEvidenceWarnings evidence={view}/>
-      {board && <section><h3>사진대지</h3><p>포함 사진 {board.photos.filter(p => p.included).length}장(분류별 1쪽 2칸){board.missingDisplay ? ` · 표시본 없는 사진 ${board.missingDisplay}장` : ""}. 화면·인쇄에는 이 브라우저가 만든 표시본(위치·기기 정보 제거)만 씁니다. 지출 연결과는 별개입니다.</p><a href={"/api" + base + "/photo-board/print"} target="_blank" rel="noreferrer">사진대지 인쇄 ↗</a></section>}<CostEvidenceRequest key={`${view.period.siteId}:${view.period.id}`} siteId={view.period.siteId} periodId={view.period.id} />
+      {board && <section><h3>사진대지</h3><p>포함 사진 {board.photos.filter(p => p.included).length}장(분류별 1쪽 2칸){board.missingDisplay ? ` · 표시본 없는 사진 ${board.missingDisplay}장` : ""}. 화면·인쇄에는 이 브라우저가 만든 표시본(위치·기기 정보 제거)만 씁니다. 지출 연결과는 별개입니다.</p><a href={"/api" + base + "/photo-board/print"} target="_blank" rel="noreferrer">사진대지 인쇄 / PDF</a></section>}<CostEvidenceRequest key={`${view.period.siteId}:${view.period.id}`} siteId={view.period.siteId} periodId={view.period.id} />
       {view.period.status === "open" && !editing && <fieldset disabled={busy || loading}><legend>미검사 원본 업로드 (처음 미연결)</legend><input ref={input} type="file" accept=".png,.jpg,.jpeg,.pdf" onChange={e => setFile(e.target.files?.[0] || null)}/><button disabled={!file || view.items.length >= 20} onClick={() => void save(true)}>원본 저장</button></fieldset>}
       {view.items.map(({file:f, links}) => <article key={f.id}><h3>{f.filename}</h3><p>{f.format} · {f.size} bytes · {f.id}</p><p>원본 SHA256 {f.sha256}</p>
         <a href={"/api" + base + `/evidence/files/${f.id}/download`}>미검사 원본 다운로드</a>
@@ -99,7 +99,7 @@ export function CostEvidence({ base, onClose, onDirtyChange, onBusyChange }: {
         <p>현재 선택 ID: {targets.map(t => `${t.expenseId} v${t.version}`).join(" · ") || "없음 (모든 연결 분리)"}</p>
         <button onClick={() => { setTargets([]); setConfirm(false); }}>모든 선택 해제</button>
         {expenses?.items.map(e => <label key={e.id}><input type="checkbox" checked={targets.some(t => t.expenseId === e.id)} disabled={!targets.some(t => t.expenseId === e.id) && targets.length >= 50} onChange={ev => { setTargets(old => ev.target.checked ? [...old,{expenseId:e.id,version:e.version}] : old.filter(t => t.expenseId !== e.id)); setConfirm(false); }}/>{e.description} · {e.amount}원 · {e.status === "active" ? "유효행" : "취소행"} · {e.id} v{e.version}</label>)}
-        <button disabled={offset === 0} onClick={() => { setConfirm(false); setOffset(v => v - 50); }}>이전 지출50개</button><button disabled={!expenses?.hasMore} onClick={() => { setConfirm(false); setOffset(v => v + 50); }}>다음 지출50개</button>
+        <button disabled={offset === 0} onClick={() => { setConfirm(false); setOffset(v => v - 50); }}>이전 50</button><button disabled={!expenses?.hasMore} onClick={() => { setConfirm(false); setOffset(v => v + 50); }}>다음 50</button>
         <label>연결/분리/재확인 사유<textarea maxLength={1000} value={reason} onChange={e => {setReason(e.target.value);setConfirm(false);}}/></label>
         <label><input type="checkbox" checked={confirm} onChange={e => setConfirm(e.target.checked)}/>동일 월의 선택 지출과 버전을 확인했고, 참조 연결일 뿐 적격·배분 판단이 아님을 확인합니다.</label>
         <button disabled={!confirm || !reason.trim()} onClick={() => void save(false)}>명시 연결목록 저장</button>
@@ -107,7 +107,7 @@ export function CostEvidence({ base, onClose, onDirtyChange, onBusyChange }: {
       </fieldset>}
     </>}
     {events && <section><h3>증빙 변경 이력</h3>{events.items.map(e => <details key={e.version}><summary>증빙 v{e.version} · {e.event} · {e.actor_name} · {e.at}</summary><p>{e.reason}</p><pre>{JSON.stringify(e.data,null,2)}</pre></details>)}
-      <button disabled={busy || loading || eventOffset === 0} onClick={() => setEventOffset(v => v - 20)}>최근 이력20개</button><button disabled={busy || loading || !events.hasMore} onClick={() => setEventOffset(v => v + 20)}>이전 이력20개</button>
+      <button disabled={busy || loading || eventOffset === 0} onClick={() => setEventOffset(v => v - 20)}>최근 이력20개</button><button disabled={busy || loading || !events.hasMore} onClick={() => setEventOffset(v => v + 20)}>이전 20</button>
     </section>}
   </section>;
 }

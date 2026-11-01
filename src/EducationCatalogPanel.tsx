@@ -147,10 +147,10 @@ export function EducationCatalogPanel({
       )}
       <div className="actions">
       <button className="secondary" disabled={busy || loading || !offset} onClick={() => setOffset((v) => v - 50)}>
-        이전50개
+        이전 50
       </button>
       <button className="secondary" disabled={busy || loading || !page.hasMore} onClick={() => setOffset((v) => v + 50)}>
-        다음50개
+        다음 50
       </button>
       </div>
     </section>

@@ -440,7 +440,7 @@ export function CostSplits({
           }
         }}
       >
-        이전 분할 50개
+        이전 50
       </button>
       <button
         disabled={working || !page.hasMore}
@@ -453,7 +453,7 @@ export function CostSplits({
           }
         }}
       >
-        다음 분할 50개
+        다음 50
       </button>
     </section>
   );

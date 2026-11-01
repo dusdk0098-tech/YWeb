@@ -108,10 +108,10 @@ export function WorkPlanPanel({
       {!loading && !error && !page.items.length && <EmptyState title="작업계획 없음">일반 작업계획 초안 작성으로 시작하세요.</EmptyState>}
       <div className="actions">
         <button className="secondary" disabled={busy || loading || !offset} onClick={() => setOffset((v) => v - 50)}>
-          이전50개
+          이전 50
         </button>
         <button className="secondary" disabled={busy || loading || !page.hasMore} onClick={() => setOffset((v) => v + 50)}>
-          다음50개
+          다음 50
         </button>
       </div>
     </section>

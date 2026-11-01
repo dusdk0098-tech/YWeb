@@ -183,7 +183,7 @@ export function ManagerOverview({
               setOffset(Math.max(0, offset - 50));
             }}
           >
-            이전 현장 50개
+            이전 50
           </button>
           <button
             disabled={loading || !report.hasMore}
@@ -192,7 +192,7 @@ export function ManagerOverview({
               setOffset(offset + 50);
             }}
           >
-            다음 현장 50개
+            다음 50
           </button>
         </>
       )}

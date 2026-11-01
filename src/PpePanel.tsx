@@ -105,7 +105,7 @@ export function PpePanel({
             setOffset((o) => o - 50);
           }}
         >
-          이전50
+          이전 50
         </button>
         <button
           disabled={loading || !page.hasMore}
@@ -114,7 +114,7 @@ export function PpePanel({
             setOffset((o) => o + 50);
           }}
         >
-          다음50
+          다음 50
         </button>
       </section>
     </>

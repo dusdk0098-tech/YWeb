@@ -29,7 +29,7 @@ export function RiskRegister({site,onOpen,onBusyChange}:{site:Site;onOpen:(id:st
   {page&&<><p>적용 조건: 평가일 {page.query.dateFrom || "시작 제한 없음"} ~ {page.query.dateTo || "종료 제한 없음"} · {page.query.method ? methods[page.query.method] : "모든 방법"} · {page.query.status ? statuses[page.query.status] : "모든 상태"} · 문자 {page.query.keyword || "없음"}</p><p>현재 조건 {page.total}건 · 조회 {page.generatedAt} · 생성시각 내림차순/ID 오름차순. 페이지 사이 자료 변경으로 개수·위치가 달라질 수 있습니다.</p>
    {!page.items.length&&<p>현재 페이지 결과가 없습니다. 조건 또는 첫 페이지를 다시 확인하세요.</p>}
    <ul>{page.items.map(r=><li key={r.id}><button type="button" disabled={busy} onClick={()=>onOpen(r.id)}>{r.title} / 평가일 {r.date} / {methods[r.method]} / {statuses[r.status]} / v{r.version}</button><p>작성 계정(현재 이름) {r.authorName} · {r.successorId?"후속 있는 이전 문서":"후속 없는 문서"}</p></li>)}</ul>
-   <button type="button" disabled={busy||offset===0} onClick={()=>setOffset(Math.max(0,offset-50))}>이전50</button><button type="button" disabled={busy||!page.hasMore} onClick={()=>setOffset(offset+50)}>다음50</button>
+   <button type="button" disabled={busy||offset===0} onClick={()=>setOffset(Math.max(0,offset-50))}>이전 50</button><button type="button" disabled={busy||!page.hasMore} onClick={()=>setOffset(offset+50)}>다음 50</button>
   </>}
  </section>;
 }

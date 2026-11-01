@@ -241,7 +241,7 @@ export function RiskCorePanel({
           setOffset((x) => x - 50);
         }}
       >
-        이전50
+        이전 50
       </button>
       <button
         className="secondary"
@@ -251,7 +251,7 @@ export function RiskCorePanel({
           setOffset((x) => x + 50);
         }}
       >
-        다음50
+        다음 50
       </button>
       </div>
       {loading && <p>조회 중</p>}

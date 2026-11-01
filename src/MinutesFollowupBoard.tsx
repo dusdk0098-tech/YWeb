@@ -72,8 +72,8 @@ export function MinutesFollowupBoard({ site, onClose }: { site: Site; onClose: (
         <p>해당 후속조치 없음</p>
       )}
       <p>기한 표시는 이 기기의 날짜 기준입니다.</p>
-      <button disabled={loading || !offset} onClick={() => setOffset((v) => v - 50)}>이전50</button>
-      <button disabled={loading || !page.hasMore} onClick={() => setOffset((v) => v + 50)}>다음50</button>
+      <button disabled={loading || !offset} onClick={() => setOffset((v) => v - 50)}>이전 50</button>
+      <button disabled={loading || !page.hasMore} onClick={() => setOffset((v) => v + 50)}>다음 50</button>
     </section>
   );
 }

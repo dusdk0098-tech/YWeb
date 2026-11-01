@@ -155,7 +155,7 @@ export function WorkPlanEditor({
           : <StatusChip tone="neutral">새 작업계획</StatusChip>
         }
       >
-        {record && <a className="button secondary" href={"/api" + base + "/" + record.id + "/print"} target="_blank" rel="noreferrer">저장된 작업계획 인쇄</a>}
+        {record && <a className="button secondary" href={"/api" + base + "/" + record.id + "/print"} target="_blank" rel="noreferrer">작업계획 인쇄 / PDF</a>}
       </PageHeader>
       {record?.parent_id && <p className="muted">정정 사유: {record.revision_reason}</p>}
       <Notice summary="직접 쓰는 작업계획서입니다. 작업허가나 공학 검토가 아닙니다.">{workPlanWarning}</Notice>

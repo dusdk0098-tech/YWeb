@@ -1,11 +1,12 @@
 import { assertRecoveryReady } from "./recovery-gate.js";
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import express from "express";
 import { openDatabase } from "./db.js";
 import { createApp } from "./app.js";
 import { localPermissionWarnings as localPermissionWarningsFor } from "./local-permissions.js";
 import { aiConfigFromEnv } from "./ai-suggest.js";
+import { DEFAULT_ADS_FEED } from "./ads.js";
 import { publicOrigin, readPublicSettings, type PublicRuntime } from "./public-access.js";
 import { startDirect, startTunnel } from "./public-serve.js";
 if (existsSync(".env")) process.loadEnvFile(".env");
@@ -31,7 +32,8 @@ if (pub.mode === "tunnel" && !pub.tunnelToken) Object.assign(runtime, { mode: "o
 const app = await createApp(db, {
   secret,
   origin: process.env.APP_ORIGIN || `http://127.0.0.1:${port}`,
-  adsEnabled: process.env.ADS_ENABLED === "true",
+  // 광고 (docs/ADS.md): on unless ADS_ENABLED=false; the operator can also turn it off in the app.
+  ads: process.env.ADS_ENABLED === "false" ? undefined : { feedUrl: process.env.ADS_FEED_URL || DEFAULT_ADS_FEED, dir: resolve(dirname(databasePath), "ads") },
   localPermissionWarnings,
   ai: aiConfigFromEnv(),
   publicOrigin: runtime.origin,

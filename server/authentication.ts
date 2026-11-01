@@ -43,7 +43,7 @@ const cookie = {
 export async function registerAuthentication(
   app: Express,
   db: Db,
-  adsEnabled: boolean,
+  adsEnabled: () => boolean,
 ) {
   const dummyHash = await argon2.hash(randomBytes(32), {
     type: argon2.argon2id,
@@ -87,7 +87,7 @@ export async function registerAuthentication(
           .get(req.session.userId)
       : null;
     const grants = req.session.userId ? grantsOf(db, req.session.userId) : { operator: false, issuer: false };
-    res.json({ user: user || null, csrf: req.session.csrf, adsEnabled, ...grants, local: isLocalRequest(req) });
+    res.json({ user: user || null, csrf: req.session.csrf, adsEnabled: adsEnabled(), ...grants, local: isLocalRequest(req) });
   });
   app.post(
     "/api/login",

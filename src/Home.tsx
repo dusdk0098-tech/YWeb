@@ -9,10 +9,16 @@ type Row = { id: string; status: string; author_id?: string; owner_id?: string; 
 type Period = { id: string; month: string; status: string };
 type Task = { kind: string; id: string; tab: string; title: string; due: string; late: boolean; review: boolean };
 type Data = { journals: Row[]; tbm: Row[]; plans: Row[]; inspections: Row[]; periods: Period[]; tasks: Task[] };
+type Ad = { id: string; title: string; text: string; url: string; image: boolean };
 const today = () => new Date().toLocaleDateString("en-CA");
 const KOR_DATE = (d: string) => { const [y, m, day] = d.split("-").map(Number); return `${m}월 ${day}일 (${"일월화수목금토"[new Date(y, m - 1, day).getDay()]})`; };
 export function Home({ site, user, ads, onOpen }: { site: Site | undefined; user: User; ads?: boolean; onOpen: (tab: string) => void }) {
-  const [data, setData] = useState<Data | null>(null), [error, setError] = useState("");
+  const [data, setData] = useState<Data | null>(null), [error, setError] = useState(""), [adList, setAdList] = useState<Ad[]>([]);
+  useEffect(() => {
+    // 광고 (결정 6): text, link and image come from this server only; nothing about the site leaves it (docs/ADS.md).
+    if (!ads) { setAdList([]); return; }
+    api<{ ads: Ad[] }>("/ads").then((v) => setAdList(v.ads)).catch(() => setAdList([]));
+  }, [ads]);
   useEffect(() => {
     if (!site) { setData(null); return; }
     let active = true;
@@ -118,7 +124,18 @@ export function Home({ site, user, ads, onOpen }: { site: Site | undefined; user
           <button type="button" className="secondary" onClick={() => onOpen("photoboard")}>사진 올리기</button>
         </div>
       </section>
-      {ads && <aside className="ad-slot" aria-label="광고 자리">광고 · 자체 자리 표시만 활성화됨 (외부 광고/추적 없음)</aside>}
+      {adList.length > 0 && (
+        <aside className="ad-slot" aria-label="광고">
+          <span className="ad-label">광고 · 개발자 수익용 · 현장 정보는 보내지 않습니다</span>
+          {adList.map((a) => (
+            <a key={a.id} className="ad" href={a.url} target="_blank" rel="noopener noreferrer sponsored">
+              {a.image && <img src={`/api/ads/image/${a.id}`} alt="" />}
+              <strong>{a.title}</strong>
+              {a.text && <span>{a.text}</span>}
+            </a>
+          ))}
+        </aside>
+      )}
     </section>
   );
 }

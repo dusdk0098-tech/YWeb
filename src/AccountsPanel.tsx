@@ -3,9 +3,12 @@ import { api } from "./api";
 import { Notice, PageHeader, StatusChip, TechDetails } from "./ui";
 // 계정 발급 (운영자 · 설치 PC 전용). The server decides every right; this screen only shows the forms.
 type Account = { id: string; email: string; name: string; operator: boolean; issuer: boolean };
+type AdsState = { enabled: boolean; feedUrl: string | null; fetchedAt: string | null; lastError: string | null; count: number };
 export function AccountsPanel() {
   const [items, setItems] = useState<Account[] | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState(""), [notice, setNotice] = useState("");
   const [reset, setReset] = useState<string | null>(null); // account whose password is being reset
+  const [adsState, setAdsState] = useState<AdsState | null>(null);
+  useEffect(() => { api<AdsState>("/ads/settings").then(setAdsState).catch(() => setAdsState(null)); }, []);
   const load = () => api<{ items: Account[] }>("/accounts").then((v) => setItems(v.items)).catch((e) => setError((e as Error).message));
   useEffect(() => { void load(); }, []);
   async function run(action: () => Promise<unknown>, done: string) {
@@ -53,6 +56,21 @@ export function AccountsPanel() {
           <TechDetails><p>계정 ID {a.id}</p></TechDetails>
         </article>
       ))}
+      {adsState && (
+        <section className="ui-section">
+          <div className="ui-section-head"><h2>광고 표시</h2></div>
+          <div className="ui-section-body">
+            <p className="muted">
+              개발자가 운영하는 광고 피드에서 이 서버가 하루 한 번 받아 홈에 보여 줍니다. 현장·계정 정보는 보내지 않고, 클릭도 세지 않습니다(docs/ADS.md).
+              {" "}{adsState.fetchedAt ? `마지막 수신 ${adsState.fetchedAt.slice(0, 16).replace("T", " ")} · 광고 ${adsState.count}개` : "아직 받은 광고가 없습니다"}{adsState.lastError ? ` · 마지막 오류: ${adsState.lastError}` : ""}
+            </p>
+            <label>
+              <input type="checkbox" checked={adsState.enabled} disabled={busy} onChange={(e) => { const enabled = e.target.checked; void run(() => api("/ads/settings", "PUT", { enabled }).then(() => setAdsState({ ...adsState, enabled })), enabled ? "광고를 켰습니다." : "광고를 껐습니다. 끄신 만큼 개발자 후원을 부탁드립니다."); }} />
+              광고 표시 (기본 켬)
+            </label>
+          </div>
+        </section>
+      )}
     </section>
   );
 }

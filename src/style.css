@@ -1071,3 +1071,10 @@ button.secondary[aria-pressed="true"] { background: var(--primary-soft); border-
 .advanced-tools > summary { font-size: var(--text-meta); }
 .advanced-tools .tool-row { margin: 8px 0 0; }
 .advanced-tools label { margin-right: 12px; }
+/* 광고 (결정 6): text, link, image only, from this server */
+.ad-slot { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+.ad-slot .ad-label { flex-basis: 100%; font-size: var(--text-meta); color: var(--ink-muted); }
+.ad-slot .ad { display: flex; gap: 10px; align-items: center; flex: 1 1 280px; min-height: 56px; padding: 8px 12px; border: 1px solid var(--border-quiet); background: var(--panel); color: var(--ink); text-decoration: none; }
+.ad-slot .ad:hover { border-color: var(--primary); }
+.ad-slot .ad img { width: 64px; height: 64px; object-fit: cover; flex: none; }
+.ad-slot .ad span { color: var(--ink-muted); font-size: var(--text-meta); }

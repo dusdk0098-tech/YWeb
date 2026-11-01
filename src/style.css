@@ -1059,3 +1059,10 @@ nav#primary-navigation button.nav-home { min-height: 40px; }
 .work-plan-editor .ui-section { margin-top: 16px; }
 .plan-step { border-left: 3px solid var(--border-quiet); padding-left: 12px; margin-bottom: 16px; }
 .plan-step button { margin-right: 8px; }
+.cost-editor .ui-section { margin-top: 16px; }
+.tool-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.table-scroll { overflow-x: auto; }
+.expense-row { border-bottom: 1px solid var(--border-quiet); padding: 8px 0; }
+.expense-row h4 { margin: 0 0 4px; }
+.expense-row[data-status="cancelled"] h4 { text-decoration: line-through; color: var(--ink-muted); }
+.expense-row button { margin: 4px 8px 0 0; }

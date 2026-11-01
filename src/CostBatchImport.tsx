@@ -114,7 +114,7 @@ export function CostBatchImport({
           if (guard.canLeave()) onClose();
         }}
       >
-        비용 원장으로
+        사용내역으로
       </button>
       <h2>
         TSV 지출 일괄 입력 검토 · {period.month} v{period.version}

@@ -75,7 +75,7 @@ export function CostSearch({
   return (
     <section className="panel">
       <button disabled={busy} onClick={onClose}>
-        비용 원장 목록으로
+        사용내역 목록으로
       </button>
       <h2>현재 현장 전체 월 지출 검색</h2>
       <p>

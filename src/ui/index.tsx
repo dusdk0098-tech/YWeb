@@ -55,11 +55,11 @@ export function Section({ no, title, aside, children, id, level = 2 }: { no?: nu
   );
 }
 /** 화면 머리: 뒤로 · 제목 · 상태 칩 · 오른쪽 동작. */
-export function PageHeader({ back, onBack, title, status, children, level = 2 }: { back?: string; onBack?: () => void; title: ReactNode; status?: ReactNode; children?: ReactNode; level?: 1 | 2 }) {
+export function PageHeader({ back, onBack, backDisabled, title, status, children, level = 2 }: { back?: string; onBack?: () => void; backDisabled?: boolean; title: ReactNode; status?: ReactNode; children?: ReactNode; level?: 1 | 2 }) {
   const H = level === 1 ? "h1" : "h2";
   return (
     <div className="ui-page-head">
-      {back && onBack && <button type="button" className="ui-back" onClick={onBack}><Svg d={ICON.back} />{back}</button>}
+      {back && onBack && <button type="button" className="ui-back" disabled={backDisabled} onClick={onBack}><Svg d={ICON.back} />{back}</button>}
       <H>{title}</H>
       {status}
       {children && <div className="ui-page-actions">{children}</div>}

@@ -1,5 +1,5 @@
 import { useOfflineDraft } from "./useOfflineDraft";
-import { Notice, TechDetails } from "./ui";
+import { ActionBar, Notice, PageHeader, Section, StatusChip, TechDetails } from "./ui";
 import { DailyJournalToday } from "./DailyJournalToday";
 import { DailyInspectionReferences,DailyInspectionCaptured } from "./DailyInspectionReferences";
 import { useEffect, useRef, useState } from "react";
@@ -193,24 +193,30 @@ export function DailyJournalEditor({
       setBusy(false);
     }
   }
+  const statusText = dirty ? "저장하지 않은 일지 입력" : record ? "서버에 저장됨" : "새 일지";
   return (
-    <section className="panel">
-      <div className="section-head">
-        <h2>
-          {record?.status === "archived"
-            ? "관리자가 보관한 안전업무일지"
-            : "안전업무일지 초안"}
-        </h2>
-        <button
-          className="secondary"
-          disabled={allBusy}
-          onClick={() => {
-            if (guard.canLeave()) onClose();
-          }}
-        >
-          일지 목록으로
-        </button>
-      </div>
+    <section className="panel journal-editor">
+      <PageHeader
+        back="일지 목록으로"
+        backDisabled={allBusy}
+        onBack={() => {
+          if (guard.canLeave()) onClose();
+        }}
+        title={record?.status === "archived" ? "관리자가 보관한 안전업무일지" : "안전업무일지 초안"}
+        status={
+          record?.status === "archived" ? <StatusChip tone="done">확정 보관</StatusChip>
+          : record?.parent_id ? <StatusChip tone="draft">정정 초안</StatusChip>
+          : record ? <StatusChip tone="draft">작성 중</StatusChip>
+          : <StatusChip tone="neutral">새 일지</StatusChip>
+        }
+      >
+        {record && (
+          <a className="button secondary" href={`/api${base}/${record.id}/print`} target="_blank" rel="noreferrer">
+            일지 인쇄 / PDF
+          </a>
+        )}
+      </PageHeader>
+      {record?.parent_id && <p className="muted">정정 사유: {record.revision_reason}</p>}
       <Notice summary="직접 입력한 기록입니다. 앱이 판정하거나 승인하지 않습니다.">
         사용자가 선택한 날짜의 수기 안전업무일지입니다. 임금/근로시간/고용·교육
         이수·법적 승인·서명을 자동 판정하지 않습니다. 순찰 지적/조치는 직접
@@ -241,7 +247,7 @@ export function DailyJournalEditor({
             />
           </label>
           {editable && <DailyJournalToday siteId={site.id} date={day} />}
-          <h3>3. 관찰·조치 입력</h3>
+          <Section no={3} level={3} title="관찰·조치 입력">
           <label>
             작업 요약 · 보관 시 필수
             <textarea
@@ -284,7 +290,7 @@ export function DailyJournalEditor({
               }
             />
           </label>
-          <h3>수기 순찰 · 지적 · 개선 기록 (최대20항목)</h3>
+          <h4>순찰 · 지적 · 개선 기록 (최대 20항목)</h4>
           {body.patrols.map((p, i) => (
             <fieldset key={i}>
               <legend>순찰 {i + 1}</legend>
@@ -368,7 +374,7 @@ export function DailyJournalEditor({
               })
             }
           >
-            수기 순찰 항목 추가
+            + 순찰 항목 추가
           </button>
           <label>
             후속 업무 메모
@@ -380,43 +386,30 @@ export function DailyJournalEditor({
               }
             />
           </label>
-          <h3>4. 참조 확인</h3>
+          </Section>
+          <Section no={4} level={3} title="참조 확인">
           <label><input type="checkbox" checked={body.inspectionReferences!==undefined} onChange={e=>{if(!e.target.checked&&!window.confirm('미저장 점검 선택과 메모를 제거할까요?'))return;const next={...body};if(e.target.checked)next.inspectionReferences=[];else delete next.inspectionReferences;setBody(next);}}/>같은 날 점검 제출본 참조</label>
           {body.inspectionReferences&&<DailyInspectionReferences siteId={site.id} date={day} value={body.inspectionReferences} onChange={v=>setBody({...body,inspectionReferences:v})} onBusy={setInspectionBusy}/>}
+          </Section>
         </fieldset>
-        {editable && <h3>5. 저장·보관</h3>}
-        {editable && (
-          <button disabled={allBusy || actionDirty || (!formDirty && !!record)}>
-            일지 초안 저장
-          </button>
+        {editable ? (
+          <ActionBar note={<span role="status">{statusText}</span>}>
+            <button disabled={allBusy || actionDirty || (!formDirty && !!record)}>
+              일지 초안 저장
+            </button>
+            {offline.waiting && <p role="status">통신이 끊겨 저장하지 못했습니다. 연결되면 자동으로 다시 저장합니다.</p>}
+          </ActionBar>
+        ) : (
+          <p role="status" className="muted">{statusText}</p>
         )}
-        {offline.waiting && <p role="status">통신이 끊겨 저장하지 못했습니다. 연결되면 자동으로 다시 저장합니다.</p>}
       </form>
       {record && (
         <>
-          <TechDetails>
-            <p>
-              일지 {record.id} · {record.date} · v{record.version} · 작성 계정{" "}
-              {record.author_id}
-            </p>
-          </TechDetails>
-          <div className="actions">
-            <button
-              className="secondary"
-              disabled={allBusy}
-              onClick={() => void reload()}
-            >
+          <Section level={3} title="참조와 보관" aside={
+            <button className="secondary" disabled={allBusy} onClick={() => void reload()}>
               일지 최신본 불러오기
             </button>
-            <a
-              className="button secondary"
-              href={`/api${base}/${record.id}/print`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              일지 인쇄 / PDF
-            </a>
-          </div>
+          }>
           {(record.snapshot?.body.source||record.source_capture)?.facts.inspectionReferences&&<DailyInspectionCaptured items={(record.snapshot?.body.source||record.source_capture)!.facts.inspectionReferences!}/>}
           <DailyJournalSources
             source={record.snapshot?.body.source || record.source_capture}
@@ -432,12 +425,12 @@ export function DailyJournalEditor({
           )}
           {manager && record.status === "draft" && (
             <>
-              <p className="notice">
+              <Notice summary="보관 직전에 그날 자료가 바뀌었으면 보관이 멈춥니다. 작성자가 참조를 다시 가져와야 합니다.">
                 보관 직전에 해당일 관련 원자료가 바뀌었으면409로 중단합니다. 원
                 작성자가 참조를 갱신해야 합니다. 작성 계정이 철회됐다면
                 관리자에게 현재 권한 회복 여부 판단이 필요합니다. 자동 작성자
                 변경 없음.
-              </p>
+              </Notice>
               <button
                 disabled={allBusy || dirty || !record.source_capture}
                 onClick={() => void command("archive")}
@@ -449,11 +442,10 @@ export function DailyJournalEditor({
           {record.snapshot && (
             <p className="muted">
               보관 {record.snapshot.body.archivedAt} ·{" "}
-              {record.snapshot.body.archivedBy.name} (
-              {record.snapshot.body.archivedBy.id}) · SHA-256{" "}
-              {record.snapshot.hash}
+              {record.snapshot.body.archivedBy.name}
             </p>
           )}
+          </Section>
           {record.parent_id && (
             <button
               className="secondary"
@@ -507,14 +499,14 @@ export function DailyJournalEditor({
               </fieldset>
             )
           )}
-          <h3>이 일지의 처리 이력</h3>
-          <p className="muted">
+          <Section level={3} title="처리 이력">
+          <Notice summary="보관 시점의 내용과 처리 기록을 남깁니다.">
             초안 본문/이전 취합 전체 버전은 보관하지 않습니다. 보관 시점의
             본문·참조 snapshot과 처리 메타데이터를 보존합니다.
-          </p>
+          </Notice>
           {events.map((e) => (
             <p key={e.version}>
-              v{e.version} · {e.event} · {e.actor_name} ({e.actor_id}) · {e.at}
+              {e.at} · {e.event} · {e.actor_name}
               <br />
               {e.note}
             </p>
@@ -535,15 +527,17 @@ export function DailyJournalEditor({
               다음 이력50
             </button>
           </div>
+          </Section>
+          <TechDetails>
+            <p>
+              일지 {record.id} · {record.date} · v{record.version} · 작성 계정{" "}
+              {record.author_id}
+            </p>
+            {record.snapshot && <p>보관 계정 {record.snapshot.body.archivedBy.id} · SHA-256 {record.snapshot.hash}</p>}
+            {events.map((e) => <p key={e.version}>v{e.version} · {e.event} · {e.actor_id}</p>)}
+          </TechDetails>
         </>
       )}
-      <p role="status">
-        {dirty
-          ? "저장하지 않은 일지 입력"
-          : record
-            ? "서버에 저장됨"
-            : "새 일지"}
-      </p>
     </section>
   );
 }

@@ -1,5 +1,5 @@
 import { DailyMonthlyReport } from "./DailyMonthlyReport";
-import { Notice } from "./ui";
+import { EmptyState, Notice, PageHeader, StatusChip } from "./ui";
 import { useEffect, useState } from "react";
 import { api, type Site, type User } from "./api";
 import type { Page } from "./attendance-types";
@@ -110,12 +110,7 @@ export function DailyJournalPanel({
     );
   return (
     <section className="panel">
-      <h1>안전업무일지 · 수기 기록</h1>
-      <Notice summary="날짜마다 일지 하나. 보관한 뒤 고칠 때는 정정 초안을 새로 씁니다.">
-        현장·선택 날짜별 최초 일지 하나, 보관 이후 정정은 새 초안입니다.
-        작업/순찰 기록은 실제 안전·고용/임금·법적 승인이나 서명이 아닙니다.
-      </Notice>
-      <div className="actions">
+      <PageHeader level={1} title="안전업무일지">
         <button
           className="secondary"
           disabled={busy}
@@ -126,6 +121,17 @@ export function DailyJournalPanel({
         >
           월간 보관 일지 조회
         </button>
+        {site.role !== "viewer" && (
+          <button disabled={busy} onClick={() => setOpen(null)}>
+            새 안전업무일지
+          </button>
+        )}
+      </PageHeader>
+      <Notice summary="날짜마다 일지 하나. 보관한 뒤 고칠 때는 정정 초안을 새로 씁니다.">
+        현장·선택 날짜별 최초 일지 하나, 보관 이후 정정은 새 초안입니다.
+        작업/순찰 기록은 실제 안전·고용/임금·법적 승인이나 서명이 아닙니다.
+      </Notice>
+      <div className="filter-bar">
         <label>
           일지 날짜 시작
           <input
@@ -138,6 +144,9 @@ export function DailyJournalPanel({
             }}
           />
         </label>
+        <label>일지 날짜 끝 <input type="date" disabled={busy} value={toDate} onChange={e=>{setToDate(e.target.value);setOffset(0);}}/></label>
+        <label>기록 상태 <select disabled={busy} value={status} onChange={e=>{setStatus(e.target.value);setOffset(0);}}><option value="">모든 버전</option><option value="draft">초안</option><option value="archived">보관</option></select></label>
+        <label>작업 요약·장소·관찰 문자 검색 <input maxLength={200} disabled={busy} value={query} onChange={e=>{setQuery(e.target.value);setOffset(0);}}/></label>
         <button
           className="secondary"
           disabled={busy}
@@ -151,41 +160,35 @@ export function DailyJournalPanel({
         >
           검색 조건 초기화
         </button>
-        <label>일지 날짜 끝 <input type="date" disabled={busy} value={toDate} onChange={e=>{setToDate(e.target.value);setOffset(0);}}/></label>
-        <label>기록 상태 <select disabled={busy} value={status} onChange={e=>{setStatus(e.target.value);setOffset(0);}}><option value="">모든 버전</option><option value="draft">초안</option><option value="archived">보관</option></select></label>
-        <label>작업 요약·장소·관찰 문자 검색 <input maxLength={200} disabled={busy} value={query} onChange={e=>{setQuery(e.target.value);setOffset(0);}}/></label>
-        {site.role !== "viewer" && (
-          <button disabled={busy} onClick={() => setOpen(null)}>
-            새 안전업무일지
-          </button>
-        )}
       </div>
       {error && (
         <p role="alert" className="error">
           {error}
         </p>
       )}
-      <p>제목 필드는 없습니다. 과거 정정본도 검색하며 검색 조건은 월간 전체 달력 조회를 제한하지 않습니다. 페이지 사이 기록이 바뀔 수 있습니다.</p>
-      {!loading && !error && <p>검색 결과 {items.total ?? 0}개</p>}
+      {!loading && !error && (
+        <Notice summary={`검색 결과 ${items.total ?? 0}개`}>
+          제목 필드는 없습니다. 과거 정정본도 검색하며 검색 조건은 월간 전체 달력 조회를 제한하지 않습니다. 페이지 사이 기록이 바뀔 수 있습니다.
+        </Notice>
+      )}
       {loading ? (
         <p>불러오는 중…</p>
       ) : (
         items.items.map((j) => (
-          <article key={j.id}>
-            <h2>
-              {j.date} · {j.status === "archived" ? "관리자 기록 보관" : "초안"}
-            </h2>
-            <p>{j.workSummary.slice(0, 200) || "작업 요약 미입력"}</p>
-            <p className="muted">
-              {j.parent_id ? "정정본" : "최초 일지"}
-            </p>
-            <button disabled={busy} onClick={() => void view(j.id)}>
+          <article key={j.id} className="record-row">
+            <div className="record-row-main">
+              <h2>{j.date} · {j.status === "archived" ? "관리자 기록 보관" : "초안"}</h2>
+              <p>{j.workSummary.slice(0, 200) || "작업 요약 미입력"}</p>
+            </div>
+            {j.status === "archived" ? <StatusChip tone="done">확정 보관</StatusChip>
+              : <StatusChip tone="draft">{j.parent_id ? "정정 초안" : "작성 중"}</StatusChip>}
+            <button className="secondary" disabled={busy} onClick={() => void view(j.id)}>
               일지 열기
             </button>
           </article>
         ))
       )}
-      {!loading && !error && !items.items.length && <p>일지 없음</p>}
+      {!loading && !error && !items.items.length && <EmptyState title="일지 없음">검색 조건을 바꾸거나 새 일지를 쓰세요.</EmptyState>}
       <div className="actions">
         <button
           className="secondary"

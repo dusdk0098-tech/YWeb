@@ -1,5 +1,7 @@
 import { InspectionTaskSource } from "./InspectionTaskSource";
-import { Notice, TechDetails } from "./ui";
+import { ActionBar, Notice, PageHeader, Section, StatusChip, TechDetails, type Tone } from "./ui";
+const statusTone: Record<string, Tone> = { draft: "draft", submitted: "pending", accepted: "done", returned: "error" };
+const statusChip: Record<string, string> = { draft: "작성 중", submitted: "확인 대기", accepted: "검토 수락", returned: "반려" };
 import { InspectionHazardLinks } from "./InspectionHazardLinks";
 import { HazardEditor } from "./HazardEditor";
 import type { HazardRecord } from "./hazard-types";
@@ -152,20 +154,26 @@ export function InspectionEditor({
       />
     );
   return (
-    <section className="panel">
-      <div className="section-head">
-        <h1>
-          {t.body.title} ·{" "}
-          {record ? inspectionStatus[record.status] : "새 점검"}
-        </h1>
-        <button
-          disabled={busy}
-          className="secondary"
-          onClick={() => guard.canLeave() && onClose()}
-        >
-          점검 목록으로
-        </button>
-      </div>
+    <section className="panel inspection-editor">
+      <PageHeader
+        level={1}
+        back="점검 목록으로"
+        backDisabled={busy}
+        onBack={() => guard.canLeave() && onClose()}
+        title={<>{t.body.title} · {record ? inspectionStatus[record.status] : "새 점검"}</>}
+        status={<StatusChip tone={record ? statusTone[record.status] : "neutral"}>{record ? statusChip[record.status] : "새 점검"}</StatusChip>}
+      >
+        {record && (
+          <>
+            <button disabled={busy} className="secondary" onClick={() => reload(record.id)}>
+              최신본 다시 열기
+            </button>
+            <a className="button secondary" href={`/api/sites/${site.id}/inspections/${record.id}/print`} target="_blank" rel="noreferrer">
+              저장본 인쇄 / PDF
+            </a>
+          </>
+        )}
+      </PageHeader>
       {t.body.instructions && <p>{t.body.instructions}</p>}
       <Notice summary="부적합 결과는 자동으로 조치 완료되지 않습니다.">
         계정이 직접 입력한 점검 기록입니다. 본인 확인·법정 점검 증명·안전 인증이
@@ -173,6 +181,8 @@ export function InspectionEditor({
       </Notice>
       <TechDetails>
         <p>양식 {t.id} · 게시 버전 {t.version}</p>
+        {record?.submitted_snapshot && <p>원 제출 계정 ID {record.submitted_snapshot.submitter.id}</p>}
+        {record?.review && <p>검토 계정 ID {record.review.actor.id}</p>}
         {record && (
           <p>
             기록 {record.id} · v{record.version} · 작성 계정 {record.owner_id} ·
@@ -182,8 +192,7 @@ export function InspectionEditor({
       </TechDetails>
       {record?.submitted_snapshot && (
         <p>
-          원 제출 계정: {record.submitted_snapshot.submitter.name} (
-          {record.submitted_snapshot.submitter.id}) ·{" "}
+          원 제출 계정: {record.submitted_snapshot.submitter.name} ·{" "}
           {record.submitted_snapshot.submittedAt}
         </p>
       )}
@@ -200,6 +209,8 @@ export function InspectionEditor({
         </p>
       )}
       <fieldset disabled={!editable || busy}>
+        <Section no={1} level={2} title="점검 정보">
+        <div className="grid">
         <label>
           점검일
           <input
@@ -224,13 +235,16 @@ export function InspectionEditor({
             onChange={(e) => setForm({ ...form, performedBy: e.target.value })}
           />
         </label>
+        </div>
+        </Section>
+        <Section no={2} level={2} title={`점검 항목 · ${t.body.items.length}개`}>
         {t.body.items.map((item, index) => {
           const a = form.answers.find((a) => a.itemId === item.id)!;
           return (
-            <div className="panel" key={item.id}>
-              <h2>
+            <div className="inspection-item" key={item.id} data-result={a.result}>
+              <h3>
                 {index + 1}. {item.text}
-              </h2>
+              </h3>
               <label>
                 결과
                 <select
@@ -273,15 +287,15 @@ export function InspectionEditor({
             </div>
           );
         })}
+        </Section>
       </fieldset>
-      <div className="actions">
-        {editable && (
-          <button disabled={busy} onClick={() => run("save")}>
-            점검 초안 저장
-          </button>
-        )}
+      {editable && (
+      <ActionBar note={formDirty ? "저장하지 않은 입력" : record ? "서버에 저장됨" : ""}>
+        <button disabled={busy} onClick={() => run("save")}>
+          점검 초안 저장
+        </button>
         {offline.waiting && <p role="status">통신이 끊겨 저장하지 못했습니다. 연결되면 자동으로 다시 저장합니다.</p>}
-        {editable && record && (
+        {record && (
           <button
             disabled={busy || formDirty}
             onClick={() =>
@@ -293,31 +307,13 @@ export function InspectionEditor({
             점검 제출
           </button>
         )}
-        {record && (
-          <>
-            <button
-              disabled={busy}
-              className="secondary"
-              onClick={() => reload(record.id)}
-            >
-              최신본 다시 열기
-            </button>
-            <a
-              href={`/api/sites/${site.id}/inspections/${record.id}/print`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              저장본 인쇄 / PDF
-            </a>
-          </>
-        )}
-      </div>
+      </ActionBar>
+      )}
       {record?.review && (
         <div className="notice">
           <h2>관리자 기록 검토</h2>
           <p>
-            {record.review.actor.name} ({record.review.actor.id}) ·{" "}
-            {record.review.at}
+            {record.review.actor.name} · {record.review.at}
           </p>
           <p>{record.review.reason}</p>
           {record.review.successorId && (
@@ -333,11 +329,11 @@ export function InspectionEditor({
       {record?.status === "submitted" && site.role === "manager" && (
         <section className="panel">
           <h2>관리자 검토</h2>
-          <p>
+          <Notice summary="제출한 사람이 아닌 다른 관리자가 검토합니다.">
             잠정 업무 정책: 원 제출 계정이 아닌 현장 관리자가 검토합니다.
             제출자가 관리자이면 다른 관리자 1명이 필요합니다. 현장 설정에서 기존
             계정을 관리자로 지정하세요. 법적 의무를 뜻하지 않습니다.
-          </p>
+          </Notice>
           {record.owner_id === user.id ? (
             <p className="notice">
               본인 제출 기록은 직접 수락/반려할 수 없습니다.

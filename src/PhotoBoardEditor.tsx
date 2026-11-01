@@ -4,6 +4,7 @@ import { useDraftGuard } from "./useDraftGuard";
 import { makePhotoDisplay } from "./photo-display";
 import { circleAt, drawItem, moveCircle, moveItem, photoInfoTsv, resizeCircle, rotateItem, type Scene, type SceneItem } from "./photo-scene";
 import { MAX_ZOOM, panView, zoomView } from "../server/photo-view";
+import { ActionBar, Notice, PageHeader, Section, StatusChip } from "./ui";
 export type PhotoBoard = {
   id: string; title: string; version: number; updatedAt: string; body: { siteName: string; work: string; footer: string }; scene: Scene;
   photos: { id: string; filename: string; format: string; size: number; width: number | null; height: number | null; hasDisplay: boolean; createdAt: string }[];
@@ -90,31 +91,37 @@ export function PhotoBoardEditor({ base, initial, writable, onClose, onDirtyChan
     }, "image/png");
   }
   const placed = new Set(draft.scene.items.map((i) => i.photoId)), unplaced = board.photos.filter((p) => !placed.has(p.id));
-  return <section className="panel">
-    <button disabled={busy} onClick={() => { if (guard.canLeave()) onClose(); }}>사진 보드 목록으로</button>
-    <h2>{draft.title}{dirty ? " · 저장 안 됨" : ""}</h2>
+  return <section className="panel photo-editor">
+    <PageHeader back="사진 보드 목록으로" backDisabled={busy} onBack={() => { if (guard.canLeave()) onClose(); }} title={draft.title || "사진 보드"}
+      status={dirty ? <StatusChip tone="pending">저장 안 됨</StatusChip> : <StatusChip tone="done">저장됨</StatusChip>}>
+      <button className="secondary" disabled={busy} onClick={exportPng}>PNG 저장</button>
+      <button className="secondary" disabled={busy || !draft.scene.items.length} onClick={exportTsv}>사진 정보표 TSV 저장</button>
+      <a className="button secondary" href={`/api${path}/print`} target="_blank" rel="noreferrer">사진대지 인쇄(PDF)</a>
+    </PageHeader>
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     <fieldset disabled={!writable || busy}>
+      <Section no={1} level={3} title="보드 정보">
+      <div className="grid">
       <label>제목<input maxLength={200} value={draft.title} onChange={(e) => change({ ...draft, title: e.target.value })} /></label>
       <label>현장명<input maxLength={200} value={draft.body.siteName} onChange={(e) => change({ ...draft, body: { ...draft.body, siteName: e.target.value } })} /></label>
       <label>작업내용<input maxLength={500} value={draft.body.work} onChange={(e) => change({ ...draft, body: { ...draft.body, work: e.target.value } })} /></label>
       <label>하단 정보<input maxLength={500} value={draft.body.footer} onChange={(e) => change({ ...draft, body: { ...draft.body, footer: e.target.value } })} /></label>
+      </div>
+      </Section>
+      <Section no={2} level={3} title={`사진 · ${board.photos.length}/40장`}>
+      <div className="grid">
       <label>사진 추가(PNG·JPEG, 원본 보존)<input type="file" multiple accept=".png,.jpg,.jpeg" onChange={(e) => { if (e.target.files?.length) void upload(Array.from(e.target.files)); e.target.value = ""; }} /></label>
       <label>폴더 추가(안의 PNG·JPEG만)<input type="file" multiple {...{ webkitdirectory: "" }} onChange={(e) => { if (e.target.files?.length) void upload(Array.from(e.target.files)); e.target.value = ""; }} /></label>
-      <button disabled={!past.length} onClick={undo}>실행 취소</button>
-      <button disabled={!future.length} onClick={redo}>다시 실행</button>
-      <button disabled={!dirty || !draft.title.trim()} onClick={() => void save()}>사진 보드 저장</button>
+      </div>
+      </Section>
     </fieldset>
-    <button disabled={busy} onClick={exportPng}>PNG 저장</button>
-    <button disabled={busy || !draft.scene.items.length} onClick={exportTsv}>사진 정보표 TSV 저장</button>
-    <a href={`/api${path}/print`} target="_blank" rel="noreferrer">사진대지 인쇄(PDF) ↗</a>{dirty && <small> 인쇄는 저장된 내용 기준입니다. 먼저 저장하세요.</small>}
-    {unplaced.length > 0 && <p>배치 안 된 사진: {unplaced.map((p) => <button key={p.id} disabled={!writable || busy} onClick={() => setItems([...draft.scene.items, { photoId: p.id, included: true, rotation: 0, caption: "", circles: [] }])}>{p.filename} 배치</button>)}</p>}
-    <p>사진을 누르면 그 자리에 원형 강조가 생깁니다. 강조는 끌어서 옮기고(손가락도 가능), 고른 뒤 화살표(Shift는 10배)·+/−·Delete 또는 아래 버튼으로 조정합니다. 확대한 사진은 빈 곳을 끌어 보이는 위치를 옮깁니다.</p>
-    <ol>
+    {unplaced.length > 0 && <p>배치 안 된 사진: {unplaced.map((p) => <button key={p.id} className="secondary" disabled={!writable || busy} onClick={() => setItems([...draft.scene.items, { photoId: p.id, included: true, rotation: 0, caption: "", circles: [] }])}>{p.filename} 배치</button>)}</p>}
+    {draft.scene.items.length > 0 && <Notice summary="사진을 누르면 원형 강조가 생깁니다. 끌어서 옮깁니다.">사진을 누르면 그 자리에 원형 강조가 생깁니다. 강조는 끌어서 옮기고(손가락도 가능), 고른 뒤 화살표(Shift는 10배)·+/−·Delete 또는 아래 버튼으로 조정합니다. 확대한 사진은 빈 곳을 끌어 보이는 위치를 옮깁니다.</Notice>}
+    <ol className="photo-items">
       {draft.scene.items.map((item, i) => {
         const photo = board.photos.find((p) => p.id === item.photoId);
-        return <li key={item.photoId}>
+        return <li key={item.photoId} className="photo-item" data-included={item.included}>
           <ItemCanvas img={images[item.photoId]} item={item} label={`${i + 1}번 사진 ${photo?.filename ?? ""}`} selectedCircle={selected?.item === i ? selected.circle : null} writable={writable && !busy}
             onAdd={(x, y) => { if (!writable) return; setItem(i, { ...item, circles: [...item.circles, { x, y, r: 0.08, color: "red" as const }].slice(0, 10) }); setSelected({ item: i, circle: Math.min(item.circles.length, 9) }); }}
             onSelect={(c) => setSelected({ item: i, circle: c })} onCommit={(next) => setItem(i, next)}
@@ -143,11 +150,16 @@ export function PhotoBoardEditor({ base, initial, writable, onClose, onDirtyChan
               <button onClick={() => { setItem(i, { ...item, circles: item.circles.filter((_, j) => j !== selected.circle) }); setSelected(null); }}>강조 삭제</button>
             </>}
             {selected?.item === i && selected.circle !== null && item.circles[selected.circle] && <label>강조 색<select value={item.circles[selected.circle].color} onChange={(e) => setItem(i, { ...item, circles: item.circles.map((x, j) => (j === selected.circle ? { ...x, color: e.target.value as "red" } : x)) })}><option value="red">빨강</option><option value="yellow">노랑</option><option value="blue">파랑</option></select></label>}
-            <a href={`/api${path}/photos/${item.photoId}/download`}>미검사 원본 다운로드</a>
+            <a className="button secondary" href={`/api${path}/photos/${item.photoId}/download`}>원본 다운로드</a>
           </fieldset>
         </li>;
       })}
     </ol>
+    <ActionBar note={dirty ? "인쇄는 저장된 내용 기준입니다. 먼저 저장하세요." : undefined}>
+      <button disabled={!writable || busy || !dirty || !draft.title.trim()} onClick={() => void save()}>사진 보드 저장</button>
+      <button className="secondary" disabled={!writable || busy || !past.length} onClick={undo}>실행 취소</button>
+      <button className="secondary" disabled={!writable || busy || !future.length} onClick={redo}>다시 실행</button>
+    </ActionBar>
   </section>;
 }
 export function ItemCanvas({ img, item, label, selectedCircle, writable, onAdd, onSelect, onCommit, onKey }: {

@@ -1048,3 +1048,11 @@ nav#primary-navigation button.nav-home { min-height: 40px; }
 .inspection-item[data-result="pass"] { border-left-color: var(--success); }
 .inspection-item[data-result="fail"] { border-left-color: var(--error); }
 .inspection-item[data-result="na"] { border-left-color: var(--ink-muted); }
+.photo-editor .ui-section { margin-top: 16px; }
+.photo-items { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr)); gap: 16px; }
+.photo-item { border: 1px solid var(--border-quiet); background: var(--panel); padding: 12px; }
+.photo-item[data-included="false"] { opacity: 0.6; }
+.photo-item canvas { display: block; width: 100%; height: auto; border: 1px solid var(--border-quiet); }
+.photo-item fieldset { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.inline-create { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: end; margin: 12px 0; }
+.inline-create label { flex: 1 1 240px; margin: 0; }

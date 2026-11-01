@@ -1,4 +1,6 @@
 import { MinutesAttachments } from "./MinutesAttachments";
+import { Fragment } from "react";
+import { AiPolish } from "./AiDescriptionSuggest";
 import { Notice, TechDetails } from "./ui";
 import { MinutesFollowupsPanel } from "./MinutesFollowupsPanel";
 import { useDraftGuard } from "./useDraftGuard";
@@ -182,7 +184,8 @@ export function MeetingEditor({
           </div>
           {(["attendees", "agenda", "discussion", "decisions"] as const).map(
             (field, index) => (
-              <label key={field}>
+              <Fragment key={field}>
+              <label>
                 {
                   ["참석자 · 소속 · 역할", "안건", "논의 내용", "결정 사항"][
                     index
@@ -200,6 +203,8 @@ export function MeetingEditor({
                   }
                 />
               </label>
+              {field === "decisions" && writable && <AiPolish siteId={site.id} kind="minutes_decisions" text={value.decisions} onApply={(v) => change("decisions", v)} />}
+              </Fragment>
             ),
           )}
           <div className="section-head">

@@ -1,4 +1,5 @@
 import { useOfflineDraft } from "./useOfflineDraft";
+import { AiPolish } from "./AiDescriptionSuggest";
 import { ActionBar, Notice, PageHeader, Section, StatusChip, TechDetails } from "./ui";
 import { DailyJournalToday } from "./DailyJournalToday";
 import { DailyInspectionReferences,DailyInspectionCaptured } from "./DailyInspectionReferences";
@@ -259,6 +260,7 @@ export function DailyJournalEditor({
               }
             />
           </label>
+          {editable && <AiPolish siteId={site.id} kind="journal_summary" text={body.workSummary} onApply={(v) => setBody({ ...body, workSummary: v })} />}
           <label>
             작업 장소
             <input
@@ -280,6 +282,7 @@ export function DailyJournalEditor({
               }
             />
           </label>
+          {editable && <AiPolish siteId={site.id} kind="journal_safety" text={body.safetyInstructions} onApply={(v) => setBody({ ...body, safetyInstructions: v })} />}
           <label>
             관찰 사항
             <textarea

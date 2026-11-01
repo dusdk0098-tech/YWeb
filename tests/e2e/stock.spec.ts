@@ -27,7 +27,7 @@ test("manual stock exact quantity and selected full reversal preserve original",
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
   await page
-    .getByRole("button", { name: "재고", exact: true })
+    .getByRole("button", { name: "재고 · 보호구", exact: true })
     .click();
   await page.getByRole("button", { name: "품목 등록", exact: true }).click();
   await page.getByLabel("품목명", { exact: true }).fill("합성 품목");

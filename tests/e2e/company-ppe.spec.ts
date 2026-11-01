@@ -64,7 +64,7 @@ test("company affiliation source and PPE full return update one stock ledger", a
     .getByLabel("작업 현장")
     .selectOption({ label: "보호구 합성 현장" });
   await page
-    .getByRole("button", { name: "업체 · 보호구", exact: true })
+    .getByRole("button", { name: "재고 · 보호구", exact: true })
     .click();
   await page
     .getByRole("button", { name: "보호구 지급·반납", exact: true })

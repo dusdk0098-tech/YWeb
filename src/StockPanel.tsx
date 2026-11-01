@@ -1,4 +1,5 @@
 import { StockMinimumPanel } from "./StockMinimumPanel";
+import { PpePanel } from "./PpePanel";
 import { Notice, PageHeader } from "./ui";
 import { useEffect, useState } from "react";
 import { api, type Site } from "./api";
@@ -24,6 +25,7 @@ export function StockPanel({
     [record, setRecord] = useState<StockItem | null>(null),
     [creating, setCreating] = useState(false),
     [minimums, setMinimums] = useState(false),
+    [ppe, setPpe] = useState(false), // 보호구 지급·반납 (결정 8: one entry for PPE)
     [name, setName] = useState(""),
     [unit, setUnit] = useState(""),
     [busy, setBusy] = useState(false),
@@ -85,9 +87,24 @@ export function StockPanel({
       />
     );
   if (minimums) return <>{error && <p role="alert">{error}</p>}<StockMinimumPanel siteId={site.id} disabled={busy} onOpen={id => void open(id)} onClose={() => setMinimums(false)}/></>;
+  const switcher = (
+    <div className="segmented" role="group" aria-label="종류">
+      <button type="button" aria-pressed={!ppe} className={ppe ? "secondary" : ""} disabled={busy} onClick={() => setPpe(false)}>품목 재고</button>
+      <button type="button" aria-pressed={ppe} className={ppe ? "" : "secondary"} disabled={busy} onClick={() => setPpe(true)}>보호구 지급·반납</button>
+    </div>
+  );
+  if (ppe)
+    return (
+      <section className="panel">
+        <PageHeader level={1} title="재고 · 보호구" />
+        {switcher}
+        <PpePanel site={site} onDirtyChange={onDirtyChange} onBusyChange={onBusyChange} />
+      </section>
+    );
   return (
     <section className="panel">
-      <PageHeader level={1} title="재고" />
+      <PageHeader level={1} title="재고 · 보호구" />
+      {switcher}
       <Notice summary="직접 입력하는 재고 기록입니다. 실물 확인이나 금액 평가는 하지 않습니다.">{stockWarning}</Notice>
       {error && <p role="alert">{error}</p>}
       {creating ? (

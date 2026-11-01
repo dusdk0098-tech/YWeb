@@ -27,7 +27,7 @@ test("explicit account notice publish acknowledgement and new-version reset", as
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
   await page
-    .getByRole("button", { name: "공지", exact: true })
+    .getByRole("button", { name: "공지 · 자료", exact: true })
     .click();
   await page.getByRole("button", { name: "새 공지 초안", exact: true }).click();
   const recipients = page.getByRole("group", {

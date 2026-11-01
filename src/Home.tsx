@@ -35,7 +35,7 @@ export function Home({ site, user, ads, onOpen }: { site: Site | undefined; user
         if (!active) return;
         const tasks = [
           ...task("신고 조치", "hazards", false)(hazardsMine, (r) => `${r.title} · ${r.stateLabel}`, (r) => r.dueDate),
-          ...task("위험성평가 조치", "riskactions", false)(riskActions, (r) => r.task ? `${r.title} · ${r.task}` : r.title, (r) => r.due),
+          ...task("위험성평가 조치", "riskcore", false)(riskActions, (r) => r.task ? `${r.title} · ${r.task}` : r.title, (r) => r.due),
           ...task("점검 일정", "inspections", false)(inspectionStarts, (r) => `${r.title} · ${r.location}`, (r) => r.plannedDate),
           ...task("회의 후속조치", "minutes", false)(followups, (r) => `${r.source.action.task} · ${r.source.title}`, (r) => r.due),
           ...task("게시본 확인", "riskcore", true)(publications, (r) => r.title, () => undefined),

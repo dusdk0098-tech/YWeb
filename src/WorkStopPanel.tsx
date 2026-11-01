@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Notice, PageHeader } from "./ui";
+import { matchesFind, Notice, PageFind, PageHeader } from "./ui";
 import { api, type Site, type User } from "./api";
 import type { Page } from "./attendance-types";
 import {
@@ -19,6 +19,7 @@ export function WorkStopPanel({
   onDirtyChange: (v: boolean) => void;
   onBusyChange: (v: boolean) => void;
 }) {
+  const [find, setFind] = useState(""); // 이 페이지에서 찾기 (편의 9): filters the 50 rows already loaded
   const [page, setPage] = useState<Page<WorkStopRecord>>({
       items: [],
       hasMore: false,
@@ -129,8 +130,10 @@ export function WorkStopPanel({
         {loading ? (
           <p>불러오는 중…</p>
         ) : (
+          <>
+          <PageFind value={find} onChange={setFind} />
           <ul className="meeting-list">
-            {page.items.map((r) => (
+            {page.items.filter((r) => matchesFind(r, find)).map((r) => (
               <li key={r.id}>
                 <button
                   className="record"
@@ -152,6 +155,7 @@ export function WorkStopPanel({
               </li>
             ))}
           </ul>
+          </>
         )}
         <div className="form-actions">
           <button

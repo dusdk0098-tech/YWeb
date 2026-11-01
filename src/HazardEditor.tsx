@@ -1,4 +1,5 @@
 import { HazardAttachments } from "./HazardAttachments";
+import { useOfflineDraft } from "./useOfflineDraft";
 import { Notice, TechDetails } from "./ui";
 import { HazardInspectionSource } from "./HazardInspectionSource";
 import { useEffect, useRef, useState } from "react";
@@ -54,6 +55,7 @@ export function HazardEditor({
   const editable =
     site.role !== "viewer" &&
     (!record || (record.status === "draft" && record.owner_id === user.id));
+  const offline = useOfflineDraft(`hazard:${site.id}:${user.id}:${record?.id ?? "new"}`, form, record?.body || initialEmpty.current, editable, () => void save());
   const isManager = site.role === "manager";
   const canRemediate =
     record?.status === "assigned" &&
@@ -106,8 +108,8 @@ export function HazardEditor({
     )
       onClose();
   }
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(e?: React.FormEvent) {
+    e?.preventDefault();
     if (busy) return;
     setBusy(true);
     setError("");
@@ -121,8 +123,9 @@ export function HazardEditor({
       setRecord(next);
       setForm(next.body);
       setSaveKey(crypto.randomUUID());
+      offline.saved();
     } catch (e) {
-      setError((e as Error).message);
+      setError(offline.failed(e));
     } finally {
       setBusy(false);
     }
@@ -223,6 +226,13 @@ export function HazardEditor({
           {error}
         </p>
       )}
+      {offline.local && (
+        <p role="status">
+          이 기기에 저장 안 된 초안이 있습니다({new Date(offline.local.savedAt).toLocaleString()}).
+          <button type="button" onClick={() => { setForm(offline.local!.value); offline.discard(); }}>기기 초안 복원</button>
+          <button type="button" onClick={() => offline.discard()}>기기 초안 버리기</button>
+        </p>
+      )}
       <form onSubmit={save}>
         <fieldset disabled={!editable || busy}>
           <div className="grid">
@@ -265,11 +275,14 @@ export function HazardEditor({
         </fieldset>
         <div className="form-actions">
           {editable && (
-            <button
-              disabled={busy || attachmentDirty || (!formDirty && !!record)}
-            >
-              신고 초안 저장
-            </button>
+            <>
+              <button
+                disabled={busy || attachmentDirty || (!formDirty && !!record)}
+              >
+                신고 초안 저장
+              </button>
+              {offline.waiting && <p role="status">통신이 끊겨 저장하지 못했습니다. 연결되면 자동으로 다시 저장합니다.</p>}
+            </>
           )}
           {record && (
             <>

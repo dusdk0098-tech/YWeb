@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { PageHeader, Notice } from "./ui";
+import { matchesFind, Notice, PageFind, PageHeader } from "./ui";
 import { api, uploadLibraryFile, type Site } from "./api";
 type LibraryFile = { id: string; title: string; edition: string; filename: string; format: string; size: number; sha256: string; rights_checked_by: string; uploaded_at: string; uploader: string; withdrawn_at: string | null; withdrawn_reason: string | null };
 type Library = { revision: number; items: LibraryFile[] };
 // WEB-01 1단계: site-members-only library. Managers upload after confirming rights; members download the unscanned original.
 export function LibraryPanel({ site }: { site: Site }) {
   const base = `/sites/${site.id}/library`, manager = site.role === "manager";
+  const [find, setFind] = useState(""); // 이 페이지에서 찾기 (편의 9): filters the 50 rows already loaded
   const [data, setData] = useState<Library | null>(null), [file, setFile] = useState<File | null>(null), [title, setTitle] = useState(""), [edition, setEdition] = useState(""),
     [rights, setRights] = useState(false), [withdraw, setWithdraw] = useState<{ id: string; reason: string } | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState(""), [tick, setTick] = useState(0);
   const input = useRef<HTMLInputElement>(null);
@@ -32,8 +33,9 @@ export function LibraryPanel({ site }: { site: Site }) {
         if (ok) { setFile(null); setTitle(""); setEdition(""); setRights(false); if (input.current) input.current.value = ""; }
       })}>자료 올리기</button>
     </fieldset>}
+    <PageFind value={find} onChange={setFind} />
     {!data ? !error && <p>조회 중</p> : data.items.length === 0 ? <p>자료가 없습니다.</p> : <ul>
-      {data.items.map((f) => <li key={f.id}>
+      {data.items.filter((f) => matchesFind(f, find)).map((f) => <li key={f.id}>
         <strong>{f.title}</strong> · {f.edition} · {f.filename} · {Math.ceil(f.size / 1024)}KB · {f.uploader} {new Date(f.uploaded_at).toLocaleDateString()} · 권리 확인 {f.rights_checked_by}
         {f.withdrawn_at ? <> · <em>게시 중지: {f.withdrawn_reason}</em></> : <> · <a href={`/api${base}/${f.id}/download`}>미검사 원본 내려받기</a></>}
         {manager && !f.withdrawn_at && (withdraw?.id === f.id

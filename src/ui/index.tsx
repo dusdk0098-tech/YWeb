@@ -96,3 +96,13 @@ export function Field({ label, htmlFor, help, error, required, children }: { lab
   );
 }
 export { Svg as UiIcon };
+/** 이 페이지에서 찾기: narrows the rows already on screen (one page of 50); not a server search. */
+export const matchesFind = (row: unknown, q: string) => !q.trim() || JSON.stringify(row).toLowerCase().includes(q.trim().toLowerCase());
+export function PageFind({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="page-find">
+      이 페이지에서 찾기
+      <input type="search" maxLength={100} value={value} onChange={(e) => onChange(e.target.value)} placeholder="제목·날짜·이름" />
+    </label>
+  );
+}

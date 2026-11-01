@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Notice, TechDetails } from "./ui";
 import { api, type Site } from "./api";
 import type { EquipmentInput, EquipmentRecord } from "./equipment-types";
 import { useDraftGuard } from "./useDraftGuard";
@@ -101,15 +102,15 @@ export function EquipmentEditor({
           장비 목록으로
         </button>
       </div>
-      <p className="notice">
+      <Notice summary="활성 장비에만 사용 기록을 입력할 수 있습니다.">
         등록 활성은 앱에서 새 수기 사용기록을 입력할 수 있는 분류이며
         사용허가·장비 안전·검사/보험 적합성 인증이 아닙니다. 공학 계산·증빙 첨부
         없음.
-      </p>
+      </Notice>
       {record && (
-        <p>
-          장비 ID {record.id} · v{record.version}
-        </p>
+        <TechDetails>
+          <p>장비 ID {record.id} · v{record.version}</p>
+        </TechDetails>
       )}
       {error && (
         <p role="alert" className="error">

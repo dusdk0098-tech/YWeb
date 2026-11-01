@@ -1,4 +1,5 @@
 import type { CostExpenseSelection } from "./CostSelectedExpense";
+import { Notice } from "./ui";
 import { CostSearch } from "./CostSearch";
 import { CostLabor } from "./CostLabor";
 import { CostDashboard } from "./CostDashboard";
@@ -139,7 +140,7 @@ export function CostPanel({
   return (
     <section>
       <h2>관리자 수기 비용 원장</h2>
-      <p>{costWarning}</p>
+      <Notice summary="직접 입력하는 비용 원장입니다. 금액은 반올림하지 않습니다.">{costWarning}</Notice>
       <button
         disabled={busy}
         onClick={() => {

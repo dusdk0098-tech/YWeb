@@ -58,7 +58,6 @@ export function WorkersAttendance({
   return (
     <>
       <div className="page-heading">
-        <p className="eyebrow">PEOPLE & ATTENDANCE</p>
         <h1>명부 · 출역</h1>
         <p>현장별 최소정보 명부와 담당자 수기 출역 기록.</p>
         <div className="form-actions">

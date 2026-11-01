@@ -12,7 +12,8 @@ export function AppShell({ user, sites, siteId, site, tab, disabled, error, onSe
 }) {
   const manager = site?.role === "manager", anyManager = sites.some((s) => s.role === "manager");
   const [sheet, setSheet] = useState<string | null>(null); // open mobile tab (group ids it lists)
-  useEffect(() => { setSheet(null); }, [tab]);
+  // a new screen starts at its top, not where the long sidebar left the page
+  useEffect(() => { setSheet(null); window.scrollTo(0, 0); }, [tab]);
   const visible = (i: NavItem) => (!i.managerOnly || manager) && (i.id !== "overview" || anyManager);
   const groups = NAV_GROUPS.filter((g) => !g.managerOnly || manager);
   const item = (i: NavItem, extra = "") => (

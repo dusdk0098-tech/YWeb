@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Notice } from "./ui";
 import { api, type Site } from "./api";
 import type { Worker, Page } from "./attendance-types";
 import { WorkerIdentity } from "./WorkerIdentity";
@@ -106,11 +107,11 @@ export function WorkersPanel({
   return (
     <section className="panel">
       <h2>현장 명부</h2>
-      <p className="notice">
+      <Notice tone="warning" summary="주민등록번호·건강정보·위치·연락처는 넣지 마세요.">
         최소한의 이름·소속·구분만 입력하세요. 동명이인은 별도 ID로 관리하며 다른
         현장과 자동 합치지 않습니다. 주민등록번호·건강정보·위치·연락처를 넣지
         마세요.
-      </p>
+      </Notice>
       {error && (
         <p role="alert" className="error">
           {error}

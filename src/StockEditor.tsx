@@ -1,4 +1,5 @@
 import { StockMinimumEditor } from "./StockMinimumEditor";
+import { Notice, TechDetails } from "./ui";
 import { StockCostSource } from "./StockCostSource";
 import { useEffect, useState } from "react";
 import { api, type Site } from "./api";
@@ -151,14 +152,15 @@ export function StockEditor({
       <h2>
         {record.name} · 잔량 {record.balance} {record.unit}
       </h2>
-      <p>{stockWarning}</p>
+      <Notice summary="직접 입력하는 재고 기록입니다. 실물 확인이나 금액 평가는 하지 않습니다.">{stockWarning}</Notice>
       <button disabled={busy} onClick={() => { if (guard.canLeave()) { setForm(null); setReverse(null); setMetadata(null); setMinimums(true); } }}>최소재고 설정·현재 비교</button>
       <p>
-        품목 ID {record.id} · v{record.version} · 보존 이동{" "}
+        보존 이동{" "}
         {record.movementCount}/9000 (원본 {record.originalCount}/1000 · 역분개{" "}
         {record.reversalCount}/1000 · PPE 전용 {record.ppeReturnMovementCount||0}/7000) · 최근 효력일{" "}
         {record.lastEffectiveDate || "없음"}
       </p>
+      <TechDetails><p>품목 ID {record.id} · v{record.version}</p></TechDetails>
       {error && (
         <p role="alert">
           {error} 입력을 유지했습니다. 버전 충돌이면 목록에서 최신본을 다시

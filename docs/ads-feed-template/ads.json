@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "ads": [
+    {
+      "id": "example-sponsor",
+      "title": "예시 광고 · 제목은 60자까지",
+      "text": "문구는 140자까지. 이 항목은 예시이며 실제 광고주가 아닙니다.",
+      "url": "https://github.com/dusdk0098-tech/YWeb",
+      "from": "2026-01-01",
+      "to": "2099-12-31"
+    }
+  ]
+}

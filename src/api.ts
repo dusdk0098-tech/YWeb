@@ -3,6 +3,23 @@ let csrf = "";
 export function setCsrf(value: string) {
   csrf = value;
 }
+// Sessions last 8 hours and die on a server restart or a password change elsewhere. A 401 off the login path, or the
+// 403 the CSRF check gives once the cookie is gone, then means we are signed out — unless the server still knows us
+// (a wrong current password also answers 401, a real permission error 403), so ask /session once before sending the
+// app back to the login screen.
+let onSessionLost: (() => void) | null = null, sessionCheck: Promise<boolean> | null = null;
+export function setSessionLostHandler(handler: (() => void) | null) {
+  onSessionLost = handler;
+}
+async function sessionLost(path: string, status: number) {
+  if ((status !== 401 && status !== 403) || path === "/login" || !onSessionLost) return;
+  sessionCheck ??= fetch("/api/session", { credentials: "same-origin" })
+    .then((r) => r.json())
+    .then((s: { user: unknown }) => !s.user)
+    .catch(() => false) // unreachable server: not a lost session
+    .finally(() => { sessionCheck = null; });
+  if (await sessionCheck) onSessionLost();
+}
 export async function api<T>(
   path: string,
   method = "GET",
@@ -21,8 +38,10 @@ export async function api<T>(
   });
   if (response.status === 204) return undefined as T;
   const data = await response.json();
-  if (!response.ok)
+  if (!response.ok) {
+    await sessionLost(path, response.status);
     throw new Error(errorText(data));
+  }
   return data as T;
 }
 // Append the server's Korean field reasons (custom zod messages); zod's English defaults stay hidden.
@@ -90,7 +109,10 @@ async function uploadRawImageAttachment<T>(
     body: file,
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "첨부 저장 실패");
+  if (!response.ok) {
+    await sessionLost(path, response.status);
+    throw new Error(data.error || "첨부 저장 실패");
+  }
   return data as T;
 }
 

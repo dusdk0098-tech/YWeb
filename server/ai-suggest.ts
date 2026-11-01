@@ -8,7 +8,7 @@ import { isLocalRequest, openSecret, sealSecret } from "./local-admin.js";
 // the server (long digit runs masked); the suggestion is shown for the user to apply or ignore — nothing in the ledger changes.
 // Keys: .env (AI_ENABLED=true + AI_MONTHLY_REQUEST_LIMIT, legacy) wins; otherwise the in-app setting picks one install-wide key
 // or a key per account. Keys are stored AES-GCM encrypted with SESSION_SECRET and never sent back to the browser.
-export type AiSuggest = (text: string, apiKey: string | undefined, model: string) => Promise<string | null>;
+export type AiSuggest = (text: string, apiKey: string | undefined, model: string, system?: string) => Promise<string | null>;
 export type AiConfig = { model: string; monthlyLimit: number; suggest: AiSuggest };
 export type AiRuntime = { env?: AiConfig; suggest: AiSuggest; secret: string };
 export const AI_MODELS = ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"] as const;
@@ -33,9 +33,22 @@ const SYSTEM = [
   "Reply with only the rewritten description in Korean, at most 60 characters, with no quotes or explanation.",
   "Keep the original meaning. Do not add amounts, quantities, dates, names, companies or facts that are not in the input; keep '#' placeholders as they are.",
 ].join(" ");
+// 결정 7 (문장 다듬기): wording only. The server picks the prompt by `kind`; the user applies the result or ignores it.
+export const POLISH_KINDS = {
+  journal_summary: "the day's work summary in a site safety journal",
+  journal_safety: "the safety instructions given that day, as recorded in a site safety journal",
+  tbm_topics: "the safety points delivered at a toolbox meeting (TBM)",
+  minutes_decisions: "the decisions section of safety meeting minutes",
+} as const;
+export const polishSystem = (kind: keyof typeof POLISH_KINDS) => [
+  `You polish Korean text written by construction site safety staff: ${POLISH_KINDS[kind]}.`,
+  "Fix spelling, spacing and awkward or unclear sentences. Keep the meaning, order, facts, numbers, '#' placeholders and roughly the length.",
+  "Do not add, remove or judge any fact, hazard, measure or compliance; do not add names, dates or amounts that are not in the input.",
+  "Reply with only the polished Korean text, no quotes or explanation.",
+].join(" ");
 // Real call: Claude via the official SDK. Without an explicit key the SDK resolves .env ANTHROPIC_API_KEY or an `ant auth` profile.
 export function anthropicSuggest(): AiSuggest {
-  return async (text, apiKey, model) => {
+  return async (text, apiKey, model, system = SYSTEM) => {
     const client = new Anthropic(apiKey ? { apiKey } : {});
     const response = await client.beta.messages.create({
       model,
@@ -43,12 +56,12 @@ export function anthropicSuggest(): AiSuggest {
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default", // a safety decline is retried on a fallback model inside the same call
       output_config: { effort: "low" }, // a one-line rewrite needs little reasoning
-      system: SYSTEM,
+      system,
       messages: [{ role: "user", content: text }],
     });
     if (response.stop_reason === "refusal") return null;
     const out = response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("").trim();
-    return out ? out.slice(0, 200) : null;
+    return out ? out.slice(0, 4000) : null;
   };
 }
 export function aiConfigFromEnv(): AiConfig | undefined {
@@ -122,30 +135,44 @@ export function registerAiSuggest(app: Express, db: Db, { access }: SiteOperatio
     try { const userId = signedIn(req); db.prepare("DELETE FROM ai_keys WHERE owner=?").run("user:" + userId); res.json({ ok: true }); }
     catch (err) { next(err); }
   });
+  // One suggestion request: resolve the key, charge the monthly cap, call the model, never touch any record.
+  async function suggestFor(req: Request, text: string, event: string, system?: string) {
+    const r = resolve(req.session.userId!);
+    if (!r) throw new HttpError(404, "AI 기능이 꺼져 있거나 등록된 AI 키가 없습니다.");
+    const apiKey = r.row ? openSecret(rt.secret, r.row) : undefined;
+    if (r.row && !apiKey) throw new HttpError(409, "저장된 AI 키를 읽을 수 없습니다(서버 비밀값 변경). 키를 다시 등록하세요.");
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      if (used(r.owner) >= r.limit) throw new HttpError(429, "이번 달 AI 요청 한도를 다 썼습니다.");
+      db.prepare("INSERT INTO ai_key_usage VALUES(?,?,1) ON CONFLICT(owner,month) DO UPDATE SET requests=requests+1").run(r.owner, month());
+      db.exec("COMMIT");
+    } catch (e) { db.exec("ROLLBACK"); throw e; }
+    audit(db, req.session.userId!, String(req.params.siteId), event, `${r.model} ${r.owner === "install" || r.owner === "env" ? r.owner : "account"}`);
+    let suggestion: string | null;
+    try { suggestion = await (rt.env?.suggest ?? rt.suggest)(text, apiKey, r.model, system); }
+    catch (e) {
+      if (e instanceof Anthropic.RateLimitError) throw new HttpError(503, "AI 서비스가 바쁩니다. 잠시 뒤 다시 시도하세요.");
+      if (e instanceof Anthropic.AuthenticationError) throw new HttpError(503, "AI 키가 맞지 않습니다. 키를 다시 확인하세요.");
+      throw new HttpError(502, "AI 제안을 받지 못했습니다. 입력은 그대로입니다.");
+    }
+    if (!suggestion) throw new HttpError(422, "AI가 이 문구에 제안을 하지 않았습니다.");
+    return { suggestion, sent: text, model: r.model };
+  }
   app.post("/api/sites/:siteId/ai/expense-description", async (req, res, next) => {
     try {
       access(req, true, true);
-      const r = resolve(req.session.userId!);
-      if (!r) throw new HttpError(404, "AI 기능이 꺼져 있거나 등록된 AI 키가 없습니다.");
-      const apiKey = r.row ? openSecret(rt.secret, r.row) : undefined;
-      if (r.row && !apiKey) throw new HttpError(409, "저장된 AI 키를 읽을 수 없습니다(서버 비밀값 변경). 키를 다시 등록하세요.");
       const text = maskForAi(z.object({ text: z.string().trim().min(1, "내용을 입력한 뒤 제안을 받으세요.").max(200) }).strict().parse(req.body).text);
-      db.exec("BEGIN IMMEDIATE");
-      try {
-        if (used(r.owner) >= r.limit) throw new HttpError(429, "이번 달 AI 요청 한도를 다 썼습니다.");
-        db.prepare("INSERT INTO ai_key_usage VALUES(?,?,1) ON CONFLICT(owner,month) DO UPDATE SET requests=requests+1").run(r.owner, month());
-        db.exec("COMMIT");
-      } catch (e) { db.exec("ROLLBACK"); throw e; }
-      audit(db, req.session.userId!, String(req.params.siteId), "ai.expense_description", `${r.model} ${r.owner === "install" || r.owner === "env" ? r.owner : "account"}`);
-      let suggestion: string | null;
-      try { suggestion = await (rt.env?.suggest ?? rt.suggest)(text, apiKey, r.model); }
-      catch (e) {
-        if (e instanceof Anthropic.RateLimitError) throw new HttpError(503, "AI 서비스가 바쁩니다. 잠시 뒤 다시 시도하세요.");
-        if (e instanceof Anthropic.AuthenticationError) throw new HttpError(503, "AI 키가 맞지 않습니다. 키를 다시 확인하세요.");
-        throw new HttpError(502, "AI 제안을 받지 못했습니다. 입력은 그대로입니다.");
-      }
-      if (!suggestion) throw new HttpError(422, "AI가 이 문구에 제안을 하지 않았습니다.");
-      res.json({ suggestion, sent: text, model: r.model });
+      res.json(await suggestFor(req, text, "ai.expense_description"));
+    } catch (err) { next(err); }
+  });
+  app.post("/api/sites/:siteId/ai/polish", async (req, res, next) => {
+    try {
+      access(req, true); // editors write journals, TBMs and minutes too
+      const { kind, text } = z.object({
+        kind: z.enum(Object.keys(POLISH_KINDS) as [keyof typeof POLISH_KINDS, ...(keyof typeof POLISH_KINDS)[]]),
+        text: z.string().trim().min(1, "글을 쓴 뒤 다듬기를 받으세요.").max(4000, "4000자까지만 다듬을 수 있습니다."),
+      }).strict().parse(req.body);
+      res.json(await suggestFor(req, maskForAi(text), "ai.polish:" + kind, polishSystem(kind)));
     } catch (err) { next(err); }
   });
 }

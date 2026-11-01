@@ -1,4 +1,5 @@
 import { TbmRiskReferenceView } from "./TbmRiskReferenceView";
+import { AiPolish } from "./AiDescriptionSuggest";
 import { ActionBar, Notice, PageHeader, Section, StatusChip, TechDetails } from "./ui";
 import { TbmRiskReferencePicker } from "./TbmRiskReferencePicker";
 import { useEffect, useRef, useState } from "react";
@@ -290,6 +291,7 @@ export function TbmEditor({
               onChange={(e) => change("topics", e.target.value)}
             />
           </label>
+          {writable && <AiPolish siteId={site.id} kind="tbm_topics" text={form.topics} onApply={(v) => change("topics", v)} />}
           </Section>
         </fieldset>
         {writable ? (

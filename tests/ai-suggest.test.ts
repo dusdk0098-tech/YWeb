@@ -29,7 +29,7 @@ async function fixture(ai?: AiConfig, aiSuggest?: AiSuggest) {
     for (const [k, v] of Object.entries(extra)) r = r.set(k, v);
     return r.send(body as object);
   };
-  return { db, m, e, ask, put };
+  return { db, m, e, ask, put, site };
 }
 test("AI suggestion is off by default and masks long digit runs", async () => {
   for (const k of ["AI_ENABLED", "AI_MONTHLY_REQUEST_LIMIT"]) delete process.env[k];
@@ -66,6 +66,22 @@ test(".env AI: manager only, only masked text sent, monthly cap, refusal and err
     assert.equal(sent.length, 3);
     assert.equal((await f.m.agent.get("/api/ai/status")).body.remaining, 0);
     assert.equal((f.db.prepare("SELECT count(*) n FROM cost_expenses").get() as { n: number }).n, 0); // nothing written to the ledger
+  } finally { f.db.close(); }
+});
+test("문장 다듬기: editors too, kind required, masked text, wording prompt, same monthly cap", async () => {
+  const sent: { text: string; system?: string }[] = [];
+  const f = await fixture({ model: "claude-opus-5-5", monthlyLimit: 2, suggest: async (t, _k, _m, system) => { sent.push({ text: t, system }); return "다듬은 " + t; } });
+  try {
+    const polish = (a: typeof f.m, body: object) => a.agent.post(`/api/sites/${f.site}/ai/polish`).set("Origin", origin).set("x-csrf-token", a.csrf).send(body);
+    assert.equal((await polish(f.e, { kind: "expense", text: "x" })).status, 400);
+    assert.equal((await polish(f.e, { kind: "tbm_topics", text: "x".repeat(4001) })).status, 400);
+    const r = await polish(f.e, { kind: "tbm_topics", text: "개구부 덮개 확인 2026년 11월 1일" });
+    assert.deepEqual([r.status, r.body.suggestion, r.body.sent], [200, "다듬은 개구부 덮개 확인 #년 11월 1일", "개구부 덮개 확인 #년 11월 1일"]);
+    assert.match(sent[0].system ?? "", /toolbox meeting/);
+    assert.match(sent[0].system ?? "", /Do not add, remove or judge/);
+    assert.equal((await polish(f.m, { kind: "journal_summary", text: "작업 요약" })).status, 200);
+    assert.equal((await polish(f.m, { kind: "minutes_decisions", text: "결정" })).status, 429); // cap shared with the ledger suggestion
+    assert.equal((f.db.prepare("SELECT count(*) n FROM audit WHERE event LIKE 'ai.polish:%'").get() as { n: number }).n, 2);
   } finally { f.db.close(); }
 });
 test("in-app keys: install-wide or per account, sealed at rest, install settings only from this PC", async () => {

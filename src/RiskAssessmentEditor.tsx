@@ -1,5 +1,5 @@
 import { RiskReuseForm } from "./RiskReuseForm";
-import { Notice } from "./ui";
+import { Notice, PageHeader, Section, StatusChip, TechDetails } from "./ui";
 import { RiskReuseSource } from "./RiskReuseSource";
 import { RiskOpinionsPanel } from "./RiskOpinionsPanel";
 import { RiskPrintControl } from "./RiskPrintControl";
@@ -193,22 +193,22 @@ export function RiskAssessmentEditor({
       />
     );
   return (
-    <section>
-      <button
-        disabled={busy || reviewBusy || printBusy}
-        onClick={() => guard.canLeave() && onClose()}
-      >
-        평가 초안 목록
-      </button>
-      <h2>
-        위험성평가{" "}
-        {body.method === "product"
-          ? "수치형"
-          : body.method === "three_level"
-            ? "사람 선택 3단계"
-            : body.method === "narrative" ? "핵심요인 서술형" : "체크리스트 사람 판단"}{" "}
-        · {row ? riskStatus[row.status] : "초안 · 미검토/미승인"}
-      </h2>
+    <section className="panel risk-editor">
+      <PageHeader
+        back="위험성평가 목록"
+        backDisabled={busy || reviewBusy || printBusy}
+        onBack={() => guard.canLeave() && onClose()}
+        title={<>위험성평가{" "}
+          {body.method === "product"
+            ? "수치형"
+            : body.method === "three_level"
+              ? "사람 선택 3단계"
+              : body.method === "narrative" ? "핵심요인 서술형" : "체크리스트 사람 판단"}{" "}
+          · {row ? riskStatus[row.status] : "초안 · 미검토/미승인"}</>}
+        status={<StatusChip tone={row ? ({ draft: "draft", submitted: "pending", accepted: "done", returned: "error" } as const)[row.status] : "neutral"}>
+          {row ? ({ draft: "작성 중", submitted: "검토 대기", accepted: "수락", returned: "보완 요청" } as const)[row.status] : "새 평가"}
+        </StatusChip>}
+      />
       <Notice tone="warning" summary="긴급 위험은 이 화면 저장을 기다리지 말고 현장 비상 절차를 따르세요.">
         수치형은 설정 기준의 산술이며, 3단계·체크리스트·서술형은 사람의 판단 기록입니다. 안전
         판정·준법 보증·작업 재개 허가가 아닙니다. 저감 계획은 실제 이행·검증
@@ -219,6 +219,8 @@ export function RiskAssessmentEditor({
       <fieldset
         disabled={busy || reviewBusy || printBusy || reviewDirty || !editable}
       >
+        <Section no={1} level={3} title="기본 정보">
+        <div className="grid">
         <label>
           평가 이름
           <input
@@ -251,7 +253,8 @@ export function RiskAssessmentEditor({
             ))}
           </select>
         </label>
-        <p>
+        </div>
+        <p className="muted">
           방법:{" "}
           {body.method === "product"
             ? "가능성×중대성 수치형"
@@ -270,13 +273,19 @@ export function RiskAssessmentEditor({
             />
           </label>
         ))}
+        </Section>
       </fieldset>
       <h3>기준 버전</h3>
       <p>
         {row?.criteria_snapshot
-          ? `${row.criteria_snapshot.body.name} / ${row.criteria_snapshot.id} / v${row.criteria_snapshot.version}`
+          ? `${row.criteria_snapshot.body.name} · v${row.criteria_snapshot.version}`
           : "미선택: 산출값 미평가"}
       </p>
+      {row && (
+        <TechDetails>
+          <p>평가 {row.id} · v{row.version}{row.criteria_snapshot ? ` · 기준 ${row.criteria_snapshot.id}` : ""}</p>
+        </TechDetails>
+      )}
       {editable && (
         <>
           <WorkPlanPicker
@@ -285,7 +294,7 @@ export function RiskAssessmentEditor({
             disabled={busy || reviewBusy || printBusy || reviewDirty}
             onSelect={setCriteriaId}
           />
-          <p>선택한 ID: {criteriaId || "없음"}</p>
+          <p className="muted">{criteriaId ? "기준을 선택했습니다. 저장하면 적용됩니다." : "선택한 기준 없음"}</p>
           <button
             disabled={busy || reviewBusy || printBusy || reviewDirty}
             onClick={() => setCriteriaId("")}

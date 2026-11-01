@@ -62,7 +62,7 @@ test("independent risk document review and print preparation keep one section ea
     await page.reload();
     await page.getByLabel("작업 현장").selectOption(site.id);
     await page.getByRole("button", { name: "위험성평가", exact: true }).click();
-    await page.getByRole("button", { name: "합성 위험 문서 / v2 / submitted", exact: true }).click();
+    await page.getByRole("button", { name: "합성 위험 문서 열기", exact: true }).click();
     const review = page.getByRole("heading", { name: "문서 기록 처리", exact: true });
     const print = page.getByRole("heading", { name: "고정 원문 출력: HTML / JSON", exact: true });
     await expect(review).toHaveCount(1);

@@ -1,5 +1,7 @@
 import { RiskRegisterPanel } from "./RiskRegisterPanel";
-import { Notice } from "./ui";
+import { EmptyState, Notice, PageHeader, StatusChip, type Tone } from "./ui";
+const statusTone: Record<string, Tone> = { draft: "draft", submitted: "pending", accepted: "done", returned: "error", confirmed: "done" };
+const statusText: Record<string, string> = { draft: "작성 중", submitted: "검토 대기", accepted: "수락", returned: "보완 요청", confirmed: "확인됨" };
 import { RiskInboxPanel } from "./RiskInboxPanel";
 import { RiskPublicationsPanel } from "./RiskPublicationsPanel";
 import { RiskOverviewPanel } from "./RiskOverviewPanel";
@@ -99,17 +101,69 @@ export function RiskCorePanel({
     );
   }
   return (
-    <section>
-      <h1>위험성평가 · 방법별 기록</h1>
+    <section className="panel">
+      <PageHeader level={1} title="위험성평가">
+        {(tab === "criteria"
+          ? site.role === "manager"
+          : site.role !== "viewer") && (
+          <button
+            disabled={loading}
+            onClick={() =>
+              setOpened(
+                tab === "criteria"
+                  ? { kind: "criteria", row: null }
+                  : { kind: "assessments", row: null },
+              )
+            }
+          >
+            새 {tab === "criteria" ? "기준" : "평가"} 초안
+          </button>
+        )}
+      </PageHeader>
       <Notice summary="평가 방법(수치형·3단계·체크리스트·서술형)마다 따로 기록합니다.">
         수치형·사람 선택3단계·체크리스트·서술형 기준/문서를 제공하는 개발본입니다. 수치
         재평가와 다른 방법을 혼동하지 않습니다. 계정 의견은 근로자 참여 증명이
         아닙니다. 전체 방법·참여/서명과 독립 보안·실제 브라우저 검증은
         미완료입니다.
       </Notice>
-      <button disabled={loading} onClick={() => setOpened({ kind: "inbox" })}>내 위험성평가 업무</button>
-      <button disabled={loading} onClick={() => setOpened({ kind: "publications" })}>고정 평가 게시본·내 계정 확인</button>
-      <button disabled={loading} onClick={() => setOpened({ kind: "overview" })}>현장 위험성평가 업무 현황</button>
+      <div className="tool-row" role="group" aria-label="위험성평가 도구">
+      <button className="secondary" disabled={loading} onClick={() => setOpened({ kind: "inbox" })}>내 위험성평가 업무</button>
+      <button className="secondary" disabled={loading} onClick={() => setOpened({ kind: "publications" })}>고정 평가 게시본·내 계정 확인</button>
+      <button className="secondary" disabled={loading} onClick={() => setOpened({ kind: "overview" })}>현장 위험성평가 업무 현황</button>
+      <button
+        className="secondary"
+        disabled={loading}
+        onClick={() => setOpened({ kind: "opinions" })}
+      >
+        {site.role === "manager" ? "현장 계정 의견함" : "내 계정 의견함"}
+      </button>
+      <button className="secondary" disabled={loading} onClick={() => setOpened({kind:"register"})}>평가 문서 목록 검색 (모든 방법)</button>
+      </div>
+      <div className="segmented" role="group" aria-label="목록 종류">
+      <button
+        aria-pressed={tab === "assessments"}
+        className={tab === "assessments" ? "" : "secondary"}
+        disabled={loading}
+        onClick={() => {
+          setTab("assessments");
+          setOffset(0);
+        }}
+      >
+        평가 문서
+      </button>
+      <button
+        aria-pressed={tab === "criteria"}
+        className={tab === "criteria" ? "" : "secondary"}
+        disabled={loading}
+        onClick={() => {
+          setTab("criteria");
+          setOffset(0);
+        }}
+      >
+        사람이 정의한 기준
+      </button>
+      </div>
+      <div className="filter-bar">
       <label>
         평가 방법 (방법 간 점수 변환 없음)
         <select
@@ -129,56 +183,21 @@ export function RiskCorePanel({
           <option value="narrative">핵심요인 서술형</option>
         </select>
       </label>
-      <button
-        disabled={loading}
-        onClick={() => setOpened({ kind: "opinions" })}
-      >
-        {site.role === "manager" ? "현장 계정 의견함" : "내 계정 의견함"}
-      </button>
-      <button
-        disabled={loading}
-        onClick={() => {
-          setTab("assessments");
-          setOffset(0);
-        }}
-      >
-        평가 문서
-      </button>
-      <button
-        disabled={loading}
-        onClick={() => {
-          setTab("criteria");
-          setOffset(0);
-        }}
-      >
-        사람이 정의한 기준
-      </button>
-      <button disabled={loading} onClick={() => setOpened({kind:"register"})}>평가 문서 목록 검색 (모든 방법)</button>
-      {error && <p role="alert">{error}</p>}
-      <button disabled={loading} onClick={() => setTick((x) => x + 1)}>
+      <button className="secondary" disabled={loading} onClick={() => setTick((x) => x + 1)}>
         목록 다시 조회
       </button>
-      {(tab === "criteria"
-        ? site.role === "manager"
-        : site.role !== "viewer") && (
-        <button
-          disabled={loading}
-          onClick={() =>
-            setOpened(
-              tab === "criteria"
-                ? { kind: "criteria", row: null }
-                : { kind: "assessments", row: null },
-            )
-          }
-        >
-          새 {tab === "criteria" ? "기준" : "평가"} 초안
-        </button>
-      )}
-      <ul>
-        {page.items.map((r) => (
-          <li key={r.id}>
+      </div>
+      {error && <p role="alert">{error}</p>}
+      {page.items.map((r) => {
+        const title = "name" in r.body ? r.body.name : r.body.title, status = "status" in r ? r.status : "draft";
+        return (
+          <article key={r.id} className="record-row">
+            <div className="record-row-main"><h2>{title || "제목 없음"}</h2></div>
+            <StatusChip tone={statusTone[status] ?? "neutral"}>{statusText[status] ?? status}</StatusChip>
             <button
+              className="secondary"
               disabled={loading}
+              aria-label={`${title} 열기`}
               onClick={() =>
                 setOpened(
                   tab === "criteria"
@@ -187,13 +206,15 @@ export function RiskCorePanel({
                 )
               }
             >
-              {"name" in r.body ? r.body.name : r.body.title} / v{r.version} /{" "}
-              {"status" in r ? r.status : "draft"}
+              열기
             </button>
-          </li>
-        ))}
-      </ul>
+          </article>
+        );
+      })}
+      {!loading && !error && !page.items.length && <EmptyState title={tab === "criteria" ? "기준이 없습니다." : "평가 문서가 없습니다."} />}
+      <div className="actions">
       <button
+        className="secondary"
         disabled={loading || !offset}
         onClick={() => {
           setLoading(true);
@@ -203,6 +224,7 @@ export function RiskCorePanel({
         이전50
       </button>
       <button
+        className="secondary"
         disabled={loading || !page.hasMore}
         onClick={() => {
           setLoading(true);
@@ -211,6 +233,7 @@ export function RiskCorePanel({
       >
         다음50
       </button>
+      </div>
       {loading && <p>조회 중</p>}
     </section>
   );

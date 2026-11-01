@@ -8,15 +8,15 @@ import argon2 from "argon2";
 import request from "supertest";
 import { openDatabase } from "../server/db.js";
 import { createApp } from "../server/app.js";
-// 광고 (결정 6): the server fetches a validated feed, keeps the last good copy on disk, serves text/link/image itself,
-// shows only ads inside their dates, and lets the operator turn ads off from the install PC.
+// 광고 (결정 6, 2026-11-02 변경: 앱 안에 끄는 스위치 없음): the server fetches a validated feed, keeps the last good copy on
+// disk, serves text/link/image itself and shows only ads inside their dates.
 const origin = "http://127.0.0.1:3000", feedUrl = "https://feed.example/yweb/ads.json";
 const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 1, 2]); // header fixture only
 const goodFeed = { version: 1, ads: [
   { id: "safety-shop", title: "합성 안전용품", text: "합성 광고 문구", url: "https://example.test/shop", image: "shop.png" },
   { id: "old", title: "지난 광고", text: "", url: "https://example.test/old", to: "2000-01-01" },
 ] };
-test("ads: fetched by the server, cached on disk, dated, operator switch from the install PC only", async () => {
+test("ads: fetched by the server, cached on disk, dated, no switch", async () => {
   const dir = mkdtempSync(join(tmpdir(), "yweb-ads-"));
   let feedBody: string = JSON.stringify(goodFeed);
   const fetches: string[] = [];
@@ -26,10 +26,8 @@ test("ads: fetched by the server, cached on disk, dated, operator switch from th
     if (url === "https://feed.example/yweb/shop.png") return new Response(png, { status: 200, headers: { "content-type": "image/png" } });
     return new Response("missing", { status: 404 });
   }) as unknown as typeof fetch;
-  const db = openDatabase(":memory:"), password = randomUUID(), operator = randomUUID(), viewer = randomUUID();
-  for (const [id, email] of [[operator, "op@example.test"], [viewer, "v@example.test"]])
-    db.prepare("INSERT INTO users VALUES(?,?,?,?)").run(id, email, email, await argon2.hash(password));
-  db.prepare("INSERT INTO account_grants(user_id,operator,issuer,granted_by,granted_at) VALUES(?,1,0,NULL,?)").run(operator, new Date().toISOString());
+  const db = openDatabase(":memory:"), password = randomUUID(), viewer = randomUUID();
+  db.prepare("INSERT INTO users VALUES(?,?,?,?)").run(viewer, "v@example.test", "v@example.test", await argon2.hash(password));
   const make = () => createApp(db, { origin, secret: "synthetic-business-only".repeat(3), ads: { feedUrl, dir, fetch: fakeFetch, intervalMs: 3600_000 } });
   let app = await make();
   await app.locals.adsRefresh();
@@ -41,7 +39,7 @@ test("ads: fetched by the server, cached on disk, dated, operator switch from th
   };
   try {
     assert.equal((await request(app).get("/api/ads")).status, 401);
-    const op = await login("op@example.test"), v = await login("v@example.test");
+    const v = await login("v@example.test");
     let r = await v.a.get("/api/ads");
     assert.equal(r.body.enabled, true);
     assert.deepEqual(r.body.ads, [{ id: "safety-shop", title: "합성 안전용품", text: "합성 광고 문구", url: "https://example.test/shop", image: true }]);
@@ -62,19 +60,7 @@ test("ads: fetched by the server, cached on disk, dated, operator switch from th
     feedBody = "not json";
     await app.locals.adsRefresh();
     assert.equal((await v.a.get("/api/ads")).body.ads.length, 1);
-    // the switch: operator on the install PC only
-    const put = (c: typeof op, body: object, remote = false) => {
-      const q = c.a.put("/api/ads/settings").set("Origin", origin).set("x-csrf-token", c.csrf);
-      return (remote ? q.set("x-forwarded-for", "203.0.113.5") : q).send(body);
-    };
-    assert.equal((await put(v, { enabled: false })).status, 403);
-    assert.equal((await put(op, { enabled: false }, true)).status, 403);
-    assert.equal((await put(op, { enabled: false })).status, 200);
-    r = await v.a.get("/api/ads");
-    assert.deepEqual([r.body.enabled, r.body.ads], [false, []]);
-    assert.equal((await v.a.get("/api/ads/image/safety-shop")).status, 404);
-    assert.equal((await v.a.get("/api/session")).body.adsEnabled, false);
-    assert.equal((await put(op, { enabled: true })).status, 200);
+    assert.equal((await v.a.put("/api/ads/settings").set("Origin", origin).set("x-csrf-token", v.csrf).send({ enabled: false })).status, 404); // no switch
     // a new process with an unreachable feed still serves the copy on disk
     feedBody = "not json";
     app = await make();

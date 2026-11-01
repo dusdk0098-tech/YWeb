@@ -32,8 +32,8 @@ if (pub.mode === "tunnel" && !pub.tunnelToken) Object.assign(runtime, { mode: "o
 const app = await createApp(db, {
   secret,
   origin: process.env.APP_ORIGIN || `http://127.0.0.1:${port}`,
-  // 광고 (docs/ADS.md): on unless ADS_ENABLED=false; the operator can also turn it off in the app.
-  ads: process.env.ADS_ENABLED === "false" ? undefined : { feedUrl: process.env.ADS_FEED_URL || DEFAULT_ADS_FEED, dir: resolve(dirname(databasePath), "ads") },
+  // 광고 (docs/ADS.md): always on; ADS_FEED_URL only changes the feed address.
+  ads: { feedUrl: process.env.ADS_FEED_URL || DEFAULT_ADS_FEED, dir: resolve(dirname(databasePath), "ads") },
   localPermissionWarnings,
   ai: aiConfigFromEnv(),
   publicOrigin: runtime.origin,

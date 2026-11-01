@@ -1,3 +1,4 @@
+import { SOLE_MANAGER_NOTE, soleManager } from "./sole-manager.js";
 import type { Express,Request } from "express";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -14,7 +15,7 @@ export function registerMinutesFollowups(app:Express,db:Db,{access,mutate}:SiteO
  function eligible(site:string,id:string){if(!canWriteSite(db, site, id))throw new HttpError(400,"현재 현장의 manager/editor 계정을 배정하세요.");}
  function manager(req:Request){access(req,true,true);get(req);}
  function assigned(req:Request){access(req,true);if(get(req).assignee_id!==req.session.userId)throw new HttpError(403,"현재 배정 계정만 보고할 수 있습니다.");}
- function verifier(req:Request){manager(req);const old=get(req),report=old.report?JSON.parse(old.report) as MinutesFollowupReport:null;if(old.assignee_id===req.session.userId||report?.actor.id===req.session.userId)throw new HttpError(403,"보고/배정 계정과 다른 관리자가 확인해야 합니다.");}
+ function verifier(req:Request){manager(req);const old=get(req),report=old.report?JSON.parse(old.report) as MinutesFollowupReport:null;if((old.assignee_id===req.session.userId||report?.actor.id===req.session.userId)&&!soleManager(db,old.site_id,req.session.userId!))throw new HttpError(403,"보고/배정 계정과 다른 관리자가 확인해야 합니다.");}
  function event(req:Request,row:MinutesFollowupRow,kind:string,why:string){const actor=account(db,req.session.userId!);db.prepare("INSERT INTO minutes_followup_events(followup_id,version,event,reason,actor_id,actor_name,at,body) VALUES(?,?,?,?,?,?,?,?)").run(row.id,row.version,kind,why,actor.id,actor.name,new Date().toISOString(),JSON.stringify(minutesFollowupRecord(db,row)));audit(db,actor.id,row.site_id,"minutes.followup."+kind,row.id);}
  app.get(base+"/assignees",(req,res)=>{access(req,true,true);const q=companyPage.parse(req.query);const rows=db.prepare("SELECT u.id,u.name,m.role FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.site_id=? AND m.role IN('manager','editor') ORDER BY u.name,u.id LIMIT 51 OFFSET ?").all(String(req.params.siteId),q.offset);res.json({items:rows.slice(0,50),hasMore:rows.length>50});});
  app.get(base,(req,res)=>{access(req);const q=companyPage.extend({minutesId:z.uuid().optional(),mine:z.literal("1").optional(),open:z.literal("1").optional()}).parse(req.query),mine=q.mine?req.session.userId!:null;const rows=db.prepare("SELECT * FROM minutes_followups WHERE site_id=? AND (? IS NULL OR minutes_id=?) AND (? IS NULL OR assignee_id=?) AND (? IS NULL OR status<>'verified') ORDER BY due,id LIMIT 51 OFFSET ?").all(String(req.params.siteId),q.minutesId??null,q.minutesId??null,mine,mine,q.open??null,q.offset) as MinutesFollowupRow[];res.json({items:rows.slice(0,50).map(r=>minutesFollowupRecord(db,r)),hasMore:rows.length>50});});
@@ -42,7 +43,9 @@ export function registerMinutesFollowups(app:Express,db:Db,{access,mutate}:SiteO
   assigned(req);const v=z.object({version:revision,text:prose,claimedLocalDate:date,reason,confirmHumanReport:z.literal(true)}).strict().parse(req.body);
   mutate(req,res,`site:${req.params.siteId}:minutes-followup:${req.params.id}:report`,v,()=>{
    const old=get(req);if(old.version!==v.version||old.status==="verified")throw new HttpError(409,"확인기록은 먼저 재개방하거나 최신 버전을 조회하세요.");const now=new Date().toISOString(),report:MinutesFollowupReport={text:v.text,claimedLocalDate:v.claimedLocalDate,actor:account(db,req.session.userId!),at:now};
-   db.prepare("UPDATE minutes_followups SET status='reported',report=?,verification=NULL,version=version+1,updated_at=? WHERE id=?").run(JSON.stringify(report),now,old.id);const row=get(req);event(req,row,old.status==="reported"?"report_corrected":"reported",v.reason);return minutesFollowupRecord(db,row);
+   db.prepare("UPDATE minutes_followups SET status='reported',report=?,verification=NULL,version=version+1,updated_at=? WHERE id=?").run(JSON.stringify(report),now,old.id);let row=get(req);event(req,row,old.status==="reported"?"report_corrected":"reported",v.reason);
+   if(soleManager(db,row.site_id,req.session.userId!)){const verification={note:SOLE_MANAGER_NOTE,actor:account(db,req.session.userId!),at:new Date().toISOString(),reportHash:minutesHash(report),selfProcessed:true};db.prepare("UPDATE minutes_followups SET status='verified',verification=?,version=version+1,updated_at=? WHERE id=?").run(JSON.stringify(verification),verification.at,row.id);row=get(req);event(req,row,"verified",SOLE_MANAGER_NOTE);}
+   return minutesFollowupRecord(db,row);
   },()=>assigned(req));
  });
  app.post(base+"/:id/verify",(req,res)=>{

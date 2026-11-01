@@ -260,16 +260,17 @@ test("risk immutable document submission, different-manager review and explicit 
       authorId: other,
     });
     assert.equal(r.status, 409);
+    // Restore a synthetic eligible reviewer, not the old user's authorship — before the submit, or the only
+    // manager's own submit would be accepted at once (server/sole-manager.ts).
+    f.db
+      .prepare("INSERT INTO memberships VALUES(?,?,?)")
+      .run(f.site, f.manager, "manager");
     r = await send(`/risk-assessments/${next.id}/submit`, {
       version: 1,
       reason: "Fresh review needed",
       confirmRecordOnly: true,
     });
     assert.equal(r.status, 200);
-    // Restore a synthetic eligible reviewer, not the old user's authorship.
-    f.db
-      .prepare("INSERT INTO memberships VALUES(?,?,?)")
-      .run(f.site, f.manager, "manager");
     r = await f.send("post", `/risk-assessments/${next.id}/review`, {
       version: 2,
       decision: "returned",

@@ -343,6 +343,9 @@ test("published templates and submitted inspections preserve original, independe
     );
     db.prepare("UPDATE sites SET name=? WHERE id=?").run("changed", site);
     assert.equal((await viewer.c.get(url + "/print")).text, stable);
+    // 관리자 1명 현장이면 본인 처리가 한 번에 끝나므로(server/sole-manager.ts), 두 번째 관리자를 두어 2인 원칙을 확인한다.
+    db.prepare("INSERT INTO users VALUES(?,?,?,?)").run("second-manager", "second-manager@example.test", "second", "x");
+    db.prepare("INSERT INTO memberships VALUES(?,?,?)").run(site, "second-manager", "manager");
     const self = (
       await write(m, "post", base + "/inspections", { templateId: t.id, body })
     ).body as Inspection;

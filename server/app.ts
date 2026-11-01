@@ -280,7 +280,7 @@ export async function createApp(db: Db, config: AppConfig) {
     res.json(
       db
         .prepare(
-          "SELECT s.*,m.role FROM sites s JOIN memberships m ON s.id=m.site_id WHERE m.user_id=? ORDER BY s.name",
+          "SELECT s.*,m.role,(SELECT count(*) FROM memberships x WHERE x.site_id=s.id AND x.role='manager') AS managers FROM sites s JOIN memberships m ON s.id=m.site_id WHERE m.user_id=? ORDER BY s.name",
         )
         .all(req.session.userId!),
     ),

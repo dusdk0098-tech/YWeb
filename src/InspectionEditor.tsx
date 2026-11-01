@@ -7,7 +7,7 @@ import { HazardEditor } from "./HazardEditor";
 import type { HazardRecord } from "./hazard-types";
 import { InspectionHistory } from "./InspectionHistory";
 import { useEffect, useRef, useState } from "react";
-import { api, type Site, type User } from "./api";
+import { api, type Site, type User, soleManagerOf } from "./api";
 import {
   inspectionStatus,
   resultLabel,
@@ -334,7 +334,7 @@ export function InspectionEditor({
             제출자가 관리자이면 다른 관리자 1명이 필요합니다. 현장 설정에서 기존
             계정을 관리자로 지정하세요. 법적 의무를 뜻하지 않습니다.
           </Notice>
-          {record.owner_id === user.id ? (
+          {record.owner_id === user.id && !soleManagerOf(site) ? (
             <p className="notice">
               본인 제출 기록은 직접 수락/반려할 수 없습니다.
             </p>

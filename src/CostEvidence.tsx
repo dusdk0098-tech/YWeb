@@ -74,7 +74,7 @@ export function CostEvidence({ base, onClose, onDirtyChange, onBusyChange }: {
     try { const path = base + "/photo-board/order", body = { groupName: group[at].groupName, items }; setBoard(await api<Board>(path, "PUT", body, guard.key(path, body))); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
-  return <section><button disabled={busy} onClick={() => { if (guard.canLeave()) onClose(); }}>비용 원장으로 돌아가기</button>
+  return <section><button disabled={busy} onClick={() => { if (guard.canLeave()) onClose(); }}>사용내역으로 돌아가기</button>
     <h2>비용 원본·같은 월 지출 연결</h2><p>{costEvidenceWarning}</p><p>증빙 참조 목록은 정확한 마감 ID/해시에 연결된 별도 기록입니다. 기존 금융 기준본·수기 제출 진술에 파일이나 증빙 목록을 자동 포함하지 않습니다. 과거 마감 목록은 원장의 변경 이력에서 확인하세요.</p>
     <p>월별 보존20파일/각5MiB, 파일별 활성 연결50행. 신고·회의록·작업계획·비용·교육 합산 현장200개/100MiB·전체512MiB. 연결을 분리해도 원본과 용량은 보존됩니다. 다음 월로 복사하지 않습니다.</p>
     {error && <p role="alert">{error} 저장 실패 시 입력은 유지됩니다. 조회 실패를 빈 목록으로 취급하지 않습니다.</p>}

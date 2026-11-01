@@ -77,6 +77,6 @@ test("manager literal cross-month cost search labels owning month and spend date
     .getByRole("button", { name: "이 지출 ID와 귀속 원장 열기", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: /2026-12 비용 원장/ }),
+    page.getByRole("heading", { name: /2026-12 산업안전보건관리비/ }),
   ).toBeVisible();
 });

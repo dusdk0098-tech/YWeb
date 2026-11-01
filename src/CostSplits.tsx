@@ -192,7 +192,7 @@ export function CostSplits({
           }
         }}
       >
-        비용 원장으로
+        사용내역으로
       </button>
       <h2>
         수량·금액 보존 분할 · {period.month} v{period.version}

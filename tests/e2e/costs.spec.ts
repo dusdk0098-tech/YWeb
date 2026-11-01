@@ -55,15 +55,15 @@ test("manager ledger keeps exact fractions through explicit close and carry", as
     await page.getByLabel(label, { exact: true }).fill(value);
   await page.getByRole("button", { name: "현장 설정 저장" }).click();
   await expect(page.getByRole("status")).toBeVisible();
-  await page.getByRole("button", { name: "비용 원장으로 돌아가기" }).click();
+  await page.getByRole("button", { name: "사용내역으로 돌아가기" }).click();
   await page.getByLabel("변경 / 마감 / 재개 사유").fill("수기 마감");
   await page.getByRole("button", { name: "기록 마감", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /2026-10 비용 원장 · 마감/ }),
+    page.getByRole("heading", { name: /2026-10 산업안전보건관리비 · 마감/ }),
   ).toBeVisible();
   await page.getByRole("button", { name: "다음 월 이월 생성" }).click();
   await expect(
-    page.getByRole("heading", { name: /2026-11 비용 원장/ }),
+    page.getByRole("heading", { name: /2026-11 산업안전보건관리비/ }),
   ).toBeVisible();
   await expect(page.getByText("0.75", { exact: true }).first()).toBeVisible();
 });

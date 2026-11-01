@@ -34,7 +34,7 @@ export function CostCategoryDetail({
   const selected = period.totals.byCategory.find((c) => c.id === categoryId);
   return (
     <section>
-      <button onClick={onClose}>비용 원장으로 돌아가기</button>
+      <button onClick={onClose}>사용내역으로 돌아가기</button>
       <h2>{period.month} 항목별 상세</h2>
       <p>유효 지출만 표시합니다. 읽기 전용입니다.</p>
       <div className="actions">

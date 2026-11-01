@@ -83,7 +83,7 @@ export function CostSettingsForm({
   return (
     <section>
       <button disabled={busy} onClick={() => guard.canLeave() && onClose()}>
-        비용 원장으로 돌아가기
+        사용내역으로 돌아가기
       </button>
       <h2>{period.month} 현장 설정</h2>
       <p>

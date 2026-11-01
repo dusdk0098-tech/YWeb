@@ -1,3 +1,4 @@
+import { Notice, PageHeader, Section, StatusChip, TechDetails } from "./ui";
 import { AiDescriptionSuggest } from "./AiDescriptionSuggest";
 import { CostCategoryDetail } from "./CostCategoryDetail";
 import { CostSettingsForm } from "./CostSettingsForm";
@@ -207,7 +208,7 @@ export function CostPeriodEditor({
   if(presets)return <CostInputPresets siteId={site.id} onClose={()=>setPresets(false)} onDirtyChange={setBatchDirty} onBusyChange={setBatchBusy} onApply={open?(preset)=>{if(!confirm(`설명 ${preset.body.defaults.description} / 수량 ${preset.body.defaults.quantity} / 단가 ${preset.body.defaults.unitPriceWon}을 미저장 새 지출에 적용할까요? 지출일과 비용 항목은 비워지며 직접 선택해야 합니다. 원장은 저장하지 않습니다.`))return;const applied=costPresetDraft(preset);setForm(applied.form);setPresetSource(applied);setEditing(null);setReason("");setPresets(false);}:undefined}/>;
   if(settings)return <CostSettingsForm base={base} period={record} onSaved={setRecord} onClose={()=>setSettings(false)} onDirtyChange={setBatchDirty} onBusyChange={setBatchBusy}/>;
   if(detail)return <CostCategoryDetail base={base} period={record} onClose={()=>setDetail(false)}/>;
-  if(baselines)return <section><button disabled={batchDirty||batchBusy} onClick={()=>setBaselines(false)}>비용 원장으로 돌아가기</button><CostBaselines key={record.id} base={base} period={record} onDirtyChange={setBatchDirty} onBusyChange={setBatchBusy}/></section>;
+  if(baselines)return <section><button disabled={batchDirty||batchBusy} onClick={()=>setBaselines(false)}>사용내역으로 돌아가기</button><CostBaselines key={record.id} base={base} period={record} onDirtyChange={setBatchDirty} onBusyChange={setBatchBusy}/></section>;
   if(stockExpense)return <CostStockPanel key={`${site.id}:${record.id}:${stockExpense}`} site={site} periodId={record.id} expenseId={stockExpense} onDirtyChange={setBatchDirty} onBusyChange={setBatchBusy} onClose={()=>{setStockExpense(null);setTick(v=>v+1);}}/>;
   if (splits)
     return (
@@ -239,24 +240,31 @@ export function CostPeriodEditor({
       />
     );
   return (
-    <section>
-      <button
-        disabled={busy}
-        onClick={() => {
+    <section className="panel cost-editor">
+      <PageHeader
+        back="사용내역 목록"
+        backDisabled={busy}
+        onBack={() => {
           if (guard.canLeave()) onClose();
         }}
+        title={`${record.month} 산업안전보건관리비 · ${open ? "작성 중" : "마감"}`}
+        status={open ? <StatusChip tone="draft">작성 중</StatusChip> : <StatusChip tone="done">마감</StatusChip>}
       >
-        원장 목록
-      </button>
-      <h2>
-        {record.month} 비용 원장 · {open ? "작성 중" : "마감"} · v
-        {record.version}
-      </h2>
-      <p>{costWarning}</p>
-      <button disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setPresets(true);}}}>반복 입력 프리셋 관리 / 새 지출 적용</button>
+        <a className="button" href={"/api" + base + "/legal-forms/print"} target="_blank" rel="noreferrer">사용내역서 인쇄 (표지·집계표·사용내역서·총괄)</a>
+      </PageHeader>
+      <Notice summary="직접 입력하는 기록입니다. 금액은 반올림하지 않습니다.">{costWarning}</Notice>
       {selectedExpense&&<CostSelectedExpense key={`${record.id}:${selectedExpense.id}`} base={base} selection={selectedExpense}/>}
-      <button disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setBaselines(true);}}}>고정 기준본 · 제출 진술 · 현재 비교</button>
+      {error && (
+        <p role="alert">
+          {error} 입력을 보존했습니다. 충돌이면 다른 창의 변경을 확인하고
+          목록에서 다시 여세요.
+        </p>
+      )}
+      <div className="tool-row" role="group" aria-label="월 도구">
+      <button className="secondary" disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setPresets(true);}}}>반복 입력 프리셋 관리 / 새 지출 적용</button>
+      <button className="secondary" disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setBaselines(true);}}}>고정 기준본 · 제출 진술 · 현재 비교</button>
       <button
+        className="secondary"
         disabled={busy}
         onClick={() => {
           if (guard.canLeave()) {
@@ -272,6 +280,7 @@ export function CostPeriodEditor({
       </button>
       {open && (
         <button
+          className="secondary"
           disabled={busy}
           onClick={() => {
             if (guard.canLeave()) {
@@ -286,18 +295,17 @@ export function CostPeriodEditor({
           TSV 지출 일괄 입력
         </button>
       )}
-      {error && (
-        <p role="alert">
-          {error} 입력을 보존했습니다. 충돌이면 다른 창의 변경을 확인하고
-          목록에서 다시 여세요.
-        </p>
-      )}
-      <button disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setDetail(true);}}}>항목별 상세</button>
-      <button disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setSettings(true);}}}>현장 설정</button>
-      <p>초기/이월 근거: {record.opening_note}</p>
-      {record.source_close_id && (
-        <p>이월 기준 마감본 ID: {record.source_close_id}</p>
-      )}
+      <button className="secondary" disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setDetail(true);}}}>항목별 상세</button>
+      <button className="secondary" disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setSettings(true);}}}>현장 설정</button>
+      <button className="secondary" disabled={busy} onClick={() => { if(guard.canLeave()) {setForm(null);setBudget(null);setReason("");setEvidence(true);} }}>미검사 원본·동일 월 지출 연결</button>
+      <button className="secondary" disabled={busy} onClick={() => setHistory((v) => !v)}>
+        변경 이력 · 과거 마감본
+      </button>
+      </div>
+      {history && <CostHistory base={base} tick={tick} disabled={dirty||busy||batchBusy} />}
+      <Section no={1} level={3} title="항목별 합계">
+      <p className="muted">초기/이월 근거: {record.opening_note}</p>
+      <div className="table-scroll">
       <table>
         <thead>
           <tr>
@@ -333,17 +341,15 @@ export function CostPeriodEditor({
           </tr>
         </tbody>
       </table>
-      <p>
+      </div>
+      <p className="muted">
         반올림 없는 원 단위 표시 · 유효 {record.totals.activeCount}행 / 취소{" "}
         {record.totals.cancelledCount}행
       </p>
-      <button disabled={busy} onClick={() => { if(guard.canLeave()) {setForm(null);setBudget(null);setReason("");setEvidence(true);} }}>미검사 원본·동일 월 지출 연결</button>
-      <button disabled={busy} onClick={() => setHistory((v) => !v)}>
-        변경 이력 · 과거 마감본
-      </button>
+      </Section>
+      <Section no={2} level={3} title="출력">
+      <p className="muted">사용내역서 인쇄는 원본 엑셀 양식의 순서·값을 HTML로 재현합니다. 저장하지 않은 입력은 반영되지 않습니다.</p>
       <CostOutputControl key={`${base}:${record.version}:${dirty}:${busy}`} base={base} disabled={dirty||busy||batchBusy} />
-      <p><a className="button" href={"/api" + base + "/legal-forms/print"} target="_blank" rel="noreferrer">사용내역서 인쇄 (표지·집계표·사용내역서·총괄)</a> 원본 엑셀 양식의 순서·값을 HTML로 재현합니다. 저장하지 않은 입력은 반영되지 않습니다.</p>
-      {history && <CostHistory base={base} tick={tick} disabled={dirty||busy||batchBusy} />}
       {preflight && (
         <details open={preflight.errorCount > 0}>
           <summary>
@@ -360,8 +366,9 @@ export function CostPeriodEditor({
           )}
         </details>
       )}
+      </Section>
+      <Section no={3} level={3} title={open ? "마감" : "재개 · 이월"}>
       <fieldset disabled={busy}>
-        <legend>원장 작업</legend>
         <label>
           변경 / 마감 / 재개 사유
           <textarea
@@ -436,13 +443,14 @@ export function CostPeriodEditor({
                 다음 월 이월 생성
               </button>
             )}
-            <p>
+            <p className="muted">
               이월에는 사유 입력을 사용하지 않습니다. 입력 중인 사유를 비운 뒤
               실행하세요.
             </p>
           </>
         )}
       </fieldset>
+      </Section>
       {budget && (
         <fieldset disabled={busy}>
           <legend>항목 구성 고정 · 금액만 수정</legend>
@@ -520,15 +528,15 @@ export function CostPeriodEditor({
           </button>
         </fieldset>
       )}
-      {open && (
+      <Section no={4} level={3} title={`지출 · 유효 ${record.totals.activeCount}행`} aside={open && (
         <button disabled={busy} onClick={() => edit(null)}>
           지출 행 추가
         </button>
-      )}
+      )}>
       {form && (
         <fieldset disabled={busy}>
           <legend>{editing ? "지출 수정" : "지출 추가"}</legend>
-          {presetSource&&!editing&&<aside className="notice"><p>미저장 프리셋 {presetSource.name} · v{presetSource.source.version} · {presetSource.source.hash}</p><p>적용 기본값: {presetSource.defaults.description} / 수량 {presetSource.defaults.quantity} / 단가 {presetSource.defaults.unitPriceWon}. 아래 값은 직접 편집할 수 있습니다. 날짜와 비용 항목을 직접 선택하세요. 개정/중지되면 저장이 거부되고 입력은 유지됩니다.</p><button onClick={()=>{if(confirm("현재 입력은 유지하고 프리셋 출처를 해제해 수동 입력으로 계속할까요?"))setPresetSource(null);}}>출처 해제 · 수동 입력으로 계속</button></aside>}
+          {presetSource&&!editing&&<aside className="notice"><p>미저장 프리셋 {presetSource.name}</p><p>적용 기본값: {presetSource.defaults.description} / 수량 {presetSource.defaults.quantity} / 단가 {presetSource.defaults.unitPriceWon}. 아래 값은 직접 편집할 수 있습니다. 날짜와 비용 항목을 직접 선택하세요. 개정/중지되면 저장이 거부되고 입력은 유지됩니다.</p><button onClick={()=>{if(confirm("현재 입력은 유지하고 프리셋 출처를 해제해 수동 입력으로 계속할까요?"))setPresetSource(null);}}>출처 해제 · 수동 입력으로 계속</button></aside>}
           <label>
             항목
             <select
@@ -669,8 +677,8 @@ export function CostPeriodEditor({
         <p>지출 조회 중</p>
       ) : (
         rows.items.map((row) => (
-          <article key={row.id}>
-            <h3>{row.description}</h3>
+          <article key={row.id} className="expense-row" data-status={row.status}>
+            <h4>{row.description}</h4>
             <p>
               {row.spend_date} · {row.quantity} × {row.unit_price_won}원 ={" "}
               {row.amount}원 ·{" "}
@@ -678,6 +686,7 @@ export function CostPeriodEditor({
               {record.laborKinds[row.id] && ` · 인건비 ${record.laborKinds[row.id]}`}
             </p>
             <button
+              className="secondary"
               disabled={busy}
               onClick={() => {
                 if (guard.canLeave()) {
@@ -691,20 +700,22 @@ export function CostPeriodEditor({
             >
               이 지출 분할 검토 / 출처
             </button>
-            <button disabled={busy} onClick={()=>setSelectedExpense({id:row.id,version:row.version,status:row.status})}>이 지출 현재 값 / 최초 프리셋 출처</button>
-            <button disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setBudget(null);setReason("");setStockExpense(row.id);}}}>비용 출처 입고 / 연결 이력</button>
+            <button className="secondary" disabled={busy} onClick={()=>setSelectedExpense({id:row.id,version:row.version,status:row.status})}>이 지출 현재 값 / 최초 프리셋 출처</button>
+            <button className="secondary" disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setBudget(null);setReason("");setStockExpense(row.id);}}}>비용 출처 입고 / 연결 이력</button>
             {open && (
               <>
                 <button
+                  className="secondary"
                   disabled={busy || row.status !== "active"}
                   onClick={() => edit(row)}
                 >
                   수정
                 </button>
-                <button disabled={busy} onClick={() => edit(row, true)}>
+                <button className="secondary" disabled={busy} onClick={() => edit(row, true)}>
                   복사 입력
                 </button>
                 <button
+                  className="secondary"
                   disabled={busy || formOpen || !!budget || !reason.trim()}
                   onClick={() =>
                     void send(
@@ -722,18 +733,26 @@ export function CostPeriodEditor({
           </article>
         ))
       )}
+      <div className="actions">
       <button
+        className="secondary"
         disabled={busy || loading || offset === 0}
         onClick={() => setOffset((v) => v - 50)}
       >
         이전 50행
       </button>
       <button
+        className="secondary"
         disabled={busy || loading || !rows.hasMore}
         onClick={() => setOffset((v) => v + 50)}
       >
         다음 50행
       </button>
+      </div>
+      </Section>
+      <TechDetails>
+        <p>원장 {record.id} · v{record.version}{record.source_close_id ? ` · 이월 기준 마감본 ID ${record.source_close_id}` : ""}</p>
+      </TechDetails>
     </section>
   );
 }

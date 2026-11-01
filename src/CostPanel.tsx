@@ -1,5 +1,5 @@
 import type { CostExpenseSelection } from "./CostSelectedExpense";
-import { Notice } from "./ui";
+import { EmptyState, Notice, PageHeader, StatusChip } from "./ui";
 import { CostSearch } from "./CostSearch";
 import { CostLabor } from "./CostLabor";
 import { CostDashboard } from "./CostDashboard";
@@ -138,11 +138,10 @@ export function CostPanel({
       />
     );
   return (
-    <section>
-      <h2>산업안전보건관리비 사용내역</h2>
-      <p>월을 열어 지출을 입력하고, 그 화면의 <strong>사용내역서 인쇄</strong>로 표지·집계표·사용내역서(별지 제1호)·총괄현황을 출력합니다.</p>
-      <Notice summary="직접 입력하는 비용 원장입니다. 금액은 반올림하지 않습니다.">{costWarning}</Notice>
+    <section className="panel">
+      <PageHeader level={1} title="산업안전보건관리비 사용내역">
       <button
+        className="secondary"
         disabled={busy}
         onClick={() => {
           if (guard.canLeave()) {
@@ -154,6 +153,7 @@ export function CostPanel({
         월마감 대시보드
       </button>
       <button
+        className="secondary"
         disabled={busy}
         onClick={() => {
           if (guard.canLeave()) {
@@ -165,6 +165,7 @@ export function CostPanel({
         전체 월 지출 검색
       </button>
       <button
+        className="secondary"
         disabled={busy}
         onClick={() => {
           if (guard.canLeave()) {
@@ -175,6 +176,9 @@ export function CostPanel({
       >
         인건비 조회
       </button>
+      </PageHeader>
+      <p>월을 열어 지출을 입력하고, 그 화면의 <strong>사용내역서 인쇄</strong>로 표지·집계표·사용내역서(별지 제1호)·총괄현황을 출력합니다.</p>
+      <Notice summary="직접 입력하는 기록입니다. 금액은 반올림하지 않습니다.">{costWarning}</Notice>
       {error && <p role="alert">{error}</p>}
       {creating ? (
         <fieldset disabled={busy}>
@@ -273,8 +277,12 @@ export function CostPanel({
         </fieldset>
       ) : (
         <>
+          {!loading && !page.items.length && offset === 0 && (
+            <EmptyState title="아직 월 원장이 없습니다.">현장당 한 번 최초 원장을 만들고, 이후 월은 마감본에서 이월합니다.</EmptyState>
+          )}
           <button
             disabled={busy || loading || page.items.length > 0 || offset > 0}
+            hidden={!loading && (page.items.length > 0 || offset > 0)}
             onClick={() => setCreating(true)}
           >
             최초 원장 만들기
@@ -283,26 +291,32 @@ export function CostPanel({
             <p>조회 중</p>
           ) : (
             page.items.map((p) => (
-              <p key={p.id}>
-                <button disabled={busy} onClick={() => void open(p.id)}>
+              <article key={p.id} className="record-row">
+                <div className="record-row-main"><h2>{p.month}</h2><p>{p.status === "closed" ? "마감된 월" : "입력 중인 월"}</p></div>
+                {p.status === "closed" ? <StatusChip tone="done">마감</StatusChip> : <StatusChip tone="draft">작성 중</StatusChip>}
+                <button className="secondary" disabled={busy} onClick={() => void open(p.id)}>
                   {p.month} · {p.status === "closed" ? "마감" : "작성 중"} · v
                   {p.version}
                 </button>
-              </p>
+              </article>
             ))
           )}
+          <div className="actions">
           <button
+            className="secondary"
             disabled={busy || loading || offset === 0}
             onClick={() => setOffset((v) => v - 50)}
           >
             이전
           </button>
           <button
+            className="secondary"
             disabled={busy || loading || !page.hasMore}
             onClick={() => setOffset((v) => v + 50)}
           >
             다음
           </button>
+          </div>
         </>
       )}
     </section>

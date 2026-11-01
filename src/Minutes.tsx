@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { PageHeader } from "./ui";
+import { matchesFind, PageFind, PageHeader } from "./ui";
 import { api, type Meeting, type Site } from "./api";
 import { MinutesFollowupBoard } from "./MinutesFollowupBoard";
 export function Minutes({
@@ -9,6 +9,7 @@ export function Minutes({
   site: Site;
   open: (m: Meeting | null) => void;
 }) {
+  const [find, setFind] = useState(""); // 이 페이지에서 찾기 (편의 9): filters the 50 rows already loaded
   const [items, setItems] = useState<Meeting[]>([]),
     [offset, setOffset] = useState(0),
     [more, setMore] = useState(false),
@@ -68,8 +69,10 @@ export function Minutes({
             <p>첫 회의를 기록해 보세요.</p>
           </div>
         ) : (
+          <>
+          <PageFind value={find} onChange={setFind} />
           <ul className="meeting-list">
-            {items.map((m) => (
+            {items.filter((m) => matchesFind(m, find)).map((m) => (
               <li key={m.id}>
                 <button className="record" onClick={() => open(m)}>
                   <span>
@@ -86,6 +89,7 @@ export function Minutes({
               </li>
             ))}
           </ul>
+          </>
         )}
         <div className="form-actions">
           <button

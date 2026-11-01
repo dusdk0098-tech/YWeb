@@ -1,5 +1,5 @@
 import { EquipmentDuePanel } from "./EquipmentDuePanel";
-import { Notice, PageHeader } from "./ui";
+import { matchesFind, Notice, PageFind, PageHeader } from "./ui";
 import { useEffect, useState } from "react";
 import { api, type Site, type User } from "./api";
 import type { Page } from "./attendance-types";
@@ -24,6 +24,7 @@ export function EquipmentPanel({
   onDirtyChange: (v: boolean) => void;
   onBusyChange: (v: boolean) => void;
 }) {
+  const [find, setFind] = useState(""); // 이 페이지에서 찾기 (편의 9): filters the 50 rows already loaded
   const [dueMode, setDueMode] = useState(false);
   const [tab, setTab] = useState<"equipment" | "uses">("equipment"),
     [filter, setFilter] = useState(""),
@@ -224,8 +225,9 @@ export function EquipmentPanel({
         <p>불러오는 중…</p>
       ) : (
         <section className="panel">
+          <PageFind value={find} onChange={setFind} />
           {tab === "equipment"
-            ? rows.items.map((r) => (
+            ? rows.items.filter((r) => matchesFind(r, find)).map((r) => (
                 <article key={r.id}>
                   <h2>
                     {r.body.name} · {r.body.typeLabel}
@@ -239,7 +241,7 @@ export function EquipmentPanel({
                   </button>
                 </article>
               ))
-            : uses.items.map((r) => (
+            : uses.items.filter((r) => matchesFind(r, find)).map((r) => (
                 <article key={r.id}>
                   <h2>{r.equipment_snapshot.body.name}</h2>
                   <p>

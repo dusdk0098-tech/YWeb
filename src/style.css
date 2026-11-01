@@ -1078,3 +1078,4 @@ button.secondary[aria-pressed="true"] { background: var(--primary-soft); border-
 .ad-slot .ad:hover { border-color: var(--primary); }
 .ad-slot .ad img { width: 64px; height: 64px; object-fit: cover; flex: none; }
 .ad-slot .ad span { color: var(--ink-muted); font-size: var(--text-meta); }
+.page-find { display: block; margin: 8px 0 12px; max-width: 420px; }

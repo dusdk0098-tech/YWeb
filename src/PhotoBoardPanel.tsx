@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { api, type Site } from "./api";
 import { PhotoBoardEditor, type PhotoBoard } from "./PhotoBoardEditor";
-import { EmptyState, Notice, PageHeader } from "./ui";
+import { EmptyState, matchesFind, Notice, PageFind, PageHeader } from "./ui";
 // 사진 보드(N) 1단계: list, create, open. Photos are shown only as browser-made EXIF-free display copies.
 export function PhotoBoardPanel({ site, onDirtyChange, onBusyChange }: { site: Site; onDirtyChange: (v: boolean) => void; onBusyChange: (v: boolean) => void }) {
+  const [find, setFind] = useState(""); // 이 페이지에서 찾기 (편의 9): filters the 50 rows already loaded
   const [page, setPage] = useState<{ items: { id: string; title: string; version: number; updated_at: string }[]; hasMore: boolean } | null>(null),
     [offset, setOffset] = useState(0), [tick, setTick] = useState(0), [open, setOpen] = useState<PhotoBoard | null>(null),
     [title, setTitle] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState("");
@@ -29,7 +30,8 @@ export function PhotoBoardPanel({ site, onDirtyChange, onBusyChange }: { site: S
       <label>제목<input maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} /></label>
       <button disabled={!title.trim()} onClick={() => void run(() => api<PhotoBoard>(base, "POST", { title }, crypto.randomUUID()))}>사진 보드 만들기</button>
     </fieldset>}
-    {!page ? !error && <p>조회 중</p> : page.items.length ? page.items.map((b) => <article key={b.id} className="record-row">
+    <PageFind value={find} onChange={setFind} />
+    {!page ? !error && <p>조회 중</p> : page.items.length ? page.items.filter((b) => matchesFind(b, find)).map((b) => <article key={b.id} className="record-row">
       <div className="record-row-main"><h2>{b.title}</h2><p>최근 저장 {b.updated_at.slice(0, 16).replace("T", " ")}</p></div>
       <button className="secondary" disabled={busy} aria-label={`${b.title} 열기`} onClick={() => void run(() => api<PhotoBoard>(`${base}/${b.id}`))}>열기</button>
     </article>) : <EmptyState title="사진 보드가 없습니다.">제목을 넣고 사진 보드를 만드세요.</EmptyState>}

@@ -1,5 +1,5 @@
 import { EducationCatalogPanel } from "./EducationCatalogPanel";
-import { Notice, PageHeader } from "./ui";
+import { matchesFind, Notice, PageFind, PageHeader } from "./ui";
 import { useEffect, useState } from "react";
 import { api, type Site, type User } from "./api";
 import type { EducationSession, EducationFull } from "./education-types";
@@ -16,6 +16,7 @@ export function EducationPanel({
   onDirtyChange: (dirty: boolean) => void;
   onBusyChange: (busy: boolean) => void;
 }) {
+  const [find, setFind] = useState(""); // 이 페이지에서 찾기 (편의 9): filters the 50 rows already loaded
   const [catalogMode, setCatalogMode] = useState(false);
   const [rows, setRows] = useState<EducationSession[]>([]),
     [more, setMore] = useState(false),
@@ -131,8 +132,10 @@ export function EducationPanel({
         {loading ? (
           <p>불러오는 중…</p>
         ) : (
+          <>
+          <PageFind value={find} onChange={setFind} />
           <ul className="meeting-list">
-            {rows.map((r) => (
+            {rows.filter((r) => matchesFind(r, find)).map((r) => (
               <li key={r.id}>
                 <button
                   className="record"
@@ -157,6 +160,7 @@ export function EducationPanel({
               </li>
             ))}
           </ul>
+          </>
         )}
         <div className="form-actions">
           <button

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Notice, PageHeader } from "./ui";
+import { matchesFind, Notice, PageFind, PageHeader } from "./ui";
 import { api, type Site } from "./api";
 import type { Page } from "./attendance-types";
 import { noticeStatus, type NoticeView } from "./notice-types";
@@ -13,6 +13,7 @@ export function NoticesPanel({
   onDirtyChange: (v: boolean) => void;
   onBusyChange: (v: boolean) => void;
 }) {
+  const [find, setFind] = useState(""); // 이 페이지에서 찾기 (편의 9): filters the 50 rows already loaded
   const [rows, setRows] = useState<Page<NoticeView>>({
       items: [],
       hasMore: false,
@@ -101,7 +102,8 @@ export function NoticesPanel({
         <p>불러오는 중…</p>
       ) : (
         <section className="panel">
-          {rows.items.map((r) => (
+          <PageFind value={find} onChange={setFind} />
+          {rows.items.filter((r) => matchesFind(r, find)).map((r) => (
             <article key={r.id}>
               <h2>{r.content.title}</h2>
               <p>

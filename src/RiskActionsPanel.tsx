@@ -60,7 +60,7 @@ export function RiskActionsPanel({
     return <RiskActionEditor {...common} user={user} initial={opened} />;
   return (
     <section className="panel">
-      <PageHeader level={1} title="위험성평가 조치" />
+      <PageHeader level={2} title="조치 추적" />
       <Notice summary="담당자 보고와 다른 관리자의 확인을 나눠 기록합니다.">
         보고와 다른 관리자의 확인 기록을 분리합니다. 실제 현장 관측/위험
         해소/작업 재개 허가가 아니며 위험행별 별도 재평가 기록은 평가 문서에서

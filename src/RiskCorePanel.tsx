@@ -1,5 +1,6 @@
 import { RiskRegisterPanel } from "./RiskRegisterPanel";
 import { EmptyState, Notice, PageHeader, StatusChip, type Tone } from "./ui";
+import { RiskActionsPanel } from "./RiskActionsPanel";
 const statusTone: Record<string, Tone> = { draft: "draft", submitted: "pending", accepted: "done", returned: "error", confirmed: "done" };
 const statusText: Record<string, string> = { draft: "작성 중", submitted: "검토 대기", accepted: "수락", returned: "보완 요청", confirmed: "확인됨" };
 import { RiskInboxPanel } from "./RiskInboxPanel";
@@ -28,7 +29,7 @@ export function RiskCorePanel({
   const [method, setMethod] = useState<"product" | "three_level" | "checklist" | "narrative">(
     "product",
   );
-  const [tab, setTab] = useState<"criteria" | "assessments">("assessments"),
+  const [tab, setTab] = useState<"criteria" | "assessments" | "actions">("assessments"),
     [opened, setOpened] = useState<
       | { kind: "criteria"; row: RiskCriteriaRecord | null }
       | { kind: "assessments"; row: RiskAssessmentRecord | null }
@@ -48,7 +49,7 @@ export function RiskCorePanel({
     [error, setError] = useState(""),
     [tick, setTick] = useState(0);
   useEffect(() => {
-    if (opened) return;
+    if (opened || tab === "actions") return; // the actions tab lists its own records
     let active = true;
     setLoading(true);
     setPage({ items: [], hasMore: false });
@@ -100,6 +101,48 @@ export function RiskCorePanel({
       />
     );
   }
+  const switcher = (
+      <div className="segmented" role="group" aria-label="목록 종류">
+        <button
+          aria-pressed={tab === "assessments"}
+          className={tab === "assessments" ? "" : "secondary"}
+          disabled={loading}
+          onClick={() => {
+            setTab("assessments");
+            setOffset(0);
+          }}
+        >
+          평가 문서
+        </button>
+        <button
+          aria-pressed={tab === "criteria"}
+          className={tab === "criteria" ? "" : "secondary"}
+          disabled={loading}
+          onClick={() => {
+            setTab("criteria");
+            setOffset(0);
+          }}
+        >
+          사람이 정의한 기준
+        </button>
+              <button
+          aria-pressed={tab === "actions"}
+          className={tab === "actions" ? "" : "secondary"}
+          disabled={loading}
+          onClick={() => setTab("actions")}
+        >
+          조치 추적
+        </button>
+        </div>
+  );
+  if (tab === "actions")
+    return (
+      <section className="panel">
+        <PageHeader level={1} title="위험성평가" />
+        {switcher}
+        <RiskActionsPanel site={site} user={user} onDirtyChange={onDirtyChange} onBusyChange={onBusyChange} />
+      </section>
+    );
   return (
     <section className="panel">
       <PageHeader level={1} title="위험성평가">
@@ -139,30 +182,7 @@ export function RiskCorePanel({
       </button>
       <button className="secondary" disabled={loading} onClick={() => setOpened({kind:"register"})}>평가 문서 목록 검색 (모든 방법)</button>
       </div>
-      <div className="segmented" role="group" aria-label="목록 종류">
-      <button
-        aria-pressed={tab === "assessments"}
-        className={tab === "assessments" ? "" : "secondary"}
-        disabled={loading}
-        onClick={() => {
-          setTab("assessments");
-          setOffset(0);
-        }}
-      >
-        평가 문서
-      </button>
-      <button
-        aria-pressed={tab === "criteria"}
-        className={tab === "criteria" ? "" : "secondary"}
-        disabled={loading}
-        onClick={() => {
-          setTab("criteria");
-          setOffset(0);
-        }}
-      >
-        사람이 정의한 기준
-      </button>
-      </div>
+      {switcher}
       <div className="filter-bar">
       <label>
         평가 방법 (방법 간 점수 변환 없음)

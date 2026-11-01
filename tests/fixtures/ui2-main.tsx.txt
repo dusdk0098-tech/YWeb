@@ -1,7 +1,6 @@
 import { HelpPanel } from "./HelpPanel";
 import { helpDestinationAllowed } from "./help-topics";
 import {
-  RiskActionsPanel,
   RiskCorePanel,
   CompanyPpePanel,
   WorkStopPanel,
@@ -11,14 +10,12 @@ import {
   CostPanel,
   DailyJournalPanel,
   EquipmentPanel,
-  NoticesPanel,
   EducationPanel,
   InspectionsPanel,
   HazardsPanel,
   TbmPanel,
   WorkersAttendance,
   PhotoBoardPanel,
-  LibraryPanel,
 } from "./DomainPanels";
 import { Login } from "./Login";
 import { AppShell } from "./AppShell";
@@ -30,6 +27,7 @@ import { SiteManagement } from "./SiteManagement";
 import { PasswordChange } from "./PasswordChange";
 import { AiSettings } from "./AiSettings";
 import { AccountsPanel } from "./AccountsPanel";
+import { NoticesLibraryPanel } from "./NoticesLibraryPanel";
 import { PublicAccessSettings } from "./PublicAccessSettings";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -242,8 +240,6 @@ function App() {
             onDirtyChange={setAttendanceDirty}
             onBusyChange={setAttendanceBusy}
           />
-        ) : site && tab === "library" ? (
-          <LibraryPanel key={site.id} site={site} />
         ) : site && tab === "photoboard" ? (
           <PhotoBoardPanel
             key={site.id}
@@ -276,7 +272,7 @@ function App() {
             onBusyChange={setAttendanceBusy}
           />
         ) : site && tab === "notices" ? (
-          <NoticesPanel
+          <NoticesLibraryPanel
             key={site.id}
             site={site}
             onDirtyChange={setAttendanceDirty}
@@ -292,14 +288,6 @@ function App() {
           />
         ) : site && tab === "inspections" ? (
           <InspectionsPanel
-            key={site.id}
-            site={site}
-            user={user}
-            onDirtyChange={setAttendanceDirty}
-            onBusyChange={setAttendanceBusy}
-          />
-        ) : site && tab === "riskactions" ? (
-          <RiskActionsPanel
             key={site.id}
             site={site}
             user={user}

@@ -10,6 +10,7 @@ test("현장 자료실: manager uploads with rights check, downloads, withdraws"
   const site = await (await page.request.post("/api/sites", { headers: { Origin: "http://127.0.0.1:3107", "x-csrf-token": s.csrf, "idempotency-key": randomUUID() }, data: { name: "자료 합성 " + randomUUID() } })).json();
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
+  await page.getByRole("button", { name: "공지 · 자료", exact: true }).click();
   await page.getByRole("button", { name: "자료실", exact: true }).click();
   await expect(page.getByText("자료가 없습니다.")).toBeVisible();
   await page.getByLabel("자료 제목").fill("작업 전 점검 지침");

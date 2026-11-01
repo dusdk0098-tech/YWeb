@@ -14,22 +14,20 @@ export const NAV_GROUPS: NavGroup[] = [
   { id: "docs", title: "문서", icon: "work-plan", items: [
     { id: "workplans", title: "작업계획", icon: "work-plan" },
     { id: "riskcore", title: "위험성평가", icon: "risk" },
-    { id: "riskactions", title: "위험성평가 조치", icon: "risk" },
     { id: "minutes", title: "회의록", icon: "minutes" },
-    { id: "notices", title: "공지", icon: "notice" },
+    { id: "notices", title: "공지 · 자료", icon: "notice" }, // notices + library (결정 8)
   ] },
   { id: "resources", title: "현장 자원", icon: "roster", items: [
     { id: "attendance", title: "명부 · 출역", icon: "roster" },
-    { id: "companyppe", title: "업체 · 보호구", icon: "company-ppe" },
+    { id: "companyppe", title: "업체 · 소속", icon: "company-ppe" },
     { id: "equipment", title: "장비", icon: "equipment" },
-    { id: "stock", title: "재고", icon: "stock", managerOnly: true },
+    { id: "stock", title: "재고 · 보호구", icon: "stock", managerOnly: true }, // PPE issue/return lives here (결정 8)
   ] },
   { id: "cost", title: "안전보건관리비", icon: "cost", managerOnly: true, items: [
     { id: "costs", title: "산업안전보건관리비", icon: "cost" },
   ] },
   { id: "media", title: "사진 · 자료", icon: "photo-board", items: [
     { id: "photoboard", title: "사진 보드", icon: "photo-board" },
-    { id: "library", title: "자료실", icon: "library" },
   ] },
 ];
 export const SETTINGS: NavItem[] = [

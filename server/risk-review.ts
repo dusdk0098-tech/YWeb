@@ -1,3 +1,4 @@
+import { SOLE_MANAGER_NOTE, soleManager } from "./sole-manager.js";
 import { validateChecklistCoverage } from "./risk-checklist-model.js";
 import type { Express, Request } from "express";
 import { randomUUID } from "node:crypto";
@@ -97,7 +98,7 @@ export function registerRiskReview(
   }
   function reviewer(req: Request) {
     access(req, true, true);
-    if (read(req).author_id === req.session.userId)
+    if (read(req).author_id === req.session.userId && !soleManager(db, String(req.params.siteId), req.session.userId!))
       throw new HttpError(
         403,
         "작성 계정과 다른 현장 관리자가 문서를 검토해야 합니다. 실제 위험 허용 판단이 아닙니다.",
@@ -193,8 +194,24 @@ export function registerRiskReview(
         db.prepare(
           "UPDATE risk_assessments SET status='submitted',version=version+1,submission=?,submission_hash=?,updated_at=? WHERE id=?",
         ).run(JSON.stringify(s), riskHash(s), at, old.id);
-        const row = read(req);
+        let row = read(req);
         riskEvent(db, req, "assessment", row, "submitted", v.reason);
+        if (soleManager(db, old.site_id, req.session.userId!)) {
+          const now = new Date().toISOString(),
+            d: RiskDecision = {
+              kind: "accepted",
+              reason: SOLE_MANAGER_NOTE,
+              actor: account(db, req.session.userId!),
+              at: now,
+              submissionHash: row.submission_hash!,
+              selfProcessed: true,
+            };
+          db.prepare(
+            "UPDATE risk_assessments SET status='accepted',version=version+1,decision=?,updated_at=? WHERE id=?",
+          ).run(JSON.stringify(d), now, old.id);
+          row = read(req);
+          riskEvent(db, req, "assessment", row, "document_accepted", SOLE_MANAGER_NOTE);
+        }
         return row;
       },
       () => {

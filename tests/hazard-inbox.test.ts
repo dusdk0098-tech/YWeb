@@ -24,6 +24,8 @@ test("hazard inbox real lifecycle current assignment self review roles and busin
   r=await f.agent.get(endpoint);assert.equal(r.body.total,1);assert.equal(r.body.items[0].canReport,false);assert.equal((await f.agent.get(endpoint).query({kind:'reviews'})).status,403);
   assert.equal((await f.send(`/hazards/${record.id}/remediate`,{version:record.version,text:'not allowed'})).status,403);
   f.db.prepare("UPDATE memberships SET role='manager' WHERE site_id=? AND user_id=?").run(f.site,f.manager);
+  // a second manager keeps the two-person rule in force (server/sole-manager.ts)
+  f.db.prepare("INSERT INTO users VALUES(?,?,?,?)").run("second-manager","second-manager@example.test","second","x");f.db.prepare("INSERT INTO memberships VALUES(?,?,?)").run(f.site,"second-manager","manager");
   r=await f.send(`/hazards/${record.id}/remediate`,{version:record.version,text:'합성 제출'});assert.equal(r.status,200,r.text);record=r.body;
   r=await f.agent.get(endpoint);assert.equal(r.body.items[0].stateLabel,'다른 관리자 검토 대기');assert.equal(r.body.items[0].canClose,false);assert.equal(r.body.items[0].canReturn,true);
   assert.equal((await f.agent.get(endpoint).query({kind:'reviews'})).body.total,0);

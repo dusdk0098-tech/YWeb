@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Notice } from "./ui";
-import { api, type Site, type User } from "./api";
+import { api, type Site, type User, soleManagerOf } from "./api";
 import { useDraftGuard } from "./useDraftGuard";
 import {
   workStopLabels,
@@ -110,9 +110,10 @@ export function WorkStopEditor({
       options.push("request-review");
   }
   const cannotResume =
-    record?.requester_id === user.id ||
-    record?.review_record?.actorId === user.id ||
-    record?.eligibleReviewerCount === 0;
+    !soleManagerOf(site) &&
+    (record?.requester_id === user.id ||
+      record?.review_record?.actorId === user.id ||
+      record?.eligibleReviewerCount === 0);
   function clear() {
     setReason("");
     setAssigneeId("");

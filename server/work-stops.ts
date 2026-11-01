@@ -1,3 +1,4 @@
+import { SOLE_MANAGER_NOTE, soleManager } from "./sole-manager.js";
 import { persistedAccountSession } from "./account-session.js";
 import type { Express, Request } from "express";
 import { randomUUID } from "node:crypto";
@@ -243,8 +244,9 @@ export function registerWorkStops(
       if (action === "record-resumption") {
         const record = workStopRecord(db, row);
         if (
-          row.requester_id === req.session.userId ||
-          record.review_record?.actorId === req.session.userId
+          (row.requester_id === req.session.userId ||
+            record.review_record?.actorId === req.session.userId) &&
+          !soleManager(db, row.site_id, req.session.userId!)
         )
           throw new HttpError(
             403,
@@ -363,9 +365,11 @@ export function registerWorkStops(
           if (!record.stop_record || !record.review_record)
             throw new HttpError(409, "중지/개선 기록이 필요합니다.");
           eligible(row.site_id, record.review_record.actorId);
+          const sole = soleManager(db, row.site_id, a.id);
           if (
-            a.id === row.requester_id ||
-            a.id === record.review_record.actorId
+            (a.id === row.requester_id ||
+              a.id === record.review_record.actorId) &&
+            !sole
           )
             throw new HttpError(403, "다른 관리자의 검토 기록이 필요합니다.");
           if (value.recordedLocal < record.stop_record.recordedLocal)
@@ -381,10 +385,11 @@ export function registerWorkStops(
               resumption_record: JSON.stringify({
                 ...timed(value),
                 conditions: value.conditions,
+                ...(sole ? { selfProcessed: true, note: SOLE_MANAGER_NOTE } : {}),
               }),
             },
             action,
-            note,
+            sole ? `${SOLE_MANAGER_NOTE} · ${note}` : note,
           );
         }
         if (action === "close-without-stop") {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api, type Site, type User } from "./api";
+import { api, type Site, type User, soleManagerOf } from "./api";
 import { useDraftGuard } from "./useDraftGuard";
 import { WorkPlanPicker } from "./WorkPlanPicker";
 import type { RiskAssessmentRecord } from "../server/risk-core";
@@ -36,7 +36,7 @@ export function RiskReviewActions({
       onBusyChange,
     ),
     manager = site.role === "manager",
-    own = row.author_id === user.id;
+    own = row.author_id === user.id && !soleManagerOf(site); // the only manager may review their own document
   async function send(action: "submit" | "accepted" | "returned" | "revise") {
     const path = `/sites/${site.id}/risk-assessments/${row.id}/${action === "accepted" || action === "returned" ? "review" : action}`,
       value =

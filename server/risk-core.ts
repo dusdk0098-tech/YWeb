@@ -129,6 +129,7 @@ export type RiskDecision = {
   actor: { id: string; name: string };
   at: string;
   submissionHash: string;
+  selfProcessed?: true; // 관리자 1명 현장: the author accepted their own submission
 };
 export type RiskCriteriaRecord = ReturnType<typeof criteriaRecord>;
 export type RiskAssessmentRecord = ReturnType<typeof assessmentRecord>;

@@ -55,7 +55,10 @@ export type Site = {
   name: string;
   role: "manager" | "editor" | "viewer";
   version: number;
+  managers?: number; // manager memberships on the site (from GET /sites)
 };
+// 관리자 1명 현장: the only manager also does the "another manager" steps (server/sole-manager.ts decides; this only shows the controls).
+export const soleManagerOf = (site: Site) => site.role === "manager" && site.managers === 1;
 export type Meeting = {
   status?: "draft" | "finalized";
   parentId?: string | null;

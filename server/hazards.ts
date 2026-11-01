@@ -1,3 +1,4 @@
+import { SOLE_MANAGER_NOTE, soleManager } from "./sole-manager.js";
 import { attachmentManifest } from "./hazard-attachment-model.js";
 import { hazardInspectionSource } from "./inspection-links.js";
 import type { Express, Request } from "express";
@@ -300,7 +301,7 @@ export function registerHazardRoutes(
             "현재 배정된 담당자 본인만 조치 내용을 제출할 수 있습니다.",
           );
         eligible(site, req.session.userId!);
-        return save(
+        const requested = save(
           req,
           row,
           {
@@ -311,6 +312,8 @@ export function registerHazardRoutes(
           "remediation_submitted",
           "담당자 조치 기록 제출·관리자 검토 요청",
         );
+        if (!soleManager(db, site, req.session.userId!)) return requested;
+        return save(req, get(site, id), { status: "closed" }, "closed", SOLE_MANAGER_NOTE);
       },
       () => {
         access(req, true);
@@ -360,7 +363,7 @@ export function registerHazardRoutes(
       input,
       () => {
         const row = expected(site, id, input.version, ["review_requested"]);
-        if (row.remediator_id === req.session.userId)
+        if (row.remediator_id === req.session.userId && !soleManager(db, site, req.session.userId!))
           throw new HttpError(
             403,
             "잠정 독립 검토 정책: 본인이 제출한 조치는 종결할 수 없습니다. 다른 현장 관리자가 검토해야 합니다. 현장 관리에서 기존 계정에 관리자 권한을 배정하거나 다른 담당자에게 재배정하세요.",
@@ -369,7 +372,7 @@ export function registerHazardRoutes(
       },
       () => {
         access(req, true, true);
-        if (get(site, id).remediator_id === req.session.userId)
+        if (get(site, id).remediator_id === req.session.userId && !soleManager(db, site, req.session.userId!))
           throw new HttpError(
             403,
             "잠정 독립 검토 정책: 본인이 제출한 조치는 종결할 수 없습니다. 다른 현장 관리자가 검토해야 합니다. 현장 관리에서 기존 계정에 관리자 권한을 배정하거나 다른 담당자에게 재배정하세요.",

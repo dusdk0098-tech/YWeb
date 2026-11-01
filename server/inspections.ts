@@ -1,3 +1,4 @@
+import { SOLE_MANAGER_NOTE, soleManager } from "./sole-manager.js";
 import { assertInspectionNewUse, inspectionSelection } from "./inspection-use.js";
 import { createInspectionDraft } from "./inspection-write.js";
 import {
@@ -249,6 +250,18 @@ export function registerInspectionRoutes(
           "UPDATE inspections SET status='submitted',version=version+1,submitted_snapshot=? WHERE id=?",
         ).run(JSON.stringify(snapshot), id);
         event(req, id, "submitted");
+        if (soleManager(db, site, req.session.userId!)) {
+          const review = {
+            actor: account(db, req.session.userId!),
+            at: new Date().toISOString(),
+            reason: SOLE_MANAGER_NOTE,
+            selfProcessed: true,
+          };
+          db.prepare(
+            "UPDATE inspections SET status='accepted',version=version+1,review=? WHERE id=?",
+          ).run(JSON.stringify(review), id);
+          event(req, id, "accept", SOLE_MANAGER_NOTE);
+        }
         return inspectionRecord(getInspection(db, site, id));
       },
       () => {
@@ -263,7 +276,7 @@ export function registerInspectionRoutes(
       const site = String(req.params.siteId),
         id = String(req.params.id);
       const row = getInspection(db, site, id);
-      if (row.owner_id === req.session.userId)
+      if (row.owner_id === req.session.userId && !soleManager(db, site, req.session.userId!))
         throw new HttpError(
           403,
           "제출 계정은 자신의 기록을 검토할 수 없습니다. 현장 설정에서 다른 관리자 계정을 지정하세요.",
@@ -343,7 +356,7 @@ export function registerInspectionRoutes(
         },
         () => {
           access(req, true, true);
-          if (getInspection(db, site, id).owner_id === req.session.userId)
+          if (getInspection(db, site, id).owner_id === req.session.userId && !soleManager(db, site, req.session.userId!))
             throw new HttpError(
               403,
               "제출 계정은 자신의 기록을 검토할 수 없습니다.",

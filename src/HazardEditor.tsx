@@ -2,7 +2,7 @@ import { HazardAttachments } from "./HazardAttachments";
 import { Notice, TechDetails } from "./ui";
 import { HazardInspectionSource } from "./HazardInspectionSource";
 import { useEffect, useRef, useState } from "react";
-import { api, type Site, type User } from "./api";
+import { api, type Site, type User, soleManagerOf } from "./api";
 import {
   statusLabel,
   type HazardDetails,
@@ -60,7 +60,7 @@ export function HazardEditor({
     record.assignee_id === user.id &&
     site.role !== "viewer";
   const selfReview =
-    record?.status === "review_requested" && record.remediator_id === user.id;
+    record?.status === "review_requested" && record.remediator_id === user.id && !soleManagerOf(site);
   useEffect(() => {
     onDirtyChange(dirty);
     return () => onDirtyChange(false);

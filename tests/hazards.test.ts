@@ -412,6 +412,9 @@ test("report assignment remediation independent review close/reopen history and 
     ).body as HazardRecord;
     assert.equal(r.remediation, "");
     assert.equal(r.remediator_id, null);
+    // 관리자 1명 현장이면 본인 처리가 한 번에 끝나므로(server/sole-manager.ts), 두 번째 관리자를 두어 2인 원칙을 확인한다.
+    db.prepare("INSERT INTO users VALUES(?,?,?,?)").run("second-manager", "second-manager@example.test", "second", "x");
+    db.prepare("INSERT INTO memberships VALUES(?,?,?)").run(site, "second-manager", "manager");
     r = (
       await write(m, "post", url + "/remediate", {
         version: r.version,

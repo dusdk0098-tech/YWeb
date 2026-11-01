@@ -451,14 +451,14 @@ export function InspectionTaskEditor({
               disabled={busy || !eventOffset}
               onClick={() => setEventOffset((o) => Math.max(0, o - 50))}
             >
-              이전 이력50
+              이전 50
             </button>
             <button
               className="secondary"
               disabled={busy || !moreEvents}
               onClick={() => setEventOffset((o) => o + 50)}
             >
-              다음 이력50
+              다음 50
             </button>
           </div>
         </>

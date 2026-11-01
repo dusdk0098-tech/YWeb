@@ -42,6 +42,6 @@ test('finalization SSR distinguishes separate review and unresolved engineering;
  const transfer=renderToStaticMarkup(createElement(EducationContentTransfer,{siteId:'s',onClose:()=>{},onDraft:()=>{},onDirtyChange:()=>{},onBusyChange:()=>{}}));assert.match(transfer,/그 원자료에는 코드91이 없습니다/);assert.match(transfer,/별도 조사 교육91/);
  const props={siteId:'s',date:'2026-10-29',value:[],onChange:()=>{},onBusy:()=>{}};
  assert.notEqual(DailyInspectionReferences(props).key,DailyInspectionReferences({...props,date:'2026-10-30'}).key);assert.notEqual(DailyInspectionReferences(props).key,DailyInspectionReferences({...props,siteId:'other'}).key);
- const daily=renderToStaticMarkup(createElement(DailyInspectionReferences,{siteId:'s',date:'',value:[],onChange:()=>{},onBusy:()=>{}}));assert.match(daily,/<button type="button" disabled="">다음50개/);
+ const daily=renderToStaticMarkup(createElement(DailyInspectionReferences,{siteId:'s',date:'',value:[],onChange:()=>{},onBusy:()=>{}}));assert.match(daily,/<button type="button" disabled="">다음 50/);
  const lifting=renderToStaticMarkup(createElement(WorkPlanLiftingFields,{siteId:'s',value:blankLifting(),equipmentIds:[],onChange:()=>{},onBusy:()=>{}}));assert.match(lifting,/공학 근거 미확정/);assert.match(lifting,/작업 허가를 판단하지 마세요/);
 });

@@ -42,6 +42,6 @@ export function RiskInboxPanel({site,user,onClose,onDirtyChange,onBusyChange}:{s
   <button disabled={busy} onClick={()=>{setOffset(0);setTick(v=>v+1);}}>내 업무 다시 조회</button>
   {error&&<p role="alert">{error}</p>}{busy&&<p role="status">현재 권한으로 조회 중…</p>}
   {page&&<RiskInboxRows page={page} disabled={busy} onOpen={r=>void open(r)}/>}
-  <button disabled={busy||!offset} onClick={()=>setOffset(v=>Math.max(0,v-50))}>이전 50개</button><button disabled={busy||!page?.hasMore} onClick={()=>setOffset(v=>v+50)}>다음 50개</button>
+  <button disabled={busy||!offset} onClick={()=>setOffset(v=>Math.max(0,v-50))}>이전 50</button><button disabled={busy||!page?.hasMore} onClick={()=>setOffset(v=>v+50)}>다음 50</button>
  </section>;
 }

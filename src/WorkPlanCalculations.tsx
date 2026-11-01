@@ -115,6 +115,6 @@ export function WorkPlanCalculations({ path, editable, onDirty }: { path: string
       {c.warnings.length > 0 && <ul className="warning-list">{c.warnings.map((w) => <li key={w}>⚠ {w}</li>)}</ul>}
     </div>)}
     {editable && <button disabled={!dirty || !parsed.success || busy} onClick={() => void save()}>장비 계산 저장</button>}
-    {saved?.saved && <a href={`/api${path}/print`} target="_blank" rel="noreferrer">장비 계산서 인쇄 ↗</a>}
+    {saved?.saved && <a href={`/api${path}/print`} target="_blank" rel="noreferrer">장비 계산서 인쇄 / PDF</a>}
   </section>;
 }

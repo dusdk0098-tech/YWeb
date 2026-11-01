@@ -34,8 +34,8 @@ export function PhotoBoardPanel({ site, onDirtyChange, onBusyChange }: { site: S
       <button className="secondary" disabled={busy} aria-label={`${b.title} 열기`} onClick={() => void run(() => api<PhotoBoard>(`${base}/${b.id}`))}>열기</button>
     </article>) : <EmptyState title="사진 보드가 없습니다.">제목을 넣고 사진 보드를 만드세요.</EmptyState>}
     <div className="actions">
-      <button className="secondary" disabled={busy || !offset} onClick={() => setOffset((v) => v - 50)}>이전50</button>
-      <button className="secondary" disabled={busy || !page?.hasMore} onClick={() => setOffset((v) => v + 50)}>다음50</button>
+      <button className="secondary" disabled={busy || !offset} onClick={() => setOffset((v) => v - 50)}>이전 50</button>
+      <button className="secondary" disabled={busy || !page?.hasMore} onClick={() => setOffset((v) => v + 50)}>다음 50</button>
     </div>
   </section>;
 }

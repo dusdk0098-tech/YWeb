@@ -40,7 +40,7 @@ export function RiskPublicationsPanel({ site, onClose, onDirtyChange, onBusyChan
     <button disabled={loading} onClick={() => setTick((n) => n + 1)}>현재 목록/게시본 다시 조회</button>
     {site.role === "manager" && !selected && <WorkPlanPicker path={`/sites/${site.id}/risk-assessments?status=accepted`} label="게시할 수락 평가 선택 (후속 문서 없는 평가만 게시 가능)" disabled={loading} onSelect={selectSource} />}
     <ul>{page.items.map((p) => <li key={p.id}><button disabled={loading} onClick={() => setSelected(p.id)}>{p.publication.source.title} / 제출 v{p.publication.source.submissionVersion} / {p.status === "withdrawn" ? "철회" : p.sourceHasSuccessor ? "후속 문서 있음·새 확인 중지" : "게시"} / {p.ownAck ? "내 확인 있음" : "내 확인 없음"}</button></li>)}</ul>
-    {!selected && <><button disabled={loading || offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>이전 게시본 50개</button><button disabled={loading || !page.hasMore} onClick={() => setOffset(offset + 50)}>다음 게시본 50개</button></>}
+    {!selected && <><button disabled={loading || offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>이전 50</button><button disabled={loading || !page.hasMore} onClick={() => setOffset(offset + 50)}>다음 50</button></>}
     {loading && <p role="status">현재 권한으로 게시본 조회 중…</p>}
   </section>;
 }

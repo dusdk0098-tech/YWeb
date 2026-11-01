@@ -80,7 +80,7 @@ export function WorkPlanPicker({
           setOffset((v) => v - 50);
         }}
       >
-        이전50개
+        이전 50
       </button>
       <button
         disabled={!page.hasMore}
@@ -89,7 +89,7 @@ export function WorkPlanPicker({
           setOffset((v) => v + 50);
         }}
       >
-        다음50개
+        다음 50
       </button>
       {loading && <p>선택 목록 조회 중</p>}
     </fieldset>

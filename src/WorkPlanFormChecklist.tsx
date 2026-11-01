@@ -40,6 +40,6 @@ export function WorkPlanFormChecklist({ path, editable, onDirty }: { path: strin
     </table>}
     {problem && <p role="alert">{problem}</p>}
     {editable && <button disabled={!dirty || !!problem || busy} onClick={() => void save()}>양식 체크리스트 저장</button>}
-    <a href={`/api${path}/print`} target="_blank" rel="noreferrer">양식 체크리스트 인쇄 ↗</a>
+    <a href={`/api${path}/print`} target="_blank" rel="noreferrer">양식 체크리스트 인쇄 / PDF</a>
   </section>;
 }

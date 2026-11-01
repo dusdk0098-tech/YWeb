@@ -387,7 +387,7 @@ export function WorkStopEditor({
                           setOffset((o) => o - 50);
                         }}
                       >
-                        이전 계정50
+                        이전 50
                       </button>
                       <button
                         type="button"
@@ -397,7 +397,7 @@ export function WorkStopEditor({
                           setOffset((o) => o + 50);
                         }}
                       >
-                        다음 계정50
+                        다음 50
                       </button>
                     </>
                   )}

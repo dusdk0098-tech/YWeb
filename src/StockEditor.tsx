@@ -369,13 +369,13 @@ export function StockEditor({
         disabled={busy || loading || offset === 0}
         onClick={() => setOffset((v) => v - 50)}
       >
-        이전50개
+        이전 50
       </button>
       <button
         disabled={busy || loading || !page.hasMore}
         onClick={() => setOffset((v) => v + 50)}
       >
-        다음50개
+        다음 50
       </button>
     </section>
   );

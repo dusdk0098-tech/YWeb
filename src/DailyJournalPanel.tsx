@@ -195,14 +195,14 @@ export function DailyJournalPanel({
           disabled={busy || loading || !offset}
           onClick={() => setOffset((o) => Math.max(0, o - 50))}
         >
-          이전50
+          이전 50
         </button>
         <button
           className="secondary"
           disabled={busy || loading || !items.hasMore}
           onClick={() => setOffset((o) => o + 50)}
         >
-          다음50
+          다음 50
         </button>
       </div>
     </section>

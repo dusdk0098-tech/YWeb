@@ -540,14 +540,14 @@ export function DailyJournalEditor({
               disabled={allBusy || !eventOffset}
               onClick={() => setEventOffset((v) => Math.max(0, v - 50))}
             >
-              이전 이력50
+              이전 50
             </button>
             <button
               className="secondary"
               disabled={allBusy || !moreEvents}
               onClick={() => setEventOffset((v) => v + 50)}
             >
-              다음 이력50
+              다음 50
             </button>
           </div>
           </Section>

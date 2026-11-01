@@ -44,8 +44,8 @@ export function RiskPublicationCreate({ site, initial, onClose, onPublished, onD
     <fieldset disabled={busy || loading || source.status !== "accepted" || !!source.successor_id || site.role !== "manager"}>
       <legend>현재 현장 대상 계정 {selected.length}/200</legend>
       {page.items.map((person) => <label key={person.id}><input type="checkbox" checked={selected.some((r) => r.id === person.id)} disabled={!selected.some((r) => r.id === person.id) && selected.length >= 200} onChange={(e) => { setSelected(e.target.checked ? [...selected, person] : selected.filter((r) => r.id !== person.id)); setConfirm(false); }} />{person.name} ({person.role})</label>)}
-      <button type="button" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>이전 계정 50개</button>
-      <button type="button" disabled={!page.hasMore} onClick={() => setOffset(offset + 50)}>다음 계정 50개</button>
+      <button type="button" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>이전 50</button>
+      <button type="button" disabled={!page.hasMore} onClick={() => setOffset(offset + 50)}>다음 50</button>
       <button type="button" onClick={() => setTick((n) => n + 1)}>대상 후보 다시 조회</button>
       <ul>{selected.map((person) => <li key={person.id}>{person.name} <button type="button" onClick={() => { setSelected(selected.filter((r) => r.id !== person.id)); setConfirm(false); }}>선택 해제</button></li>)}</ul>
       <label>대상이 확인할 고정 문구<textarea maxLength={2000} value={statement} onChange={(e) => { setStatement(e.target.value); setConfirm(false); }} /></label>

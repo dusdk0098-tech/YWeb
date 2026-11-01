@@ -23,8 +23,8 @@ export function StockMinimumPanel({ siteId, onOpen, onClose, disabled }: {
     {page && <><p>전체 설정 이력 품목 {page.totalConfiguredItems}개 · 이번 페이지 {page.items.length}개 · 시작 위치 {page.offset + 1} · 조회 {page.queriedAt}</p>
       <p>이번 페이지: {Object.entries(page.pageCounts).map(([key, count]) => `${minimumLabels[key as keyof typeof minimumLabels]} ${count}`).join(" / ")}</p>
       {page.items.map(row => <article key={row.item.id}><h3>{row.item.name} · {row.item.unit}</h3><p>{row.item.id}</p><StockMinimumSummary record={row}/><button disabled={disabled} onClick={() => onOpen(row.item.id)}>품목 상세·수불·설정</button></article>)}
-      <button disabled={disabled || offset === 0} onClick={() => setOffset(v => Math.max(0, v - 10))}>이전 10개</button>
-      <button disabled={disabled || !page.hasMore} onClick={() => setOffset(v => v + 10)}>다음 10개</button>
+      <button disabled={disabled || offset === 0} onClick={() => setOffset(v => Math.max(0, v - 10))}>이전 10</button>
+      <button disabled={disabled || !page.hasMore} onClick={() => setOffset(v => v + 10)}>다음 10</button>
     </>}
   </section>;
 }

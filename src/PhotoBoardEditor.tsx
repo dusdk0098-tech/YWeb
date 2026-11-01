@@ -96,7 +96,7 @@ export function PhotoBoardEditor({ base, initial, writable, onClose, onDirtyChan
       status={dirty ? <StatusChip tone="pending">저장 안 됨</StatusChip> : <StatusChip tone="done">저장됨</StatusChip>}>
       <button className="secondary" disabled={busy} onClick={exportPng}>PNG 저장</button>
       <button className="secondary" disabled={busy || !draft.scene.items.length} onClick={exportTsv}>사진 정보표 TSV 저장</button>
-      <a className="button secondary" href={`/api${path}/print`} target="_blank" rel="noreferrer">사진대지 인쇄(PDF)</a>
+      <a className="button secondary" href={`/api${path}/print`} target="_blank" rel="noreferrer">사진대지 인쇄 / PDF</a>
     </PageHeader>
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}

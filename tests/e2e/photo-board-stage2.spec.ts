@@ -39,7 +39,7 @@ test("사진 보드 2단계: folder, zoom, drag, TSV, two-per-page print", async
   await expect(page.getByRole("img", { name: /1번 사진.*원형 강조 1개/ })).toBeVisible();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 20, { steps: 5 });
+  await page.mouse.move(box.x + box.width * 0.625, box.y + box.height * 0.555, { steps: 5 }); // relative: the canvas is scaled to its card
   await page.mouse.up();
   await page.getByLabel("확대(배)").first().fill("2");
   await expect(page.getByRole("img", { name: /1번 사진.*2배 확대/ })).toBeVisible();

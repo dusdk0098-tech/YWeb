@@ -36,7 +36,7 @@ export function Login({
         <img src="/brand/yweb-mark.svg" alt="" width={48} height={48} />
         <span className="brand">Y웹</span>
         <p>현장 안전 기록</p>
-        <p className="muted">TBM · 점검 · 안전업무일지 · 작업계획 · 비용 원장을 한곳에서.</p>
+        <p className="muted">TBM · 점검 · 안전업무일지 · 작업계획 · 산업안전보건관리비를 한곳에서.</p>
       </div>
       <section className="login-form panel">
         <h2>로그인</h2>

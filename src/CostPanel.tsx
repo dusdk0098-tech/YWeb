@@ -139,7 +139,8 @@ export function CostPanel({
     );
   return (
     <section>
-      <h2>관리자 수기 비용 원장</h2>
+      <h2>산업안전보건관리비 사용내역</h2>
+      <p>월을 열어 지출을 입력하고, 그 화면의 <strong>사용내역서 인쇄</strong>로 표지·집계표·사용내역서(별지 제1호)·총괄현황을 출력합니다.</p>
       <Notice summary="직접 입력하는 비용 원장입니다. 금액은 반올림하지 않습니다.">{costWarning}</Notice>
       <button
         disabled={busy}

@@ -56,7 +56,7 @@ export function Home({ site, user, ads, onOpen }: { site: Site | undefined; user
         {card("tbm", "오늘 TBM", tbmToday.length ? `${tbmToday.length}건 기록됨` : "아직 없음 · 시작하기", tbmToday.length ? "neutral" : "signal", "tbm")}
         {card("daily", "오늘 안전업무일지", journalToday ? (journalToday.status === "draft" ? "작성 중 · 이어 쓰기" : "보관됨") : "아직 없음 · 쓰기", journalToday ? "draft" : "signal", "journal")}
         {card("inspections", "내 확인 기다림", waiting.length ? `점검 ${waiting.length}건` : "없음", waiting.length ? "signal" : "neutral", "inspection")}
-        {site.role === "manager" && card("costs", "비용 원장", openPeriod ? `${openPeriod.month} 작성 중` : "열린 월 없음", openPeriod ? "draft" : "neutral", "cost")}
+        {site.role === "manager" && card("costs", "산업안전보건관리비", openPeriod ? `${openPeriod.month} 작성 중` : "열린 월 없음", openPeriod ? "draft" : "neutral", "cost")}
       </div>
       <section className="home-list">
         <h2>내가 작성 중인 기록 <span className="muted">{data ? `${drafts.length}건` : "조회 중"}</span></h2>

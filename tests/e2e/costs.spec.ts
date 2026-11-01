@@ -27,7 +27,7 @@ test("manager ledger keeps exact fractions through explicit close and carry", as
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
   await page
-    .getByRole("button", { name: "비용 원장", exact: true })
+    .getByRole("button", { name: "산업안전보건관리비", exact: true })
     .click();
   await page.getByRole("button", { name: "최초 원장 만들기" }).click();
   await page.getByLabel("귀속 월").fill("2026-10");

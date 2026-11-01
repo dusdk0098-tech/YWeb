@@ -54,7 +54,7 @@ test("exact quantity and amount split can be explicitly undone", async ({
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
   await page
-    .getByRole("button", { name: "비용 원장", exact: true })
+    .getByRole("button", { name: "산업안전보건관리비", exact: true })
     .click();
   await page
     .getByRole("button", { name: "2026-10 · 작성 중 · v2", exact: true })

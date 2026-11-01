@@ -125,8 +125,11 @@ export function EducationCatalogEditor({
       {record?.status==="published"&&<>
         {useStatus?<CatalogUseNotice state={useStatus}/>:<p role={useError?"alert":undefined}>{useError?"현재 사용상태 조회 실패: "+useError:"현재 사용상태 조회 중"}</p>}
         <button disabled={busy||stopDirty||changed||!!reason||makeJournal} onClick={()=>setUseTick(t=>t+1)}>현재 사용상태 다시 조회</button>
+        <details className="ui-tech advanced-tools">
+          <summary>관리 · 검수 기록 · 사용 중지</summary>
         {site.role==="manager"&&useStatus&&!useStatus.useStopped&&!makeJournal&&<CatalogStopForm busy={busy||changed||!!reason} onDirtyChange={setStopDirty} onStop={why=>void stopUse(why)}/>}
         {record.published_hash&&<CatalogReview key={record.id} path={base+"/"+record.id+"/reviews"} sourceHash={record.published_hash} manager={site.role==="manager"} keyFor={guard.key} onLatest={setReview} onDirty={setReviewDirty}/>}
+        </details>
       </>}
       <button
         disabled={busy}

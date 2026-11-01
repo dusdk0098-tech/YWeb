@@ -146,23 +146,29 @@ export function CostPanel({
         onClick={() => {
           if (guard.canLeave()) {
             setCreating(false);
-            setDashboard(true);
+            setSearch(true);
           }
         }}
       >
-        월마감 대시보드
+        전체 월 지출 검색
       </button>
+      </PageHeader>
+      <p>월을 열어 지출을 입력하고, 그 화면의 <strong>사용내역서 인쇄</strong>로 표지·집계표·사용내역서(별지 제1호)·총괄현황을 출력합니다.</p>
+      <Notice summary="직접 입력하는 기록입니다. 금액은 반올림하지 않습니다.">{costWarning}</Notice>
+      <details className="ui-tech advanced-tools">
+        <summary>고급 · 월마감 대시보드 · 인건비 조회</summary>
+        <div className="tool-row">
       <button
         className="secondary"
         disabled={busy}
         onClick={() => {
           if (guard.canLeave()) {
             setCreating(false);
-            setSearch(true);
+            setDashboard(true);
           }
         }}
       >
-        전체 월 지출 검색
+        월마감 대시보드
       </button>
       <button
         className="secondary"
@@ -176,9 +182,8 @@ export function CostPanel({
       >
         인건비 조회
       </button>
-      </PageHeader>
-      <p>월을 열어 지출을 입력하고, 그 화면의 <strong>사용내역서 인쇄</strong>로 표지·집계표·사용내역서(별지 제1호)·총괄현황을 출력합니다.</p>
-      <Notice summary="직접 입력하는 기록입니다. 금액은 반올림하지 않습니다.">{costWarning}</Notice>
+        </div>
+      </details>
       {error && <p role="alert">{error}</p>}
       {creating ? (
         <fieldset disabled={busy}>

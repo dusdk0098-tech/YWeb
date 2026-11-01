@@ -108,3 +108,7 @@
 4. **Pretendard Variable(OFL) 자체 호스팅 승인** → `public/fonts/`에 woff2 1개 + LICENSE, `docs/DEPENDENCIES.md`에 기재.
 
 PR 0(시안)은 이 결정값으로 만든다.
+
+## 사용자 결정 (2026-11-01)
+
+5. **확인 창은 브라우저 기본 `window.confirm` 유지.** 공통 확인 다이얼로그로 바꾸려면 앱 83곳(41개 파일)과 E2E dialog 처리 53곳(22개 spec)을 함께 고쳐야 하고, 마감·보관·반려 같은 되돌릴 수 없는 동작의 확인이 빠질 위험이 있어 보류. 다시 할 때는 화면 묶음별 PR로 나눈다.

@@ -6,6 +6,8 @@ import { rateLimit } from "express-rate-limit";
 import { transaction, type Db } from "./db.js";
 import { HttpError } from "./site-operations.js";
 import { credentials } from "./validation.js";
+import { grantsOf } from "./accounts.js";
+import { isLocalRequest } from "./local-admin.js";
 import {
   currentSessionEpoch,
   persistedAccountSession,
@@ -84,7 +86,8 @@ export async function registerAuthentication(
           .prepare("SELECT id,email,name FROM users WHERE id=?")
           .get(req.session.userId)
       : null;
-    res.json({ user: user || null, csrf: req.session.csrf, adsEnabled });
+    const grants = req.session.userId ? grantsOf(db, req.session.userId) : { operator: false, issuer: false };
+    res.json({ user: user || null, csrf: req.session.csrf, adsEnabled, ...grants, local: isLocalRequest(req) });
   });
   app.post(
     "/api/login",

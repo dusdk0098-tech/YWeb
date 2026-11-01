@@ -1,5 +1,6 @@
 import { migrateCostDetails } from "./cost-detail-schema.js";
 import { migrateCostPhotos, migrateCostPhotoScene } from "./cost-photo-schema.js";
+import { migrateAccountGrants } from "./accounts.js";
 import { migrateEducationReviews } from "./education-catalog-review.js";
 import { migratePhotoBoards } from "./photo-board.js";
 import { migrateTbmJoin, migrateTbmSignatures } from "./tbm-join.js";
@@ -226,6 +227,7 @@ PRAGMA user_version=1;`);
       if (version < 69) migrateWorkPlanCalculations(db);
       if (version < 70) migratePublicAccess(db);
       if (version < 71) migrateCostPhotoScene(db);
+      if (version < 72) migrateAccountGrants(db);
     });
   } catch (error) {
     db.close();

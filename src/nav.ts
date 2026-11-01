@@ -1,5 +1,5 @@
 // 메뉴 구조 (UI 개편 PR 2): 25개 평면 메뉴 → 묶음. 탭 id는 main.tsx의 분기와 같아야 한다.
-export type NavItem = { id: string; title: string; icon: string; managerOnly?: boolean };
+export type NavItem = { id: string; title: string; icon: string; managerOnly?: boolean; operatorOnly?: boolean };
 export type NavGroup = { id: string; title: string; icon: string; items: NavItem[]; managerOnly?: boolean };
 export const HOME: NavItem = { id: "home", title: "오늘", icon: "today" };
 export const NAV_GROUPS: NavGroup[] = [
@@ -36,6 +36,7 @@ export const SETTINGS: NavItem[] = [
   { id: "sites", title: "현장 관리", icon: "settings" },
   { id: "overview", title: "관리 현장 현황", icon: "settings" }, // shown when the user manages any site
   { id: "account", title: "내 비밀번호", icon: "lock" },
+  { id: "accounts", title: "계정 발급", icon: "lock", operatorOnly: true }, // operator on the install PC
   { id: "ai", title: "AI 문구 설정", icon: "settings" },
   { id: "public", title: "외부 접속 설정", icon: "online" },
   { id: "help", title: "도움말", icon: "help" },

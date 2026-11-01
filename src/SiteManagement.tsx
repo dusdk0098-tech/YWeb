@@ -3,11 +3,14 @@ import { api, type Site, type User } from "./api";
 export function SiteManagement({
   site,
   refresh,
+  issuer = false,
 }: {
   sites: Site[];
   site: Site | undefined;
   refresh: () => Promise<void>;
+  issuer?: boolean; // 계정 발급 권한 (운영자가 줌): this manager may create accounts for this site
 }) {
+  const [reset, setReset] = useState<string | null>(null);
   const [members, setMembers] = useState<(User & { role: string })[]>([]),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -124,6 +127,17 @@ export function SiteManagement({
                       {m.name} · {m.email}
                       <small>{m.role}</small>
                     </span>
+                    {issuer && m.role !== "manager" && (
+                      <button type="button" disabled={busy} className="secondary" onClick={() => setReset(reset === m.id ? null : m.id)}>
+                        비밀번호 초기화
+                      </button>
+                    )}
+                    {reset === m.id && (
+                      <form className="inline-create" onSubmit={(e) => { e.preventDefault(); const d = new FormData(e.currentTarget); void run(() => api(`/sites/${site.id}/accounts/${m.id}/password`, "POST", { password: d.get("password") }, crypto.randomUUID()).then(() => setReset(null))); }}>
+                        <label>새 비밀번호 (12자 이상)<input name="password" type="password" required minLength={12} maxLength={128} autoComplete="new-password" /></label>
+                        <button disabled={busy}>초기화 · 기존 로그인 끊김</button>
+                      </form>
+                    )}
                     <button
                       disabled={busy}
                       className="secondary"
@@ -144,6 +158,21 @@ export function SiteManagement({
                   </li>
                 ))}
               </ul>
+              {issuer && (
+                <form onSubmit={(e) => { e.preventDefault(); const f = e.currentTarget, d = new FormData(f); void run(() => api(`/sites/${site.id}/accounts`, "POST", { name: d.get("name"), email: d.get("email"), password: d.get("password"), role: d.get("role") }, crypto.randomUUID()).then(() => f.reset())); }}>
+                  <fieldset disabled={busy}>
+                    <legend>이 현장에 새 계정 발급</legend>
+                    <div className="grid">
+                      <label>이름<input name="name" required maxLength={100} /></label>
+                      <label>이메일<input name="email" type="email" required maxLength={254} autoComplete="off" /></label>
+                      <label>첫 비밀번호 (12자 이상)<input name="password" type="password" required minLength={12} maxLength={128} autoComplete="new-password" /></label>
+                      <label>권한<select name="role" defaultValue="editor"><option value="viewer">열람자</option><option value="editor">작성자</option><option value="manager">현장 관리자</option></select></label>
+                    </div>
+                    <p className="muted">첫 비밀번호는 직접 전달하고, 받은 사람이 "내 비밀번호"에서 바꾸게 하세요. 발급 기록이 남습니다.</p>
+                    <button>계정 만들고 이 현장에 추가</button>
+                  </fieldset>
+                </form>
+              )}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();

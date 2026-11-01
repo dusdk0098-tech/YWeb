@@ -956,7 +956,7 @@ h3 {
 .ui-statusbar[data-tone="warning"] { border-color: var(--signal); background: var(--signal-soft); color: var(--signal-ink); }
 .ui-statusbar svg { flex: none; }
 @media (max-width: 720px) {
-  .ui-actionbar { margin: 16px -16px -24px; }
+  .ui-actionbar { margin: 16px -16px -24px; bottom: calc(64px + env(safe-area-inset-bottom)); } /* above the fixed tab bar */
   .ui-actionbar button { flex: 1 1 auto; }
   .ui-actionbar .ui-actionbar-note { flex-basis: 100%; margin-left: 0; }
 }
@@ -1025,3 +1025,17 @@ nav#primary-navigation button.nav-home { min-height: 40px; }
 }
 .sheet-account { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-quiet); }
 .sheet-account small { color: var(--ink-muted); flex: 1; overflow-wrap: anywhere; }
+/* 화면별 적용 (UI 4단계): 목록 검색 줄 · 기록 행 */
+.filter-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 12px; align-items: end; margin: 12px 0; }
+.filter-bar label { margin: 0; }
+.filter-bar button { align-self: end; }
+.record-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-quiet); }
+.record-row-main { flex: 1; min-width: 0; }
+.record-row-main h2 { margin: 0 0 4px; font-size: var(--text-body); }
+.record-row-main p { margin: 0; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.journal-editor .ui-section { margin-top: 16px; }
+@media (max-width: 720px) {
+  .record-row { flex-wrap: wrap; }
+  .record-row-main { flex-basis: 100%; }
+}
+.ui-section-body > ul:first-child, .ui-section-body > p:first-child { margin-top: 0; }

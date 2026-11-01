@@ -48,6 +48,7 @@ test("own catalog creates a journal with editable copied text and fixed provenan
     .getByRole("button", { name: "자체 내용 게시", exact: true })
     .click();
   // 교육 B안: a manager records what was checked for this published version (append-only).
+  await page.getByText(/^관리 · 검수 기록/).click(); // review and stop are folded
   await expect(page.getByText("검수 기록 없음")).toBeVisible();
   await page.getByLabel("적용대상", { exact: true }).fill("전체 근로자");
   await page.getByLabel("출처", { exact: true }).fill("자체 작성");

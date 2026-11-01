@@ -261,6 +261,12 @@ export function CostPeriodEditor({
         </p>
       )}
       <div className="tool-row" role="group" aria-label="월 도구">
+      <button className="secondary" disabled={busy} onClick={() => { if(guard.canLeave()) {setForm(null);setBudget(null);setReason("");setEvidence(true);} }}>미검사 원본·동일 월 지출 연결</button>
+      <button className="secondary" disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setSettings(true);}}}>현장 설정</button>
+      </div>
+      <details className="ui-tech advanced-tools">
+        <summary>고급 도구 · 프리셋 · 기준본 · 분할 이력 · TSV 일괄 · 항목별 상세 · 변경 이력</summary>
+        <div className="tool-row">
       <button className="secondary" disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setPresets(true);}}}>반복 입력 프리셋 관리 / 새 지출 적용</button>
       <button className="secondary" disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setBaselines(true);}}}>고정 기준본 · 제출 진술 · 현재 비교</button>
       <button
@@ -296,12 +302,11 @@ export function CostPeriodEditor({
         </button>
       )}
       <button className="secondary" disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setDetail(true);}}}>항목별 상세</button>
-      <button className="secondary" disabled={busy} onClick={()=>{if(guard.canLeave()){setForm(null);setPresetSource(null);setEditing(null);setBudget(null);setReason("");setSettings(true);}}}>현장 설정</button>
-      <button className="secondary" disabled={busy} onClick={() => { if(guard.canLeave()) {setForm(null);setBudget(null);setReason("");setEvidence(true);} }}>미검사 원본·동일 월 지출 연결</button>
       <button className="secondary" disabled={busy} onClick={() => setHistory((v) => !v)}>
         변경 이력 · 과거 마감본
       </button>
-      </div>
+        </div>
+      </details>
       {history && <CostHistory base={base} tick={tick} disabled={dirty||busy||batchBusy} />}
       <Section no={1} level={3} title="항목별 합계">
       <p className="muted">초기/이월 근거: {record.opening_note}</p>

@@ -43,6 +43,7 @@ test("cost TSV preview requires duplicate acknowledgement and returns exact rece
   await page
     .getByRole("button", { name: "2026-10 · 작성 중 · v1", exact: true })
     .click();
+  await page.getByText(/^고급 도구/).click(); // the batch tool is folded
   await page
     .getByRole("button", { name: "TSV 지출 일괄 입력", exact: true })
     .click();

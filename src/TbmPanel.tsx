@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Notice } from "./ui";
+import { EmptyState, Notice, PageHeader, StatusChip } from "./ui";
 import { api, type Site } from "./api";
 import type { TbmSession, TbmFull } from "./tbm-types";
 import type { Page } from "./attendance-types";
@@ -83,18 +83,14 @@ export function TbmPanel({
     );
   return (
     <>
-      <div className="section-head page-heading">
-        <div>
-          <h1>TBM 기록</h1>
-          <p>담당자 수기 참여기록 · 관리자 기록 확정.</p>
-        </div>
-        {site.role !== "viewer" && (
-          <button disabled={opening} onClick={() => setOpen({ record: null })}>
-            + TBM 초안
-          </button>
-        )}
-      </div>
       <section className="panel">
+        <PageHeader level={1} title="TBM 기록">
+          {site.role !== "viewer" && (
+            <button disabled={opening} onClick={() => setOpen({ record: null })}>
+              + TBM 초안
+            </button>
+          )}
+        </PageHeader>
         <Notice summary="참여는 담당자가 사람마다 직접 기록합니다.">
           출역을 TBM 참여로 자동 처리하지 않습니다. 기록 확정은 신원
           확인·서명·법정 교육 이수 인증이 아닙니다.
@@ -107,31 +103,22 @@ export function TbmPanel({
         {loading ? (
           <p>불러오는 중…</p>
         ) : (
-          <ul className="meeting-list">
-            {rows.map((r) => (
-              <li key={r.id}>
-                <button
-                  className="record"
-                  disabled={opening}
-                  onClick={() => openRecord(r.id)}
-                >
-                  <span>
-                    <small>
-                      {r.body.date} ·{" "}
-                      {r.status === "draft" ? "초안" : "관리자가 기록 확정"}
-                    </small>
-                    <strong>{r.body.title}</strong>
-                    <small>
-                      버전 {r.version}
-                      {r.parent_id ? " · 정정본" : ""}
-                    </small>
-                  </span>
-                  <span>열기 →</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          rows.map((r) => (
+            <article key={r.id} className="record-row">
+              <div className="record-row-main">
+                <h2>{r.body.title}</h2>
+                <p>{r.body.date}</p>
+              </div>
+              {r.status === "draft"
+                ? <StatusChip tone="draft">{r.parent_id ? "정정 초안" : "작성 중"}</StatusChip>
+                : <StatusChip tone="done">확정</StatusChip>}
+              <button className="secondary" disabled={opening} onClick={() => openRecord(r.id)}>
+                열기
+              </button>
+            </article>
+          ))
         )}
+        {!loading && !error && !rows.length && <EmptyState title="TBM 기록 없음">+ TBM 초안으로 오늘 TBM을 시작하세요.</EmptyState>}
         <div className="form-actions">
           <button
             className="secondary"

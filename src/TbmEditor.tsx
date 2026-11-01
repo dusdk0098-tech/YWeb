@@ -1,5 +1,5 @@
 import { TbmRiskReferenceView } from "./TbmRiskReferenceView";
-import { Notice, TechDetails } from "./ui";
+import { ActionBar, Notice, PageHeader, Section, StatusChip, TechDetails } from "./ui";
 import { TbmRiskReferencePicker } from "./TbmRiskReferencePicker";
 import { useEffect, useRef, useState } from "react";
 import { api, type Site } from "./api";
@@ -192,25 +192,27 @@ export function TbmEditor({
       return;
     void mutate("/participants/" + p.worker_id, "PUT", { state });
   }
+  const statusText = dirty ? "저장하지 않은 입력" : record ? "서버에 저장됨" : "";
   return (
-    <section className="panel">
-      <div className="section-head">
-        <div>
-          <h2>
-            {record?.status === "finalized"
-              ? "관리자가 확정한 TBM 기록"
-              : "TBM 초안"}
-          </h2>
-        </div>
-        <button
-          className="secondary"
-          type="button"
-          disabled={allBusy}
-          onClick={close}
-        >
-          TBM 목록으로
-        </button>
-      </div>
+    <section className="panel tbm-editor">
+      <PageHeader
+        back="TBM 목록으로"
+        backDisabled={allBusy}
+        onBack={close}
+        title={record?.status === "finalized" ? "관리자가 확정한 TBM 기록" : "TBM 초안"}
+        status={
+          record?.status === "finalized" ? <StatusChip tone="done">확정</StatusChip>
+          : record?.parent_id ? <StatusChip tone="draft">정정 초안</StatusChip>
+          : record ? <StatusChip tone="draft">작성 중</StatusChip>
+          : <StatusChip tone="neutral">새 TBM</StatusChip>
+        }
+      >
+        {record && (
+          <a className="button secondary" href={`/api/sites/${site.id}/tbm/${record.id}/print`} target="_blank" rel="noreferrer">
+            {record.status === "finalized" ? "확정 기록 인쇄 / PDF" : "저장 초안 인쇄 / PDF"}
+          </a>
+        )}
+      </PageHeader>
       <Notice summary="담당자가 참여를 기록하고 관리자가 확정합니다.">
         담당자가 참여 사실을 수기로 기록하며 관리자가 기록을 확정합니다. 대상자
         신원·전자서명·법정 교육 이수 인증이 아닙니다.
@@ -237,6 +239,7 @@ export function TbmEditor({
         </p>
       )}
         <fieldset disabled={!writable || allBusy}>
+          <Section no={1} level={3} title="기본 정보">
           <div className="grid">
             {(
               ["title", "date", "time", "location", "facilitator"] as const
@@ -267,6 +270,8 @@ export function TbmEditor({
               </label>
             ))}
           </div>
+          </Section>
+          <Section no={2} level={3} title="전달 내용">
           <label>
             당일 작업 · 확정 시 필수
             <textarea
@@ -285,62 +290,38 @@ export function TbmEditor({
               onChange={(e) => change("topics", e.target.value)}
             />
           </label>
+          </Section>
         </fieldset>
-        <div className="form-actions">
-          {writable && (
+        {writable ? (
+          <ActionBar note={<span role="status">{statusText}</span>}>
             <button disabled={allBusy || (!dirty && !!record)}>
               TBM 초안 저장
             </button>
-          )}
-          {offline.waiting && <p role="status">통신이 끊겨 저장하지 못했습니다. 연결되면 자동으로 다시 저장합니다.</p>}
-          {record && (
-            <a
-              className="button secondary"
-              href={`/api/sites/${site.id}/tbm/${record.id}/print`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {record.status === "finalized"
-                ? "확정 기록 인쇄 / PDF"
-                : "저장 초안 인쇄 / PDF"}
-            </a>
-          )}
-          <span role="status">
-            {dirty ? "저장하지 않은 입력" : record ? "서버에 저장됨" : ""}
-          </span>
-        </div>
+            {offline.waiting && <p role="status">통신이 끊겨 저장하지 못했습니다. 연결되면 자동으로 다시 저장합니다.</p>}
+          </ActionBar>
+        ) : (
+          <p role="status" className="muted">{statusText}</p>
+        )}
       </form>
       {record && (
         <>
-          <TbmRiskReferenceView reference={record.riskReference ?? null} sourceHasSuccessor={record.riskSourceState?.sourceHasSuccessor} historicalAtFinalization={record.snapshot?.body.schemaVersion===2 && !!record.snapshot.body.riskReference?.sourceHasSuccessorAtFinalization}/>
-          {record.riskReference && <button disabled={allBusy || dirty} onClick={async()=>{setBusy(true);setError("");try{setFixedSource(await api(`/sites/${site.id}/tbm/${record.id}/risk-reference/source`));}catch(e){setError((e as Error).message);}finally{setBusy(false);}}}>고정 평가 전체 원문 보기</button>}
-          {fixedSource!==null && <pre className="risk-publication-source">{JSON.stringify(fixedSource,null,2)}</pre>}
-          {writable && site.role==="manager" && <TbmRiskReferencePicker key={record.id+":"+record.version} siteId={site.id} disabled={busy||detailsDirty} onDirtyChange={setReferenceDirty} onBusyChange={setReferenceBusy} onSave={source=>void mutate("/risk-reference","PUT",{source})}/>}
-          <button disabled={allBusy || dirty} onClick={()=>void openLinked(record.id)}>최신 저장본 다시 열기</button>
+          <Section no={3} level={3} title={`참가 대상 · ${participants.length}명`} aside={
+            <button className="secondary" disabled={allBusy || dirty} onClick={()=>void openLinked(record.id)}>최신 저장본 다시 열기</button>
+          }>
           <TbmInvitations key={record.id + ":" + record.version} path={`/sites/${site.id}/tbm/${record.id}/invitations`} draft={record.status === "draft"} writable={writable} />
-          <h3>참가 대상 · {participants.length}명</h3>
-          <p className="muted">
+          <Notice summary="명부에서 추가하면 미확인으로 시작합니다.">
             명부 추가 시 항상 미확인으로 시작합니다. 출역/다른 기록의 참여
             상태는 가져오지 않습니다.
-          </p>
+          </Notice>
           <ul className="members">
             {participants.map((p) => (
               <li key={p.worker_id}>
                 <span>
                   <strong>{p.name}</strong> · {p.affiliation}
-                  <small>
-                    {
-                      {
-                        pending: "미확인",
-                        present: "담당자 기록 · 참여",
-                        absent: "담당자 기록 · 불참",
-                      }[p.state]
-                    }
-                  </small>
-                  <small>
-                    기록 계정 ID: {p.recorded_by || "없음"} ·{" "}
-                    {p.recorded_at || "기록 전"} · 명부 ID {p.worker_id}
-                  </small>
+                  {p.state === "present" ? <StatusChip tone="done">담당자 기록 · 참여</StatusChip>
+                    : p.state === "absent" ? <StatusChip tone="neutral">담당자 기록 · 불참</StatusChip>
+                    : <StatusChip tone="pending">미확인</StatusChip>}
+                  <small>{p.recorded_at || "기록 전"}</small>
                 </span>
                 {writable && (
                   <span className="attendance-controls">
@@ -385,7 +366,7 @@ export function TbmEditor({
           </ul>
           {writable && (
             <>
-              <h3>참가 대상 추가</h3>
+              <h4>참가 대상 추가</h4>
               <label>
                 TBM 명부 검색
                 <input
@@ -421,7 +402,7 @@ export function TbmEditor({
                         }
                       >
                         {w.name} · {w.affiliation}
-                        <small>ID {w.id} · 미확인으로 추가</small>
+                        <small>미확인으로 추가</small>
                       </button>
                     </li>
                   ))}
@@ -450,15 +431,24 @@ export function TbmEditor({
               )}
             </>
           )}
+          <TechDetails summary="참가 기술 정보">
+            {participants.map((p) => <p key={p.worker_id}>{p.name} · 명부 ID {p.worker_id} · 기록 계정 ID {p.recorded_by || "없음"}</p>)}
+          </TechDetails>
+          </Section>
+          <Section level={3} title="위험성평가 참조">
+          <TbmRiskReferenceView reference={record.riskReference ?? null} sourceHasSuccessor={record.riskSourceState?.sourceHasSuccessor} historicalAtFinalization={record.snapshot?.body.schemaVersion===2 && !!record.snapshot.body.riskReference?.sourceHasSuccessorAtFinalization}/>
+          {record.riskReference && <button disabled={allBusy || dirty} onClick={async()=>{setBusy(true);setError("");try{setFixedSource(await api(`/sites/${site.id}/tbm/${record.id}/risk-reference/source`));}catch(e){setError((e as Error).message);}finally{setBusy(false);}}}>고정 평가 전체 원문 보기</button>}
+          {fixedSource!==null && <pre className="risk-publication-source">{JSON.stringify(fixedSource,null,2)}</pre>}
+          {writable && site.role==="manager" && <TbmRiskReferencePicker key={record.id+":"+record.version} siteId={site.id} disabled={busy||detailsDirty} onDirtyChange={setReferenceDirty} onBusyChange={setReferenceBusy} onSave={source=>void mutate("/risk-reference","PUT",{source})}/>}
+          </Section>
           {record.status === "draft" && site.role === "manager" && (
-            <section>
-              <h3>관리자 기록 확정</h3>
+            <Section no={4} level={3} title="관리자 기록 확정">
               {record.riskSourceState?.sourceHasSuccessor && <label><input type="checkbox" checked={historicalConfirm} disabled={allBusy||dirty} onChange={e=>setHistoricalConfirm(e.target.checked)}/>후속 평가가 있음을 확인하고 이 TBM에는 당시 고정 출처를 사용합니다. 안전 판단이 아닙니다.</label>}
-              <p className="notice">
+              <Notice summary="확정하려면 필수 내용, 참여 1명 이상, 미확인 0명이 필요합니다.">
                 잠정 업무 정책(법적 요건 아님): 필수 내용 입력, 참여 기록 1명
                 이상, 미확인 0명. 확정 후 원본 수정은 불가하며 사유가 있는 정정
                 초안만 만들 수 있습니다.
-              </p>
+              </Notice>
               <button
                 disabled={allBusy || dirty}
                 onClick={() => {
@@ -472,7 +462,7 @@ export function TbmEditor({
               >
                 관리자가 기록 확정
               </button>
-            </section>
+            </Section>
           )}
           {record.snapshot && (
             <section>

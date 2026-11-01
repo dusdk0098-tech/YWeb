@@ -21,7 +21,7 @@ test("help has eight bounded topics, explicit limitations and no pretend backup/
 });
 test("without selected site only account/site guide and callbacks are exposed",()=>{
  const opened:HelpDestination[]=[];const element=HelpPanel({onNavigate:d=>opened.push(d)});
- const html=renderToStaticMarkup(element);assert.equal((html.match(/<h2>/g)||[]).length,1);assert.match(html,/현장이 선택되지 않았습니다/);assert.doesNotMatch(html,/백업 · 운영자|비용 원장|TBM 기록/);
+ const html=renderToStaticMarkup(element);assert.equal((html.match(/<h2>/g)||[]).length,1);assert.match(html,/현장이 선택되지 않았습니다/);assert.doesNotMatch(html,/백업 · 운영자|산업안전보건관리비|TBM 기록/);
  for(const b of buttons(element))b.props.onClick();assert.deepEqual(opened,['sites','account']);
  assert.equal(helpDestinationAllowed('costs'),false);assert.equal(helpDestinationAllowed('daily'),false);
 });

@@ -342,7 +342,7 @@ export function CostPeriodEditor({
         변경 이력 · 과거 마감본
       </button>
       <CostOutputControl key={`${base}:${record.version}:${dirty}:${busy}`} base={base} disabled={dirty||busy||batchBusy} />
-      <p><a href={"/api" + base + "/legal-forms/print"} target="_blank" rel="noreferrer">법정 서식 인쇄(표지·내역집계표·사용내역(갑)·총괄) ↗</a> 원본 엑셀 양식의 순서·값을 HTML로 재현합니다. 저장하지 않은 입력은 반영되지 않습니다.</p>
+      <p><a className="button" href={"/api" + base + "/legal-forms/print"} target="_blank" rel="noreferrer">사용내역서 인쇄 (표지·집계표·사용내역서·총괄)</a> 원본 엑셀 양식의 순서·값을 HTML로 재현합니다. 저장하지 않은 입력은 반영되지 않습니다.</p>
       {history && <CostHistory base={base} tick={tick} disabled={dirty||busy||batchBusy} />}
       {preflight && (
         <details open={preflight.errorCount > 0}>

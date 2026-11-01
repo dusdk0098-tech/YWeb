@@ -54,7 +54,7 @@ test("manager literal cross-month cost search labels owning month and spend date
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
   await page
-    .getByRole("button", { name: "비용 원장", exact: true })
+    .getByRole("button", { name: "산업안전보건관리비", exact: true })
     .click();
   await page
     .getByRole("button", { name: "전체 월 지출 검색", exact: true })

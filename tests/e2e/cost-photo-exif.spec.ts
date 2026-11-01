@@ -29,7 +29,7 @@ test("SC 사진대지: EXIF 촬영일 only prefills the editable 촬영일", asy
   }));
   await page.reload();
   await page.getByLabel("작업 현장").selectOption(site.id);
-  await page.getByRole("button", { name: "비용 원장", exact: true }).click();
+  await page.getByRole("button", { name: "산업안전보건관리비", exact: true }).click();
   await page.getByRole("button", { name: /2026-10 · 작성 중/ }).click();
   await page.getByRole("button", { name: "미검사 원본·동일 월 지출 연결" }).click();
   page.on("dialog", (d) => d.accept());

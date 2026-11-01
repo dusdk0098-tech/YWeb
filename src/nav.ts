@@ -24,8 +24,8 @@ export const NAV_GROUPS: NavGroup[] = [
     { id: "equipment", title: "장비", icon: "equipment" },
     { id: "stock", title: "재고", icon: "stock", managerOnly: true },
   ] },
-  { id: "cost", title: "비용", icon: "cost", managerOnly: true, items: [
-    { id: "costs", title: "비용 원장", icon: "cost" },
+  { id: "cost", title: "안전보건관리비", icon: "cost", managerOnly: true, items: [
+    { id: "costs", title: "산업안전보건관리비", icon: "cost" },
   ] },
   { id: "media", title: "사진 · 자료", icon: "photo-board", items: [
     { id: "photoboard", title: "사진 보드", icon: "photo-board" },

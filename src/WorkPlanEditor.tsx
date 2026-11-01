@@ -1,5 +1,5 @@
 import { WorkPlanFormChecklist } from "./WorkPlanFormChecklist";
-import { Notice, TechDetails } from "./ui";
+import { ActionBar, Notice, PageHeader, Section, StatusChip, TechDetails } from "./ui";
 import { WorkPlanCalculations } from "./WorkPlanCalculations";
 import { WorkPlanHazardReferenceFields } from "./WorkPlanHazardReferenceFields";
 import { WorkPlanLiftingFields,blankLifting } from "./WorkPlanLiftingFields";
@@ -138,42 +138,39 @@ export function WorkPlanEditor({
     <WorkPlanAttachments siteId={site.id} record={record} editable={editable} disabled={busy||reviewBusy} onBusy={setAttachmentBusy} onDirty={setAttachmentDirty} onRecord={adopt}/>
   </section>;
   return (
-    <section>
-      <button
-        disabled={allBusy || reviewDirty}
-        onClick={() => {
+    <section className="panel work-plan-editor">
+      <PageHeader
+        back="작업계획 목록"
+        backDisabled={allBusy || reviewDirty}
+        onBack={() => {
           if (guard.canLeave()) onClose();
         }}
-      >
-        작업계획 목록
-      </button>
-      <h2>
-        {record?.status === "archived"
+        title={record?.status === "archived"
           ? (record.documentReview.review ? "작성자 고정 제출본 · 문서검토 별도" : "관리자 기록 보관본 · 문서검토 없음")
           : "자체 일반 작업계획 초안"}
-      </h2>
+        status={
+          record?.status === "archived" ? <StatusChip tone="done">확정 보관</StatusChip>
+          : record?.parent_id ? <StatusChip tone="draft">정정 초안</StatusChip>
+          : record ? <StatusChip tone="draft">작성 중</StatusChip>
+          : <StatusChip tone="neutral">새 작업계획</StatusChip>
+        }
+      >
+        {record && <a className="button secondary" href={"/api" + base + "/" + record.id + "/print"} target="_blank" rel="noreferrer">저장된 작업계획 인쇄</a>}
+      </PageHeader>
+      {record?.parent_id && <p className="muted">정정 사유: {record.revision_reason}</p>}
       <Notice summary="직접 쓰는 작업계획서입니다. 작업허가나 공학 검토가 아닙니다.">{workPlanWarning}</Notice>
       {!record&&<label>새 문서 형식 (저장 후 변경 불가)<select disabled={allBusy||!editable} value={body.documentForm?.kind||'legacy'} onChange={e=>{if(body.documentForm&&!window.confirm('형식을 바꾸면 미저장 전용 입력이 초기화됩니다. 계속할까요?'))return;const legacy={...body};delete legacy.documentForm;setBody(e.target.value==='legacy'?legacy:{...legacy,documentForm:blankPlanForm(e.target.value as 'general_machine'|'excavator_lift')});}}><option value="legacy">기존 자체 일반 메모형</option><option value="general_machine">차량계·중량물 일반 입력형식</option><option value="excavator_lift">굴착기 중량물 취급 입력형식</option></select></label>}
       {record && (
         <TechDetails>
-          <p>ID {record.id} · v{record.version} · 작성계정 {record.author_id}</p>
+          <p>ID {record.id} · v{record.version} · 작성계정 {record.author_id}{record.parent_id ? ` · 연결 원본 ${record.parent_id}` : ""}</p>
         </TechDetails>
       )}
-      {record && <button disabled={allBusy} onClick={()=>{if(guard.canLeave()){adopt(record);setReviewDirty(false);setAttachmentsOpen(true);}}}>저장된 작업계획 원본 첨부 · 다운로드만</button>}
-      {!record && <p>원본 첨부는 초안을 먼저 저장한 뒤 추가합니다.</p>}
+      {record && <button className="secondary" disabled={allBusy} onClick={()=>{if(guard.canLeave()){adopt(record);setReviewDirty(false);setAttachmentsOpen(true);}}}>저장된 작업계획 원본 첨부 · 다운로드만</button>}
+      {!record && <p className="muted">원본 첨부는 초안을 먼저 저장한 뒤 추가합니다.</p>}
       {error && <p role="alert">{error} 입력을 보존했습니다.</p>}
       <fieldset disabled={allBusy || reviewDirty || !editable}>
-        <label><input type="checkbox" checked={!!body.documentPacket} onChange={e=>{if(!e.target.checked&&body.documentPacket&&!window.confirm('미저장 서류 목록 입력을 제거할까요? 기존 첨부 원본은 삭제하지 않습니다.'))return;const next={...body};if(e.target.checked)next.documentPacket=blankPacket();else delete next.documentPacket;setBody(next);}}/>선택 장비1대의 서류 참조 목록 작성</label>
-        {body.documentPacket&&<WorkPlanPacketFields siteId={site.id} planId={record?.id} version={record?.version} equipmentIds={body.equipmentIds} value={body.documentPacket} onChange={v=>setBody({...body,documentPacket:v})} onBusy={setPacketBusy}/>}
-        <label><input type="checkbox" checked={!!body.designationRecords} onChange={e=>{if(!e.target.checked&&!window.confirm('미저장 지정 기록을 제거할까요?'))return;const next={...body};if(e.target.checked)next.designationRecords={schemaVersion:1,rows:[]};else delete next.designationRecords;setBody(next);}}/>지휘자·신호수 관련 수기 지정 기록 작성</label>
-        {body.designationRecords&&<WorkPlanDesignationFields value={body.designationRecords} workerIds={body.duties.map(d=>d.workerId)} equipmentIds={body.equipmentIds} onChange={v=>setBody({...body,designationRecords:v})}/>}
-        <label><input type="checkbox" checked={!!body.plateLoadReports} onChange={e=>{if(!e.target.checked&&!window.confirm('미저장 시험보고서 기록을 제거할까요?'))return;const next={...body};if(e.target.checked)next.plateLoadReports={schemaVersion:1,rows:[]};else delete next.plateLoadReports;setBody(next);}}/>평판재하시험 보고서 수기 기록 작성</label>
-        {body.plateLoadReports&&<WorkPlanPlateReportFields value={body.plateLoadReports} onChange={v=>setBody({...body,plateLoadReports:v})} siteId={site.id} planId={record?.id} version={record?.version} onBusy={setPlateBusy}/>}
-        <label><input type="checkbox" checked={!!body.liftingDetail} onChange={e=>{if(!e.target.checked&&!window.confirm('미저장 양중 상세를 제거할까요?'))return;const next={...body};if(e.target.checked)next.liftingDetail=blankLifting();else delete next.liftingDetail;setBody(next);}}/>양중 상세 수기 입력문서 작성</label>
-        {body.liftingDetail&&<WorkPlanLiftingFields value={body.liftingDetail} onChange={v=>setBody({...body,liftingDetail:v})} siteId={site.id} planId={record?.id} version={record?.version} equipmentIds={body.equipmentIds} onBusy={setLiftingBusy}/>}
-        <label><input type="checkbox" checked={!!body.hazardReferences} onChange={e=>{if(!e.target.checked&&!window.confirm('미저장 참고 선택과 메모를 제거할까요?'))return;const next={...body};if(e.target.checked)next.hazardReferences={schemaVersion:1,rows:[]};else delete next.hazardReferences;setBody(next);}}/>사용자 제공 위험요인·대책 참고 선택</label>
-        {body.hazardReferences&&<WorkPlanHazardReferenceFields value={body.hazardReferences} onChange={v=>setBody({...body,hazardReferences:v})} onBusy={setReferenceBusy}/>}
-        {body.documentForm&&<WorkPlanFormFields value={body.documentForm} onChange={v=>setBody({...body,documentForm:v})}/>}
+        <Section no={1} level={3} title="기본 정보">
+        <div className="grid">
         <label>
           작업계획 제목
           <input
@@ -206,7 +203,8 @@ export function WorkPlanEditor({
             onChange={(e) => setBody({ ...body, endTime: e.target.value })}
           />
         </label>
-        <p>
+        </div>
+        <p className="muted">
           같은 날 종료가 시작보다 늦어야 합니다. 현지 시계 계획이며 법정
           근로시간/실제 경과시간/DST 계산이 아닙니다.
         </p>
@@ -234,9 +232,10 @@ export function WorkPlanEditor({
             />
           </label>
         ))}
-        <h3>작업 순서 · 절차 · 주의사항 (최대20개)</h3>
+        </Section>
+        <Section no={2} level={3} title={`작업 순서 · 절차 · 주의사항 (${body.steps.length}/20)`}>
         {body.steps.map((s, i) => (
-          <div key={i}>
+          <div key={i} className="plan-step">
             {(
               [
                 ["task", "단계 작업", 500],
@@ -261,6 +260,7 @@ export function WorkPlanEditor({
               </label>
             ))}
             <button
+              className="secondary"
               disabled={i === 0}
               onClick={() => {
                 const steps = [...body.steps];
@@ -271,6 +271,7 @@ export function WorkPlanEditor({
               위로 이동
             </button>
             <button
+              className="secondary"
               onClick={() =>
                 setBody({
                   ...body,
@@ -296,15 +297,29 @@ export function WorkPlanEditor({
         >
           단계 추가
         </button>
+        </Section>
+        <Section no={3} level={3} title="선택 서식 · 기록">
+        <label><input type="checkbox" checked={!!body.documentPacket} onChange={e=>{if(!e.target.checked&&body.documentPacket&&!window.confirm('미저장 서류 목록 입력을 제거할까요? 기존 첨부 원본은 삭제하지 않습니다.'))return;const next={...body};if(e.target.checked)next.documentPacket=blankPacket();else delete next.documentPacket;setBody(next);}}/>선택 장비1대의 서류 참조 목록 작성</label>
+        {body.documentPacket&&<WorkPlanPacketFields siteId={site.id} planId={record?.id} version={record?.version} equipmentIds={body.equipmentIds} value={body.documentPacket} onChange={v=>setBody({...body,documentPacket:v})} onBusy={setPacketBusy}/>}
+        <label><input type="checkbox" checked={!!body.designationRecords} onChange={e=>{if(!e.target.checked&&!window.confirm('미저장 지정 기록을 제거할까요?'))return;const next={...body};if(e.target.checked)next.designationRecords={schemaVersion:1,rows:[]};else delete next.designationRecords;setBody(next);}}/>지휘자·신호수 관련 수기 지정 기록 작성</label>
+        {body.designationRecords&&<WorkPlanDesignationFields value={body.designationRecords} workerIds={body.duties.map(d=>d.workerId)} equipmentIds={body.equipmentIds} onChange={v=>setBody({...body,designationRecords:v})}/>}
+        <label><input type="checkbox" checked={!!body.plateLoadReports} onChange={e=>{if(!e.target.checked&&!window.confirm('미저장 시험보고서 기록을 제거할까요?'))return;const next={...body};if(e.target.checked)next.plateLoadReports={schemaVersion:1,rows:[]};else delete next.plateLoadReports;setBody(next);}}/>평판재하시험 보고서 수기 기록 작성</label>
+        {body.plateLoadReports&&<WorkPlanPlateReportFields value={body.plateLoadReports} onChange={v=>setBody({...body,plateLoadReports:v})} siteId={site.id} planId={record?.id} version={record?.version} onBusy={setPlateBusy}/>}
+        <label><input type="checkbox" checked={!!body.liftingDetail} onChange={e=>{if(!e.target.checked&&!window.confirm('미저장 양중 상세를 제거할까요?'))return;const next={...body};if(e.target.checked)next.liftingDetail=blankLifting();else delete next.liftingDetail;setBody(next);}}/>양중 상세 수기 입력문서 작성</label>
+        {body.liftingDetail&&<WorkPlanLiftingFields value={body.liftingDetail} onChange={v=>setBody({...body,liftingDetail:v})} siteId={site.id} planId={record?.id} version={record?.version} equipmentIds={body.equipmentIds} onBusy={setLiftingBusy}/>}
+        <label><input type="checkbox" checked={!!body.hazardReferences} onChange={e=>{if(!e.target.checked&&!window.confirm('미저장 참고 선택과 메모를 제거할까요?'))return;const next={...body};if(e.target.checked)next.hazardReferences={schemaVersion:1,rows:[]};else delete next.hazardReferences;setBody(next);}}/>사용자 제공 위험요인·대책 참고 선택</label>
+        {body.hazardReferences&&<WorkPlanHazardReferenceFields value={body.hazardReferences} onChange={v=>setBody({...body,hazardReferences:v})} onBusy={setReferenceBusy}/>}
+        {body.documentForm&&<WorkPlanFormFields value={body.documentForm} onChange={v=>setBody({...body,documentForm:v})}/>}
+        </Section>
       </fieldset>
       {record && <WorkPlanFormChecklist key={record.id} path={`${base}/${record.id}/form-checklist`} editable={editable && !allBusy} onDirty={setChecklistDirty} />}
       {record && <WorkPlanCalculations key={record.id + ":calc"} path={`${base}/${record.id}/calculations`} editable={editable && !allBusy} onDirty={setCalcDirty} />}
-      <h3>선택 장비 · 담당 업무 메모</h3>
-      <p>
+      <Section no={4} level={3} title="선택 장비 · 담당 업무 메모">
+      <Notice summary="장비·명부는 각 10개까지 고를 수 있고, 고르지 않아도 됩니다.">
         각 최대10개, 선택은 선택사항입니다. 명부 항목을 지정해도 본인
         확인·동의·법정 선임이 되지 않습니다. 장비 선택은 공학 적합성 확인이
         아닙니다.
-      </p>
+      </Notice>
       {editable && (
         <WorkPlanPicker
           path={`/sites/${site.id}/equipment?status=active`}
@@ -386,18 +401,22 @@ export function WorkPlanEditor({
           )}
         </div>
       ))}
+      </Section>
       {editable && (
-        <button disabled={allBusy || reviewDirty} onClick={() => void command("save")}>
-          초안 저장 · 참조 취합 초기화
-        </button>
+        <ActionBar note={record?.source_capture ? undefined : "저장한 뒤 아래에서 선택 참조를 취합해야 보관할 수 있습니다."}>
+          <button disabled={allBusy || reviewDirty} onClick={() => void command("save")}>
+            초안 저장 · 참조 취합 초기화
+          </button>
+        </ActionBar>
       )}
       {record && (
         <>
+          <Section no={5} level={3} title="참조 취합 · 보관">
           <WorkPlanDocumentReview key={record.id+":"+record.version} site={site} user={user} record={record} disabled={busy||changed||!!reason||!!authorId} onSaved={adopt} onRevision={onRevision} onDirtyChange={setReviewDirty} onBusyChange={setReviewBusy}/>
-          <p>
+          <Notice summary="보관하려면 본문 저장 후 선택 참조를 취합하세요. 본문을 고치면 취합이 지워집니다.">
             본문 저장 후 선택 장비·명부 최신정보를 명시적으로 취합해야 보관할 수
             있습니다. 본문 수정 시 이전 초안 취합은 지워집니다.
-          </p>
+          </Notice>
           {record.source_capture ? (
             <details>
               <summary>
@@ -432,14 +451,8 @@ export function WorkPlanEditor({
               관리자가 기록 보관 (문서검토 아님)
             </button>
           )}
-          <a
-            href={"/api" + base + "/" + record.id + "/print"}
-            target="_blank"
-            rel="noreferrer"
-          >
-            저장된 작업계획 인쇄
-          </a>
-          <button disabled={allBusy || reviewDirty} onClick={() => setHistory((v) => !v)}>
+          </Section>
+          <button className="secondary" disabled={allBusy || reviewDirty} onClick={() => setHistory((v) => !v)}>
             처리 이력
           </button>
           {history && (
@@ -448,10 +461,6 @@ export function WorkPlanEditor({
               version={record.version}
             />
           )}
-          <p>
-            연결 원본 {record.parent_id || "없음"} · 정정 사유{" "}
-            {record.revision_reason}
-          </p>
           {record.parent_id && (
             <button
               disabled={allBusy || reviewDirty}
@@ -488,7 +497,7 @@ export function WorkPlanEditor({
                   onSelect={setAuthor}
                 />
                 <p>
-                  선택 계정 {authorId || "미선택"}. 원본과 고정 첨부 목록은 보존하며 첨부를 복사하지 않는 새 초안의
+                  {authorId ? "작성 계정을 선택했습니다." : "작성 계정 미선택."} 원본과 고정 첨부 목록은 보존하며 첨부를 복사하지 않는 새 초안의
                   참조는 초기화됩니다.
                 </p>
                 <button

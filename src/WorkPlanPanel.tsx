@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Notice } from "./ui";
+import { EmptyState, Notice, PageHeader, StatusChip } from "./ui";
 import { api, type Site, type User } from "./api";
 import type { Page } from "./attendance-types";
 import { WorkPlanEditor } from "./WorkPlanEditor";
@@ -79,43 +79,41 @@ export function WorkPlanPanel({
       />
     );
   return (
-    <section>
-      <h2>자체 수기 일반 작업계획</h2>
+    <section className="panel">
+      <PageHeader level={1} title="작업계획">
+        {site.role !== "viewer" && (
+          <button disabled={busy} onClick={() => setRecord(null)}>
+            일반 작업계획 초안 작성
+          </button>
+        )}
+      </PageHeader>
       <Notice summary="직접 쓰는 작업계획서입니다. 작업허가나 공학 검토가 아닙니다.">{workPlanWarning}</Notice>
       {error && <p role="alert">{error}</p>}
-      {site.role !== "viewer" && (
-        <button disabled={busy} onClick={() => setRecord(null)}>
-          일반 작업계획 초안 작성
-        </button>
-      )}
       {loading ? (
         <p>조회 중</p>
       ) : (
         page.items.map((r) => (
-          <article key={r.id}>
-            <h3>{r.body.title}</h3>
-            <p>
-              {r.body.date} {r.body.startTime}~{r.body.endTime} ·{" "}
-              {r.status === "archived" ? "고정 보관본 · 문서검토는 상세" : "초안"}
-            </p>
-            <button disabled={busy} onClick={() => void view(r.id)}>
+          <article key={r.id} className="record-row">
+            <div className="record-row-main">
+              <h2>{r.body.title || "제목 없음"}</h2>
+              <p>{r.body.date} {r.body.startTime}~{r.body.endTime}</p>
+            </div>
+            {r.status === "archived" ? <StatusChip tone="done">확정 보관</StatusChip> : <StatusChip tone="draft">작성 중</StatusChip>}
+            <button className="secondary" disabled={busy} onClick={() => void view(r.id)}>
               작업계획 열기
             </button>
           </article>
         ))
       )}
-      <button
-        disabled={busy || loading || !offset}
-        onClick={() => setOffset((v) => v - 50)}
-      >
-        이전50개
-      </button>
-      <button
-        disabled={busy || loading || !page.hasMore}
-        onClick={() => setOffset((v) => v + 50)}
-      >
-        다음50개
-      </button>
+      {!loading && !error && !page.items.length && <EmptyState title="작업계획 없음">일반 작업계획 초안 작성으로 시작하세요.</EmptyState>}
+      <div className="actions">
+        <button className="secondary" disabled={busy || loading || !offset} onClick={() => setOffset((v) => v - 50)}>
+          이전50개
+        </button>
+        <button className="secondary" disabled={busy || loading || !page.hasMore} onClick={() => setOffset((v) => v + 50)}>
+          다음50개
+        </button>
+      </div>
     </section>
   );
 }

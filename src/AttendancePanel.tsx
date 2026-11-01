@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Notice } from "./ui";
 import { api, type Site } from "./api";
 import type {
   Attendance,
@@ -188,11 +189,11 @@ export function AttendancePanel({
   return (
     <section className="panel">
       <h2>수기 출역 현황</h2>
-      <p className="notice">
+      <Notice summary="잘못 입력했다면 취소 사유를 남기고 새로 등록하세요.">
         담당자의 대리 입력입니다. 본인 확인·전자서명·교육/TBM 이수로 처리하지
         않습니다. 날짜·대상을 잘못 입력했다면 취소 사유를 남기고 올바른 기록을
         새로 등록하세요.
-      </p>
+      </Notice>
       <fieldset disabled={busy || !!edit}>
         <div className="grid">
           <label>

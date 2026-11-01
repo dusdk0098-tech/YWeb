@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Notice, TechDetails } from "./ui";
 import { api, type Site, type User } from "./api";
 import type {
   EquipmentRecord,
@@ -103,19 +104,20 @@ export function EquipmentUseEditor({
           사용기록 목록으로
         </button>
       </div>
-      <p className="notice">
+      <Notice summary="같은 장비·날짜에 여러 건을 넣을 수 있으니 저장 전 중복을 확인하세요.">
         수기 기록이며 실제 가동·사용 허가·안전 승인을 확인하지 않습니다. 같은
         장비/날짜에 별도 작업 기록 여러 건을 입력할 수 있으므로 저장 전 중복
         작업을 확인하세요.
-      </p>
+      </Notice>
       <h2>
         {source.body.name} · {source.body.typeLabel}
       </h2>
       <p>
-        장비 ID {source.id} · 당시 코드 {source.body.assetCode || "없음"} · 모델{" "}
+        당시 코드 {source.body.assetCode || "없음"} · 모델{" "}
         {source.body.model} · 일련표시 {source.body.serial} · 업체표시{" "}
         {source.body.ownerCompany}
       </p>
+      <TechDetails><p>장비 ID {source.id}</p></TechDetails>
       <p>
         사용 당시 입력한 검사 예정일:{" "}
         {source.dueMetadata?.nextInspectionDate || "미기록"} · 보험 기록상

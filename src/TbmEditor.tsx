@@ -140,6 +140,31 @@ export function TbmEditor({
       setBusy(false);
     }
   }
+  // 결정 (검토 2차, 편의 7): copy the previous TBM's roster as targets. They start as 미확인 — attendance and the old
+  // record's states are not carried over, so the "출역 ≠ 참여" rule holds.
+  async function copyPreviousParticipants() {
+    if (!record || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const page = await api<{ items: { id: string; body: { date: string; title: string } }[] }>(`/sites/${site.id}/tbm`);
+      const previous = page.items.filter((t) => t.id !== record.id).sort((a, b) => b.body.date.localeCompare(a.body.date))[0];
+      if (!previous) { setError("가져올 지난 TBM이 없습니다."); return; }
+      const source = await api<TbmFull>(`/sites/${site.id}/tbm/${previous.id}`);
+      const have = new Set(participants.map((x) => x.worker_id));
+      const missing = source.participants.filter((x) => !have.has(x.worker_id)).slice(0, Math.max(0, 200 - participants.length));
+      if (!missing.length) { setError(`지난 TBM(${previous.body.date} · ${previous.body.title})의 참가자가 이미 모두 있습니다.`); return; }
+      if (!window.confirm(`지난 TBM(${previous.body.date} · ${previous.body.title})의 참가자 ${missing.length}명을 미확인으로 추가할까요? 참여 상태는 가져오지 않습니다.`)) return;
+      let current = record;
+      for (const x of missing)
+        current = await api<TbmFull>(`/sites/${site.id}/tbm/${record.id}/participants`, "POST", { workerId: x.worker_id, version: current.version }, crypto.randomUUID());
+      setRecord(current);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   async function mutate(
     suffix: string,
     method: string,
@@ -369,6 +394,9 @@ export function TbmEditor({
           {writable && (
             <>
               <h4>참가 대상 추가</h4>
+              <button type="button" className="secondary" disabled={allBusy || dirty} onClick={() => void copyPreviousParticipants()}>
+                지난 TBM 참가자 불러오기
+              </button>
               <label>
                 TBM 명부 검색
                 <input

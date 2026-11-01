@@ -1040,3 +1040,11 @@ nav#primary-navigation button.nav-home { min-height: 40px; }
   .record-row-main { flex-basis: 100%; }
 }
 .ui-section-body > ul:first-child, .ui-section-body > p:first-child { margin-top: 0; }
+.segmented { display: inline-flex; gap: 0; margin: 12px 0 4px; }
+.segmented button { border-radius: 0; }
+.inspection-editor .ui-section { margin-top: 16px; }
+.inspection-item { border-left: 3px solid var(--border-quiet); padding: 4px 0 4px 12px; margin: 0 0 16px; }
+.inspection-item h3 { margin: 0 0 8px; font-size: var(--text-body); }
+.inspection-item[data-result="pass"] { border-left-color: var(--success); }
+.inspection-item[data-result="fail"] { border-left-color: var(--error); }
+.inspection-item[data-result="na"] { border-left-color: var(--ink-muted); }

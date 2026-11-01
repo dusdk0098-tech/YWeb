@@ -1,5 +1,5 @@
 import { HazardInboxPanel } from "./HazardInboxPanel";
-import { Notice } from "./ui";
+import { Notice, PageHeader } from "./ui";
 import { useEffect, useState } from "react";
 import { api, type Site, type User } from "./api";
 import type { Page } from "./attendance-types";
@@ -92,17 +92,13 @@ export function HazardsPanel({
     );
   return (
     <>
-      <div className="section-head page-heading">
-        <div>
-          <h1>신고 · 조치</h1>
-          <p>텍스트 신고부터 담당자 조치, 관리자 검토까지.</p>
-        </div>
+      <PageHeader level={1} title="신고 · 조치">
         {site.role !== "viewer" && (
           <button disabled={opening} onClick={() => setOpen({ record: null })}>
             + 신고 초안
           </button>
         )}
-      </div>
+      </PageHeader>
       <HazardInboxPanel site={site} disabled={opening} onOpen={id => void view(id)} />
       <section className="panel">
         <Notice tone="warning" summary="긴급 상황은 현장의 실제 대응 절차를 따르세요.">

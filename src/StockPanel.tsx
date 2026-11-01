@@ -1,5 +1,5 @@
 import { StockMinimumPanel } from "./StockMinimumPanel";
-import { Notice } from "./ui";
+import { Notice, PageHeader } from "./ui";
 import { useEffect, useState } from "react";
 import { api, type Site } from "./api";
 import type { Page } from "./attendance-types";
@@ -86,8 +86,8 @@ export function StockPanel({
     );
   if (minimums) return <>{error && <p role="alert">{error}</p>}<StockMinimumPanel siteId={site.id} disabled={busy} onOpen={id => void open(id)} onClose={() => setMinimums(false)}/></>;
   return (
-    <section>
-      <h2>관리자 수기 재고</h2>
+    <section className="panel">
+      <PageHeader level={1} title="재고" />
       <Notice summary="직접 입력하는 재고 기록입니다. 실물 확인이나 금액 평가는 하지 않습니다.">{stockWarning}</Notice>
       {error && <p role="alert">{error}</p>}
       {creating ? (

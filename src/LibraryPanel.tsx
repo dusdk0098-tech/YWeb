@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PageHeader, Notice } from "./ui";
 import { api, uploadLibraryFile, type Site } from "./api";
 type LibraryFile = { id: string; title: string; edition: string; filename: string; format: string; size: number; sha256: string; rights_checked_by: string; uploaded_at: string; uploader: string; withdrawn_at: string | null; withdrawn_reason: string | null };
 type Library = { revision: number; items: LibraryFile[] };
@@ -18,8 +19,8 @@ export function LibraryPanel({ site }: { site: Site }) {
     try { setData(await action()); return true; } catch (e) { setError((e as Error).message + " 입력은 유지됩니다."); return false; } finally { setBusy(false); }
   }
   return <section className="panel">
-    <h1>현장 자료실</h1>
-    <p>이 현장 구성원만 보는 자료실입니다. 파일은 검사하지 않은 원본(PDF·PNG·JPEG, 5MB 이하)으로 내려받으며, 삭제하지 않고 게시 중지만 합니다.</p>
+    <PageHeader level={1} title="자료실" />
+    <Notice summary="이 현장 구성원만 봅니다. 자료는 지우지 않고 게시 중지만 합니다.">이 현장 구성원만 보는 자료실입니다. 파일은 검사하지 않은 원본(PDF·PNG·JPEG, 5MB 이하)으로 내려받으며, 삭제하지 않고 게시 중지만 합니다.</Notice>
     {error && <p role="alert">{error}</p>}
     {manager && data && <fieldset disabled={busy}>
       <legend>자료 올리기 (관리자)</legend>

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { PageHeader } from "./ui";
 import type { Site } from "./api";
 import { CompaniesPanel } from "./CompaniesPanel";
 import { WorkerCompanyPanel } from "./WorkerCompanyPanel";
@@ -44,7 +45,7 @@ export function CompanyPpePanel({
   const props = { site, onDirtyChange: changed, onBusyChange: working };
   return (
     <>
-      <h1>업체 · 소속 · 보호구 수기 원장</h1>
+      <PageHeader level={1} title="업체 · 보호구" />
       <div className="form-actions">
         <button disabled={busy} onClick={() => navigate("companies")}>
           업체 등록부

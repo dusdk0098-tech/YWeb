@@ -1,5 +1,5 @@
 import { EducationCatalogPanel } from "./EducationCatalogPanel";
-import { Notice } from "./ui";
+import { Notice, PageHeader } from "./ui";
 import { useEffect, useState } from "react";
 import { api, type Site, type User } from "./api";
 import type { EducationSession, EducationFull } from "./education-types";
@@ -108,20 +108,16 @@ export function EducationPanel({
     );
   return (
     <>
-      <div className="section-head page-heading">
-        <div>
-          <h1>교육일지 기록</h1>
-          <button disabled={opening} onClick={() => setCatalogMode(true)}>
-            자체 교육내용 카탈로그
-          </button>
-          <p>담당자 수기 참여기록 · 관리자 기록 보관 확정.</p>
-        </div>
+      <PageHeader level={1} title="교육일지">
+        <button className="secondary" disabled={opening} onClick={() => setCatalogMode(true)}>
+          자체 교육내용 카탈로그
+        </button>
         {site.role !== "viewer" && (
           <button disabled={opening} onClick={() => setOpen({ record: null })}>
             + 교육일지 초안
           </button>
         )}
-      </div>
+      </PageHeader>
       <section className="panel">
         <Notice summary="참여는 담당자가 사람마다 직접 기록합니다.">
           출역을 교육일지 참여로 자동 처리하지 않습니다. 기록 보관은 신원

@@ -138,16 +138,16 @@ export function PhotoBoardEditor({ base, initial, writable, onClose, onDirtyChan
           {!photo?.hasDisplay && <p>표시본이 없어 미리보기·PNG에서 빠집니다.</p>}
           <fieldset disabled={!writable || busy}>
             <label><input type="checkbox" checked={item.included} onChange={(e) => setItem(i, { ...item, included: e.target.checked })} />포함</label>
-            <button onClick={() => setItems(moveItem(draft.scene.items, i, -1))} disabled={i === 0}>위로</button>
-            <button onClick={() => setItems(moveItem(draft.scene.items, i, 1))} disabled={i === draft.scene.items.length - 1}>아래로</button>
-            <button onClick={() => setItem(i, rotateItem(item))}>90° 회전</button>
+            <button className="secondary" onClick={() => setItems(moveItem(draft.scene.items, i, -1))} disabled={i === 0}>위로</button>
+            <button className="secondary" onClick={() => setItems(moveItem(draft.scene.items, i, 1))} disabled={i === draft.scene.items.length - 1}>아래로</button>
+            <button className="secondary" onClick={() => setItem(i, rotateItem(item))}>90° 회전</button>
             <label>확대(배) <input type="range" min={1} max={MAX_ZOOM} step={0.25} value={item.view?.zoom ?? 1} onChange={(e) => { const view = zoomView(item.view, Number(e.target.value)), next: SceneItem = { ...item }; delete next.view; setItem(i, view ? { ...next, view } : next); }} /> {item.view?.zoom ?? 1}배</label>
             <label>설명<input maxLength={200} value={item.caption} onChange={(e) => setItem(i, { ...item, caption: e.target.value })} /></label>
-            {item.circles.map((c, j) => <button key={j} aria-pressed={selected?.item === i && selected.circle === j} onClick={() => setSelected({ item: i, circle: j })}>강조 {j + 1}</button>)}
+            {item.circles.map((c, j) => <button className="secondary" key={j} aria-pressed={selected?.item === i && selected.circle === j} onClick={() => setSelected({ item: i, circle: j })}>강조 {j + 1}</button>)}
             {selected?.item === i && selected.circle !== null && item.circles[selected.circle] && <>
-              <button onClick={() => setItem(i, { ...item, circles: item.circles.map((x, j) => (j === selected.circle ? resizeCircle(x, 0.02) : x)) })}>강조 크게</button>
-              <button onClick={() => setItem(i, { ...item, circles: item.circles.map((x, j) => (j === selected.circle ? resizeCircle(x, -0.02) : x)) })}>강조 작게</button>
-              <button onClick={() => { setItem(i, { ...item, circles: item.circles.filter((_, j) => j !== selected.circle) }); setSelected(null); }}>강조 삭제</button>
+              <button className="secondary" onClick={() => setItem(i, { ...item, circles: item.circles.map((x, j) => (j === selected.circle ? resizeCircle(x, 0.02) : x)) })}>강조 크게</button>
+              <button className="secondary" onClick={() => setItem(i, { ...item, circles: item.circles.map((x, j) => (j === selected.circle ? resizeCircle(x, -0.02) : x)) })}>강조 작게</button>
+              <button className="secondary" onClick={() => { setItem(i, { ...item, circles: item.circles.filter((_, j) => j !== selected.circle) }); setSelected(null); }}>강조 삭제</button>
             </>}
             {selected?.item === i && selected.circle !== null && item.circles[selected.circle] && <label>강조 색<select value={item.circles[selected.circle].color} onChange={(e) => setItem(i, { ...item, circles: item.circles.map((x, j) => (j === selected.circle ? { ...x, color: e.target.value as "red" } : x)) })}><option value="red">빨강</option><option value="yellow">노랑</option><option value="blue">파랑</option></select></label>}
             <a className="button secondary" href={`/api${path}/photos/${item.photoId}/download`}>원본 다운로드</a>

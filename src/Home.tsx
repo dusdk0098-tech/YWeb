@@ -8,7 +8,7 @@ import { StatusChip, UiIcon, ICON } from "./ui";
 type Row = { id: string; status: string; author_id?: string; owner_id?: string; date?: string; body?: { date?: string; title?: string; summary?: string } };
 type Period = { id: string; month: string; status: string };
 type Task = { kind: string; id: string; tab: string; title: string; due: string; late: boolean; review: boolean };
-type Data = { journals: Row[]; tbm: Row[]; plans: Row[]; inspections: Row[]; periods: Period[]; tasks: Task[] };
+type Data = { journals: Row[]; tbm: Row[]; plans: Row[]; inspections: Row[]; periods: Period[]; tasks: Task[]; workers: number; members: number | null };
 type Ad = { id: string; title: string; text: string; url: string; image: boolean };
 const today = () => new Date().toLocaleDateString("en-CA");
 const KOR_DATE = (d: string) => { const [y, m, day] = d.split("-").map(Number); return `${m}월 ${day}일 (${"일월화수목금토"[new Date(y, m - 1, day).getDay()]})`; };
@@ -36,8 +36,10 @@ export function Home({ site, user, ads, onOpen }: { site: Site | undefined; user
       list<{ id: string; title: string; plannedDate: string; location: string }>(`/inspection-task-register?asOfDate=${d}&work=my_start`),
       list<{ id: string; title: string; date: string; location: string }>("/inspection-register?work=reviewable", manager),
       list<{ id: string; due: string; source: { title: string; action: { task: string } } }>("/minutes-followups?mine=1&open=1"),
+      list<{ id: string }>("/workers?active=true"),
+      manager ? api<unknown[]>(base + "/members").catch(() => null) : Promise.resolve(null),
     ])
-      .then(([journals, tbm, plans, inspections, periods, hazardsMine, hazardReviews, riskActions, publications, riskReviews, inspectionStarts, inspectionReviews, followups]) => {
+      .then(([journals, tbm, plans, inspections, periods, hazardsMine, hazardReviews, riskActions, publications, riskReviews, inspectionStarts, inspectionReviews, followups, workers, members]) => {
         if (!active) return;
         const tasks = [
           ...task("신고 조치", "hazards", false)(hazardsMine, (r) => `${r.title} · ${r.stateLabel}`, (r) => r.dueDate),
@@ -49,7 +51,7 @@ export function Home({ site, user, ads, onOpen }: { site: Site | undefined; user
           ...task("신고 검토", "hazards", true)(hazardReviews, (r) => r.title, (r) => r.dueDate),
           ...task("문서 검토", "riskcore", true)(riskReviews, (r) => r.title, () => undefined),
         ].sort((a, b) => Number(b.late) - Number(a.late) || (a.due && b.due ? a.due.localeCompare(b.due) : a.due ? -1 : b.due ? 1 : 0));
-        setData({ journals, tbm, plans, inspections, periods, tasks });
+        setData({ journals, tbm, plans, inspections, periods, tasks, workers: workers.length, members: members ? members.length : null });
       })
       .catch((e) => active && setError((e as Error).message));
     return () => { active = false; };
@@ -78,6 +80,13 @@ export function Home({ site, user, ads, onOpen }: { site: Site | undefined; user
       <span className="home-card-value">{value}</span>
     </button>
   );
+  // 첫 실행 안내 (편의 4): shown until the site has its first TBM; each step opens the screen that does it.
+  const steps = data && data.tbm.length === 0 ? [
+    { label: "현장 만들기", done: true, tab: "sites", go: "" },
+    { label: "명부 등록", done: data.workers > 0, tab: "attendance", go: "명부 등록하러 가기" },
+    ...(data.members !== null ? [{ label: "구성원 추가", done: data.members > 1, tab: "sites", go: "구성원 추가하러 가기" }] : []),
+    { label: "첫 TBM", done: false, tab: "tbm", go: "첫 TBM 쓰러 가기" },
+  ] : [];
   const dueText = (t: Task) => !t.due ? "" : (t.late ? "기한 지남 · " : "") + (t.due === d ? "오늘" : KOR_DATE(t.due)) + " · ";
   return (
     <section className="home">
@@ -92,6 +101,18 @@ export function Home({ site, user, ads, onOpen }: { site: Site | undefined; user
         {card("", "내 할 일", !data ? "조회 중" : tasks.length ? `${tasks.length}건${late ? ` · 기한 지남 ${late}건` : ""}` : "없음", late ? "signal" : tasks.length ? "draft" : "neutral", "inspection")}
         {site.role === "manager" && card("costs", "산업안전보건관리비", openPeriod ? `${openPeriod.month} 작성 중` : "열린 월 없음", openPeriod ? "draft" : "neutral", "cost")}
       </div>
+      {steps.length > 0 && (
+        <section className="home-list home-steps">
+          <h2>시작하기 <span className="muted">첫 TBM을 쓰면 이 안내는 사라집니다</span></h2>
+          {steps.map((st, i) => (
+            <div key={st.label} className="home-row">
+              <span className="home-row-kind">{i + 1}</span>
+              <span className="home-row-title">{st.label}</span>
+              {st.done ? <StatusChip tone="done">완료</StatusChip> : <button type="button" className="secondary" onClick={() => onOpen(st.tab)}>{st.go}</button>}
+            </div>
+          ))}
+        </section>
+      )}
       <section className="home-list" id="home-tasks">
         <h2>내 할 일 <span className="muted">{data ? `${tasks.length}건` : "조회 중"}</span></h2>
         {data && tasks.length === 0 && <p className="ui-empty"><img src="/illustrations/all-done.svg" alt="" /><strong>지금 나에게 배정되거나 기다리는 일이 없습니다</strong></p>}

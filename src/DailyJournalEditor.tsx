@@ -139,6 +139,23 @@ export function DailyJournalEditor({
       setBusy(false);
     }
   }
+  // 편의 8: the two manager steps (reference capture, then archive) as one click with one question.
+  async function captureAndArchive() {
+    if (!record || busy) return;
+    if (!window.confirm("선택 날짜의 수기 출역 집계와 TBM 확정 버전 참조를 새로 가져온 뒤 바로 보관할까요? 본문·참조는 고정되며 이후 정정은 새 초안입니다. 안전/법적 승인이나 본인서명이 아닙니다.")) return;
+    setBusy(true);
+    setError("");
+    try {
+      const capturePath = base + `/${record.id}/capture`, captureBody = { version: record.version };
+      const captured = await api<DailyJournal>(capturePath, "POST", captureBody, guard.key(capturePath, captureBody));
+      const archivePath = base + `/${record.id}/archive`, archiveBody = { version: captured.version };
+      adopt(await api<DailyJournal>(archivePath, "POST", archiveBody, guard.key(archivePath, archiveBody)));
+    } catch (e) {
+      setError((e as Error).message + " 취합은 되었을 수 있습니다. 최신본을 다시 열어 확인하세요.");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function command(action: "capture" | "archive" | "revise") {
     if (!record || busy) return;
     const path = base + `/${record.id}/${action}`,
@@ -439,6 +456,9 @@ export function DailyJournalEditor({
                 onClick={() => void command("archive")}
               >
                 관리자가 일지 기록 보관
+              </button>
+              <button type="button" className="secondary" disabled={allBusy || dirty} onClick={() => void captureAndArchive()}>
+                참조 취합 후 보관
               </button>
             </>
           )}

@@ -19,7 +19,7 @@ import { registerEducationReviews } from "./education-catalog-review.js";
 import { registerPhotoBoards, isPhotoBoardUpload } from "./photo-board.js";
 import { registerTbmJoin, registerTbmJoinPublic } from "./tbm-join.js";
 import { registerAccounts, registerSetup } from "./accounts.js";
-import { adsEnabled as adsOn, registerAds, type AdsConfig } from "./ads.js";
+import { registerAds, type AdsConfig } from "./ads.js";
 import { registerWorkPlanFormChecklists } from "./work-plan-form-checklist.js";
 import { registerWorkPlanCalculations } from "./work-plan-calculations.js";
 import { registerSiteLibrary, isLibraryUpload } from "./site-library.js";
@@ -110,8 +110,8 @@ declare module "express-session" {
 export type AppConfig = {
   secret: string;
   origin: string;
-  adsEnabled?: boolean; // legacy flag, no longer read: ads run when `ads` is set and the operator has not turned them off
-  ads?: AdsConfig; // 결정 6: the developer's ad feed (server/ads.ts); absent in tests and when ADS_ENABLED=false
+  adsEnabled?: boolean; // legacy flag, no longer read: ads run whenever `ads` is set
+  ads?: AdsConfig; // 결정 6: the developer's ad feed (server/ads.ts); absent only in tests (no switch in the app)
   // SEC-LOCAL-01 A안: read-only permission findings computed at startup, shown to managers.
   localPermissionWarnings?: string[];
   // SC-04: .env AI config (legacy, wins over the in-app setting) and the call used for in-app keys (tests inject a fake).
@@ -202,7 +202,7 @@ export async function createApp(db: Db, config: AppConfig) {
   registerPublicAccess(app, db, config.publicRuntime ?? { mode: "off", state: "꺼짐" }, config.secret);
   registerTbmJoinPublic(app, db);
   registerSetup(app, db); // anonymous first-operator route, before the sign-in gate
-  await registerAuthentication(app, db, () => !!config.ads && adsOn(db));
+  await registerAuthentication(app, db, () => !!config.ads);
   const { access, mutate } = siteOperations(db);
   registerAccounts(app, db, { access, mutate });
   app.locals.adsRefresh = registerAds(app, db, config.ads).refresh;

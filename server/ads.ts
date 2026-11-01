@@ -1,18 +1,16 @@
-import type { Express, Request } from "express";
+import type { Express } from "express";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import type { Db } from "./db.js";
 import { HttpError } from "./site-operations.js";
-import { isLocalRequest } from "./local-admin.js";
-import { grantsOf } from "./accounts.js";
 // 광고 (docs/UI_REDESIGN_PLAN.md 결정 6): the developer's own ads, served to installs of this open-source app.
 // The feed is a JSON file plus images in a separate public repository (GitHub Pages). This server — never the
 // browser — fetches it once a day, validates it, keeps a copy under the data folder (so the last ads show offline)
 // and serves text, link and image from /api/ads, which keeps the CSP as strict as it is. Only text, a link and an
 // image can come from the feed: no HTML, no scripts. The request to the feed carries no site or account data,
 // and nothing is counted here: a click opens the link in a new tab, and any counting is the advertiser's own.
-// The operator can turn ads off on the install PC; the default is on.
+// There is no switch in the app (the developer's decision, 2026-11-02): ADS_FEED_URL only changes the feed address.
 export const DEFAULT_ADS_FEED = "https://dusdk0098-tech.github.io/yweb-ads/ads.json";
 export type AdsConfig = { feedUrl: string; dir: string; fetch?: typeof fetch; intervalMs?: number };
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -31,14 +29,11 @@ export const adsFeed = z.object({
 export type AdsFeed = z.infer<typeof adsFeed>;
 type Cached = { feed: AdsFeed; fetchedAt: string; images: Record<string, { type: string; file: string }> };
 export function migrateAds(db: Db) {
+  // ads_settings stays for schema continuity (73); nothing reads it since the in-app switch was removed.
   db.exec(`
 CREATE TABLE IF NOT EXISTS ads_settings(id INTEGER PRIMARY KEY CHECK(id=1),enabled INTEGER NOT NULL CHECK(enabled IN (0,1)),updated_at TEXT NOT NULL,updated_by TEXT NOT NULL);
 PRAGMA user_version=73`);
 }
-export const adsEnabled = (db: Db) => {
-  const row = db.prepare("SELECT enabled FROM ads_settings WHERE id=1").get() as { enabled: number } | undefined;
-  return row ? !!row.enabled : true;
-};
 const MAX_FEED_BYTES = 64 * 1024, MAX_IMAGE_BYTES = 300 * 1024, IMAGE_TYPES = ["image/png", "image/jpeg"];
 async function readBody(res: Response, max: number) {
   const bytes = Buffer.from(await res.arrayBuffer());
@@ -88,7 +83,7 @@ export function registerAds(app: Express, db: Db, config: AdsConfig | undefined)
   };
   app.get("/api/ads", (req, res) => {
     if (!req.session.userId) throw new HttpError(401, "로그인이 필요합니다.");
-    const on = !!config && adsEnabled(db);
+    const on = !!config;
     res.json({
       enabled: on,
       fetchedAt: cache?.fetchedAt ?? null,
@@ -99,27 +94,10 @@ export function registerAds(app: Express, db: Db, config: AdsConfig | undefined)
   app.get("/api/ads/image/:id", (req, res) => {
     if (!req.session.userId) throw new HttpError(401, "로그인이 필요합니다.");
     const img = cache?.images[String(req.params.id)];
-    if (!img || !/^[a-z0-9-]+$/.test(String(req.params.id)) || !adsEnabled(db) || !config) throw new HttpError(404, "광고 이미지가 없습니다.");
+    if (!img || !/^[a-z0-9-]+$/.test(String(req.params.id)) || !config) throw new HttpError(404, "광고 이미지가 없습니다.");
     res.setHeader("content-type", img.type);
     res.setHeader("cache-control", "private, max-age=3600");
     res.send(readFileSync(join(dir, img.file)));
-  });
-  function operator(req: Request) {
-    const user = req.session.userId;
-    if (!user) throw new HttpError(401, "로그인이 필요합니다.");
-    if (!isLocalRequest(req) || !grantsOf(db, user).operator) throw new HttpError(403, "광고 표시는 운영자가 이 앱이 설치된 PC에서만 바꿀 수 있습니다.");
-    return user;
-  }
-  app.get("/api/ads/settings", (req, res) => {
-    operator(req);
-    res.json({ enabled: adsEnabled(db), feedUrl: config?.feedUrl ?? null, fetchedAt: cache?.fetchedAt ?? null, lastError: lastError || null, count: cache?.feed.ads.length ?? 0 });
-  });
-  app.put("/api/ads/settings", (req, res) => {
-    const user = operator(req);
-    const { enabled } = z.object({ enabled: z.boolean() }).strict().parse(req.body);
-    db.prepare("INSERT INTO ads_settings VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET enabled=excluded.enabled,updated_at=excluded.updated_at,updated_by=excluded.updated_by")
-      .run(Number(enabled), new Date().toISOString(), user);
-    res.json({ enabled });
   });
   return { refresh };
 }

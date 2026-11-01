@@ -1,5 +1,5 @@
 import { clearOfflineDrafts } from "./offline-draft";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { api, setCsrf, type User } from "./api";
 import { StatusBar } from "./ui";
 export function Login({
@@ -14,7 +14,20 @@ export function Login({
   keepDraftsFor?: string | null; // the account whose device drafts survive this login (after a session expiry)
 }) {
   const [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [setup, setSetup] = useState<{ needsOperator: boolean; local: boolean } | null>(null), // first-run: no operator yet
+    [created, setCreated] = useState("");
+  useEffect(() => { api<{ needsOperator: boolean; local: boolean }>("/setup").then(setSetup).catch(() => setSetup(null)); }, []);
+  async function createOperator(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true); setError("");
+    const data = new FormData(e.currentTarget);
+    try {
+      const r = await api<{ email: string }>("/setup/operator", "POST", { name: data.get("name"), email: data.get("email"), password: data.get("password") });
+      setCreated(r.email); setSetup({ needsOperator: false, local: true });
+    } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+  }
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
@@ -76,8 +89,21 @@ export function Login({
           <button disabled={busy}>{busy ? "확인 중…" : "로그인"}</button>
         </form>
         <p className="muted">
-          공개 가입·비밀번호 재설정·SSO는 제공하지 않습니다. 계정은 관리자가 만듭니다.
+          공개 가입·비밀번호 재설정·SSO는 제공하지 않습니다. 계정은 운영자나 발급 권한을 받은 현장 관리자가 만듭니다.
         </p>
+        {created && <StatusBar tone="success" role="status">운영자 계정 {created}을(를) 만들었습니다. 위에서 로그인하세요.</StatusBar>}
+        {setup?.needsOperator && setup.local && !created && (
+          <details className="ui-notice" open>
+            <summary>이 PC에 운영자 계정이 없습니다 · 첫 운영자 만들기</summary>
+            <p className="muted">설치한 PC에서 직접 접속했을 때만 보입니다. 운영자는 이 PC에서 계정을 발급하고 비밀번호를 초기화합니다.</p>
+            <form onSubmit={createOperator}>
+              <label>운영자 이름<input name="name" required maxLength={100} /></label>
+              <label>운영자 이메일<input name="email" type="email" required maxLength={254} autoComplete="off" /></label>
+              <label>운영자 비밀번호 (12자 이상)<input name="password" type="password" required minLength={12} maxLength={128} autoComplete="new-password" /></label>
+              <button disabled={busy}>운영자 계정 만들기</button>
+            </form>
+          </details>
+        )}
       </section>
     </main>
   );

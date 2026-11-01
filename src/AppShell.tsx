@@ -6,15 +6,15 @@ export function NavIcon({ name, size = 18 }: { name: string; size?: number }) {
   // public/icons/*.svg use currentColor; <img> cannot inherit it, so mask the icon with the text color.
   return <span aria-hidden="true" className="nav-icon" style={{ width: size, height: size, WebkitMaskImage: `url(/icons/${name}.svg)`, maskImage: `url(/icons/${name}.svg)` }} />;
 }
-export function AppShell({ user, sites, siteId, site, tab, disabled, error, onSelectSite, onSelectTab, onLogout, children }: {
-  user: User; sites: Site[]; siteId: string; site: Site | undefined; tab: string; disabled: boolean; error: string;
+export function AppShell({ user, sites, siteId, site, tab, disabled, error, operator = false, onSelectSite, onSelectTab, onLogout, children }: {
+  user: User; sites: Site[]; siteId: string; site: Site | undefined; tab: string; disabled: boolean; error: string; operator?: boolean;
   onSelectSite: (id: string) => void; onSelectTab: (id: string) => void; onLogout: () => void; children: ReactNode;
 }) {
   const manager = site?.role === "manager", anyManager = sites.some((s) => s.role === "manager");
   const [sheet, setSheet] = useState<string | null>(null); // open mobile tab (group ids it lists)
   // a new screen starts at its top, not where the long sidebar left the page
   useEffect(() => { setSheet(null); window.scrollTo(0, 0); }, [tab]);
-  const visible = (i: NavItem) => (!i.managerOnly || manager) && (i.id !== "overview" || anyManager);
+  const visible = (i: NavItem) => (!i.managerOnly || manager) && (!i.operatorOnly || operator) && (i.id !== "overview" || anyManager);
   const groups = NAV_GROUPS.filter((g) => !g.managerOnly || manager);
   const item = (i: NavItem, extra = "") => (
     <button key={i.id} type="button" disabled={disabled} className={(tab === i.id ? "active " : "") + extra} aria-current={tab === i.id ? "page" : undefined} onClick={() => onSelectTab(i.id)}>

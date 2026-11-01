@@ -29,12 +29,14 @@ import { Minutes } from "./Minutes";
 import { SiteManagement } from "./SiteManagement";
 import { PasswordChange } from "./PasswordChange";
 import { AiSettings } from "./AiSettings";
+import { AccountsPanel } from "./AccountsPanel";
 import { PublicAccessSettings } from "./PublicAccessSettings";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, setCsrf, setSessionLostHandler, type Meeting, type Site, type User } from "./api";
 import { MeetingEditor } from "./MeetingEditor";
 import "./style.css";
+type Session = { user: User | null; csrf: string; adsEnabled: boolean; operator?: boolean; issuer?: boolean; local?: boolean };
 function App() {
   const [user, setUser] = useState<User | null>(null),
     [loading, setLoading] = useState(true),
@@ -44,7 +46,8 @@ function App() {
     [tab, setTab] = useState("home"),
     [ads, setAds] = useState(false),
     [editor, setEditor] = useState<{ initial: Meeting | null } | null>(null),
-    [expiredUserId, setExpiredUserId] = useState<string | null>(null); // who was signed in when the session died
+    [expiredUserId, setExpiredUserId] = useState<string | null>(null), // who was signed in when the session died
+    [flags, setFlags] = useState({ operator: false, issuer: false, local: false }); // account-issuance rights from /session
   const userRef = useRef(user);
   userRef.current = user;
   const [attendanceDirty, setAttendanceDirty] = useState(false);
@@ -63,17 +66,20 @@ function App() {
     setSiteId((id) => (list.some((s) => s.id === id) ? id : list[0]?.id || ""));
   }
   useEffect(() => {
-    api<{ user: User | null; csrf: string; adsEnabled: boolean }>("/session")
+    api<Session>("/session")
       .then((s) => {
         setUser(s.user);
         setCsrf(s.csrf);
         setAds(s.adsEnabled);
+        setFlags({ operator: !!s.operator, issuer: !!s.issuer, local: !!s.local });
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
   useEffect(() => {
-    if (user) refreshSites().catch((e) => setError(e.message));
+    if (!user) return;
+    refreshSites().catch((e) => setError(e.message));
+    api<Session>("/session").then((s) => setFlags({ operator: !!s.operator, issuer: !!s.issuer, local: !!s.local })).catch(() => {});
   }, [user]);
   useEffect(() => {
     // Back to the login screen with a notice; tab and site are kept, device drafts survive a same-account login.
@@ -140,6 +146,7 @@ function App() {
       tab={tab}
       disabled={!!editor || attendanceBusy}
       error={error}
+      operator={flags.operator && flags.local}
       onSelectSite={(id) => {
         if (!mayLeaveAttendance()) return;
         setSiteId(id);
@@ -193,6 +200,8 @@ function App() {
           <AiSettings />
         ) : tab === "public" ? (
           <PublicAccessSettings />
+        ) : tab === "accounts" && flags.operator && flags.local ? (
+          <AccountsPanel />
         ) : tab === "account" ? (
           <PasswordChange
             onDirtyChange={setAttendanceDirty}
@@ -218,7 +227,7 @@ function App() {
             }}
           />
         ) : tab === "sites" ? (
-          <SiteManagement sites={sites} site={site} refresh={refreshSites} />
+          <SiteManagement sites={sites} site={site} refresh={refreshSites} issuer={flags.issuer} />
         ) : site && tab === "stock" && site.role === "manager" ? (
           <StockPanel
             key={site.id}

@@ -18,6 +18,7 @@ import { registerCatalogUse } from "./education-catalog-use-routes.js";
 import { registerEducationReviews } from "./education-catalog-review.js";
 import { registerPhotoBoards, isPhotoBoardUpload } from "./photo-board.js";
 import { registerTbmJoin, registerTbmJoinPublic } from "./tbm-join.js";
+import { registerAccounts, registerSetup } from "./accounts.js";
 import { registerWorkPlanFormChecklists } from "./work-plan-form-checklist.js";
 import { registerWorkPlanCalculations } from "./work-plan-calculations.js";
 import { registerSiteLibrary, isLibraryUpload } from "./site-library.js";
@@ -198,8 +199,10 @@ export async function createApp(db: Db, config: AppConfig) {
       message: { error: "이 주소에서 시도가 많습니다. 15분 후 다시 시도해 주세요." } }));
   registerPublicAccess(app, db, config.publicRuntime ?? { mode: "off", state: "꺼짐" }, config.secret);
   registerTbmJoinPublic(app, db);
+  registerSetup(app, db); // anonymous first-operator route, before the sign-in gate
   await registerAuthentication(app, db, !!config.adsEnabled);
   const { access, mutate } = siteOperations(db);
+  registerAccounts(app, db, { access, mutate });
   registerAttendanceRoutes(app, db, { access, mutate });
   registerTbmRoutes(app, db, { access, mutate });
   registerHazardRoutes(app, db, { access, mutate });

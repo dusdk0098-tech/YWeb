@@ -193,7 +193,7 @@ function App() {
             }}
           />
         ) : tab === "home" ? (
-          <Home site={site} user={user} ads={ads} onOpen={(next) => { if (!mayLeaveAttendance()) return; setTab(next); setError(""); }} />
+          <Home site={site} user={user} ads={ads} operatorLocal={flags.operator && flags.local} onOpen={(next) => { if (!mayLeaveAttendance()) return; setTab(next); setError(""); }} />
         ) : tab === "ai" ? (
           <AiSettings />
         ) : tab === "public" ? (

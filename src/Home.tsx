@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type Site, type User } from "./api";
 import { NavIcon } from "./AppShell";
-import { StatusChip, UiIcon, ICON } from "./ui";
+import { StatusBar, StatusChip, UiIcon, ICON } from "./ui";
 // 홈 = 오늘 할 일 (UI 개편 PR 2). 기존 목록 API를 모아 보여 주기만 한다 — 서버 변경 없음, 판단·집계 없음.
 // 내 할 일 (검토 2차): 각 화면의 업무함 API(신고·위험성평가·점검 일정·회의 후속조치, 관리자면 검토 대기까지)를 그대로 모은다.
 // shortcut: 13 list calls on open; a summary endpoint when a real site makes this slow.
@@ -12,7 +12,17 @@ type Data = { journals: Row[]; tbm: Row[]; plans: Row[]; inspections: Row[]; per
 type Ad = { id: string; title: string; text: string; url: string; image: boolean };
 const today = () => new Date().toLocaleDateString("en-CA");
 const KOR_DATE = (d: string) => { const [y, m, day] = d.split("-").map(Number); return `${m}월 ${day}일 (${"일월화수목금토"[new Date(y, m - 1, day).getDay()]})`; };
-export function Home({ site, user, ads, onOpen }: { site: Site | undefined; user: User; ads?: boolean; onOpen: (tab: string) => void }) {
+type PublicStatus = { tone: "ok" | "warn" | "error" | "off"; step: string | null; line: string };
+const PUBLIC_TONE = { ok: "success", warn: "warning", error: "error", off: "info" } as const;
+// 외부 접속 상태 (operator on the install PC): one line, and the button opens the wizard at the step that fixes it.
+function PublicStatusLine({ onOpen }: { onOpen: (tab: string) => void }) {
+  const [s, setS] = useState<PublicStatus | null>(null);
+  useEffect(() => { api<PublicStatus>("/public-access/status").then(setS).catch(() => setS(null)); }, []);
+  if (!s) return null;
+  const open = () => { if (s.step) sessionStorage.setItem("public-setup-step", s.step); onOpen("public"); };
+  return <StatusBar tone={PUBLIC_TONE[s.tone]}>{s.line} <button type="button" className="secondary" onClick={open}>외부 접속 설정 열기</button></StatusBar>;
+}
+export function Home({ site, user, ads, operatorLocal, onOpen }: { site: Site | undefined; user: User; ads?: boolean; operatorLocal?: boolean; onOpen: (tab: string) => void }) {
   const [data, setData] = useState<Data | null>(null), [error, setError] = useState(""), [adList, setAdList] = useState<Ad[]>([]);
   useEffect(() => {
     // 광고 (결정 6): text, link and image come from this server only; nothing about the site leaves it (docs/ADS.md).
@@ -61,6 +71,7 @@ export function Home({ site, user, ads, onOpen }: { site: Site | undefined; user
     <section className="home">
       <h1>오늘</h1>
       <p className="muted">{KOR_DATE(d)}</p>
+      {operatorLocal && <PublicStatusLine onOpen={onOpen} />}
       <div className="ui-empty"><img src="/illustrations/no-records.svg" alt="" /><strong>아직 현장이 없습니다</strong><span>현장을 만들면 오늘 할 일이 여기에 모입니다.</span><button type="button" onClick={() => onOpen("sites")}>현장 만들러 가기</button></div>
     </section>
   );
@@ -94,6 +105,7 @@ export function Home({ site, user, ads, onOpen }: { site: Site | undefined; user
         <h1>오늘</h1>
         <span className="muted">{KOR_DATE(d)} · {site.name}</span>
       </div>
+      {operatorLocal && <PublicStatusLine onOpen={onOpen} />}
       {error && <p className="error" role="alert">{error}</p>}
       <div className="home-cards">
         {card("tbm", "오늘 TBM", tbmToday.length ? `${tbmToday.length}건 기록됨` : "아직 없음 · 시작하기", tbmToday.length ? "neutral" : "signal", "tbm")}

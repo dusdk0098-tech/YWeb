@@ -10,6 +10,8 @@ import { DEFAULT_ADS_FEED } from "./ads.js";
 import { publicOrigin, readPublicSettings, type PublicRuntime } from "./public-access.js";
 import { startDirect, startTunnel } from "./public-serve.js";
 import { selfCheck } from "./public-checks.js";
+import { startMonitor } from "./public-monitor.js";
+import { defaultSetupDeps } from "./public-setup.js";
 if (existsSync(".env")) process.loadEnvFile(".env");
 // SEC-LOCAL-01 B안: files this process creates (DB WAL/SHM) are owner-only on POSIX; Windows uses ACLs instead.
 if (process.platform !== "win32") process.umask(0o077);
@@ -46,6 +48,8 @@ app.get("/{*path}", (_req, res) => res.sendFile(resolve("dist/index.html")));
 const server = app.listen(port, "127.0.0.1", () =>
   console.log(`PEDIT local foundation: http://127.0.0.1:${port}`),
 );
+// 외부 접속 감시 (home status line): router mappings and DNS checked every 10 minutes while a direct connection runs.
+if (runtime.mode !== "off") startMonitor({ db, secret, runtime, deps: defaultSetupDeps(port) });
 // 적용 확인 shown in the wizard: open our own public address once it is being served.
 async function verify(mode: "direct" | "tunnel") { if (runtime.origin) runtime.selfCheck = await selfCheck(runtime.origin, mode); }
 // A failure here leaves the local app running; the reason is shown on the 외부 접속 설정 screen and in this console.

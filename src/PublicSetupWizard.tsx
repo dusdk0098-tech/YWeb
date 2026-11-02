@@ -19,6 +19,13 @@ export function PublicSetupWizard({ onApplied }: { onApplied: () => void }) {
   const [form, setForm] = useState({ domain: "", email: "", agreeTos: false, token: "" });
   const show = (x: View) => { setV(x); setForm((f) => ({ ...f, domain: x.domain, email: x.email, agreeTos: x.agreeTos })); };
   useEffect(() => { api<View>("/public-setup").then(show).catch((e) => setError((e as Error).message)); }, []);
+  // Opened from the home status line: go to the step that fixes the problem.
+  useEffect(() => {
+    const id = v && sessionStorage.getItem("public-setup-step");
+    if (!id) return;
+    sessionStorage.removeItem("public-setup-step");
+    document.getElementById(`setup-${id}`)?.scrollIntoView({ block: "start" });
+  }, [v]);
   // The outside test runs in the background; look again while a step says "확인 중".
   useEffect(() => {
     if (!v?.steps.some((s) => s.check?.status === "running")) return;

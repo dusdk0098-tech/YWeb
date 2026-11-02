@@ -9,7 +9,9 @@ test("domain wizard: questions, step checks with values to copy, apply only when
   await expect(page.getByRole("heading", { name: "오늘", exact: true })).toBeVisible();
   const world = async (data: object) => expect((await page.request.put("/api/test/public-state", { data })).ok()).toBe(true);
 
-  await page.getByRole("button", { name: "외부 접속 설정", exact: true }).click();
+  // 홈 상태 한 줄 (US3): the operator on this PC sees where the domain stands and opens the wizard from there.
+  await expect(page.getByText("휴대폰에서도 쓰려면 도메인을 연결하세요.")).toBeVisible();
+  await page.getByRole("button", { name: "외부 접속 설정 열기" }).click();
   await page.getByRole("button", { name: "도메인 연결 시작", exact: true }).click();
   await page.getByLabel("도메인이 있어요").check();
   await page.getByLabel("공유기 설정을 바꿀 수 있어요").check();
@@ -55,6 +57,10 @@ test("domain wizard: questions, step checks with values to copy, apply only when
   await page.getByRole("button", { name: "설정 적용" }).click();
   await expect(page.getByText("저장했습니다. 앱을 다시 시작하면 적용됩니다.")).toBeVisible();
   await expect(page.getByText("저장한 설정이 아직 적용되지 않았습니다. 앱을 다시 시작하세요.")).toBeVisible();
+
+  await page.getByRole("button", { name: "오늘", exact: true }).first().click();
+  await expect(page.getByText("도메인 연결을 마저 진행하세요.")).toBeVisible();
+  await page.getByRole("button", { name: "외부 접속 설정 열기" }).click();
 
   page.once("dialog", (d) => void d.accept());
   await page.getByRole("button", { name: "처음부터" }).click();

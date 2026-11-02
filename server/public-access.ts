@@ -14,7 +14,7 @@ export type PublicSettings = { mode: PublicMode; domain: string; email: string; 
 // What the running process actually did with the settings it started with (shown on the settings screen).
 // launcher: started by start.cmd, which restarts the app when it exits with code 75 (the wizard's "다시 시작해 적용").
 // selfCheck: once running, this PC opened its own public address (ok null = could not tell, e.g. the router blocks loopback).
-export type PublicRuntime = { mode: PublicMode; origin?: string; state: string; detail?: string; certNotAfter?: string; launcher?: boolean; selfCheck?: { at: string; ok: boolean | null; detail: string } };
+export type PublicRuntime = { mode: PublicMode; origin?: string; state: string; detail?: string; certNotAfter?: string; launcher?: boolean; selfCheck?: { at: string; ok: boolean | null; detail: string }; dnsMismatch?: string };
 export function migratePublicAccess(db: Db) {
   db.exec(`
  CREATE TABLE IF NOT EXISTS public_access(id INTEGER PRIMARY KEY CHECK(id=1),mode TEXT NOT NULL CHECK(mode IN ('off','direct','tunnel')),domain TEXT NOT NULL,acme_email TEXT NOT NULL,

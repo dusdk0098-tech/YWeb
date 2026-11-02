@@ -8,7 +8,8 @@ import argon2 from "argon2";
 import request from "supertest";
 import { openDatabase } from "../server/db.js";
 import { createApp } from "../server/app.js";
-import { readPublicSettings, type PublicRuntime } from "../server/public-access.js";
+import { readPublicSettings, savePublicSettings, type PublicRuntime } from "../server/public-access.js";
+import { monitorTick } from "../server/public-monitor.js";
 import { CloudflareError, type Cloudflare } from "../server/cloudflare-api.js";
 import { ELEVATED, type PublicSetupDeps } from "../server/public-setup.js";
 // 외부 접속 마법사 API (specs/001-easy-domain-setup quickstart U1–U17). Router, Cloudflare, DNS, OS and ACME are fakes.
@@ -61,7 +62,8 @@ async function fixture(runtime: PublicRuntime = { mode: "off", state: "꺼짐" }
     db.prepare("INSERT INTO users VALUES(?,?,?,?)").run(id, email, id, await argon2.hash(password));
     if (op) db.prepare("INSERT INTO account_grants(user_id,operator,issuer,granted_by,granted_at) VALUES(?,1,0,NULL,?)").run(id, new Date().toISOString());
   }
-  const app = await createApp(db, { origin, secret, publicRuntime: runtime, publicSetup: { ...deps(w, dir), ...extra } });
+  const d = { ...deps(w, dir), ...extra } as PublicSetupDeps;
+  const app = await createApp(db, { origin, secret, publicRuntime: runtime, publicSetup: d });
   let restarts = 0;
   app.locals.requestRestart = () => { restarts++; };
   async function login(email: string) {
@@ -74,7 +76,7 @@ async function fixture(runtime: PublicRuntime = { mode: "off", state: "꺼짐" }
       for (const [k, v] of Object.entries(headers)) q = q.set(k, v);
       return q.send(body);
     };
-    return { get: (headers: Record<string, string> = {}) => { let q = a.get("/api/public-setup"); for (const [k, v] of Object.entries(headers)) q = q.set(k, v); return q; }, send };
+    return { status: () => a.get("/api/public-access/status"), get: (headers: Record<string, string> = {}) => { let q = a.get("/api/public-setup"); for (const [k, v] of Object.entries(headers)) q = q.set(k, v); return q; }, send };
   }
   // The reachability test runs in the background; wait until the router step is no longer "running".
   async function settle(op: Awaited<ReturnType<typeof login>>) {
@@ -85,7 +87,7 @@ async function fixture(runtime: PublicRuntime = { mode: "off", state: "꺼짐" }
     }
     throw new Error("router check never finished");
   }
-  return { db, w, login, settle, restarts: () => restarts, close: () => { db.close(); rmSync(dir, { recursive: true, force: true }); } };
+  return { db, w, d, login, settle, restarts: () => restarts, close: () => { db.close(); rmSync(dir, { recursive: true, force: true }); } };
 }
 const step = (v: { steps: { id: string }[] }, id: string) => v.steps.find((s) => s.id === id) as { id: string; check: { status: string; reason: string; current?: string; expected?: string } | null; copy: { label: string; value: string }[]; command: string | null; action: string | null };
 test("wizard: operator on this PC only; nothing leaks to others", async () => {
@@ -228,4 +230,44 @@ test("wizard: firewall and cloudflared with one 'run as administrator' button (U
     assert.match(r.body.error, /직접 실행/);
     assert.deepEqual(linux.w.elevated, []);
   } finally { linux.close(); }
+});
+test("home status line and the 10-minute watch: DNS repaired after a new public IP (US3)", async () => {
+  const runtime: PublicRuntime = { mode: "off", state: "꺼짐" };
+  const f = await fixture(runtime);
+  try {
+    const op = await f.login("op@example.test"), worker = await f.login("w@example.test");
+    const status = async () => (await op.status()).body as { tone: string; step: string | null; line: string };
+    assert.deepEqual(await status(), { tone: "off", step: null, line: "휴대폰에서도 쓰려면 도메인을 연결하세요." });
+    assert.equal((await worker.status()).status, 403);
+    await op.send("put", "/answers", { hasDomain: true, canRouter: true });
+    assert.equal((await status()).line, "도메인 연결을 마저 진행하세요.");
+    // running as a direct connection
+    savePublicSettings(f.db, secret, "op", { mode: "direct", domain: "safety.example.test", email: "o@example.test", agreeTos: true, tunnelToken: "" });
+    Object.assign(runtime, { mode: "direct", state: "실행 중", origin: "https://safety.example.test", certNotAfter: "2027-01-30T00:00:00.000Z" });
+    f.w.dns = ["203.0.113.5"];
+    const tick = () => monitorTick({ db: f.db, secret, runtime, deps: f.d });
+    await tick();
+    assert.deepEqual(await status(), { tone: "ok", step: null, line: "외부 접속 정상 · https://safety.example.test · 인증서 2027-01-30까지" });
+    assert.deepEqual(f.w.upnpCalls, [80, 443], "port mappings are re-added each tick (routers forget them on reboot)");
+    // the line's public IP changed; DNS still points at the old one and no Cloudflare token is stored
+    f.w.ip = "198.51.100.20";
+    await tick();
+    const broken = await status();
+    assert.deepEqual([broken.tone, broken.step], ["error", "dns"]);
+    assert.match(broken.line, /198\.51\.100\.20/);
+    // with the wizard's Cloudflare token for this domain the next tick fixes the A record itself
+    await op.send("put", "/form", { domain: "safety.example.test" });
+    await op.send("put", "/cf-token", { token: GOOD });
+    await tick();
+    assert.deepEqual(f.w.records.get("safety.example.test"), { type: "A", content: "198.51.100.20" });
+    assert.equal((await status()).tone, "ok");
+    // offline: the last state stays
+    f.w.ip = "<none>";
+    await tick();
+    assert.equal((await status()).tone, "ok");
+    Object.assign(runtime, { state: "중지", detail: "인증서 발급 실패" });
+    assert.deepEqual(await status(), { tone: "error", step: "router", line: "외부 접속이 멈췄습니다: 인증서 발급 실패" });
+    Object.assign(runtime, { mode: "tunnel", state: "재연결 대기", detail: "cloudflared 종료(코드 1)." });
+    assert.deepEqual(await status(), { tone: "warn", step: "cloudflared", line: "외부 접속 연결 중: cloudflared 종료(코드 1)." });
+  } finally { f.close(); }
 });

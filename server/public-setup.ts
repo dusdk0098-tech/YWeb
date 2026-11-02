@@ -10,6 +10,7 @@ import type { Issue } from "./public-serve.js";
 import { CF_TOKEN_PERMISSIONS, CloudflareError, createCloudflare, type Cloudflare } from "./cloudflare-api.js";
 import { createUpnp, localAddressFor, type Upnp } from "./upnp.js";
 import { clearSetup, mergeCheck, readSetup, writeSetup, type CheckResult, type Setup, type SetupMode } from "./public-setup-store.js";
+import { summarize } from "./public-monitor.js";
 // 외부 접속 마법사 (specs/001-easy-domain-setup, contracts/public-setup-api.md). Operator, browser on the install PC only.
 // Every step shows its state, the values to copy for doing it by hand, and — where the app can — a "do it for me" button.
 // An automatic attempt that fails leaves the manual values in place (research R9). Nothing reaches public_access until 적용.
@@ -122,6 +123,7 @@ export function registerPublicSetup(app: Express, db: Db, runtime: PublicRuntime
   const conflict = (res: Response, current: string) => res.status(409).json({ error: `이 이름에 이미 다른 DNS 레코드가 있습니다(${current}). 바꾸려면 ‘덮어쓰기’를 누르세요.`, conflict: { current } });
 
   app.get("/api/public-setup", route((_req, res) => res.json(view())));
+  app.get("/api/public-access/status", route((_req, res) => res.json(summarize(runtime, !!setup()))));
   app.put("/api/public-setup/answers", route((req, res, user) => {
     const a = z.object({ hasDomain: z.boolean(), canRouter: z.boolean() }).strict().parse(req.body);
     const rec: SetupMode = a.canRouter ? "direct" : "tunnel";

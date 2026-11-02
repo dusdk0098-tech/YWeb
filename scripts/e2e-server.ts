@@ -29,14 +29,18 @@ db.prepare("INSERT INTO users VALUES(?,?,?,?)").run(
 // 외부 접속 마법사 spec only (scripts/e2e-runner.mjs sets TEST_PUBLIC_FAKES): the test account is the operator, and the
 // router, DNS, firewall and outside test are a synthetic world the spec changes through PUT /api/test/public-state.
 const fakes = process.env.TEST_PUBLIC_FAKES === "true";
-const world = { dns: [] as string[], fw: 0, reach: false, upnp: false };
+const world = { dns: [] as string[], fw: 0, reach: false, upnp: false, uac: 1223 }; // uac: exit code of the 'run as administrator' wrapper
 let publicSetup: Partial<PublicSetupDeps> | undefined;
 if (fakes) {
   db.prepare("INSERT INTO account_grants(user_id,operator,issuer,granted_by,granted_at) VALUES(?,1,0,NULL,?)").run("00000000-0000-4000-8000-000000000001", new Date().toISOString());
   publicSetup = {
     upnp: { externalIp: async () => null, addPortMapping: async () => (world.upnp ? { ok: true } : { ok: false, kind: "unsupported", detail: "공유기가 자동 설정(UPnP)을 지원하지 않거나 꺼져 있습니다." }) },
     fetch: (async () => new Response("ip=203.0.113.5\n")) as typeof fetch, resolve: async () => world.dns, platform: "win32",
-    run: async (_cmd, args) => (args.join(" ").includes("Get-NetFirewallRule") ? { code: 0, stdout: String(world.fw) } : args.join(" ").includes("NetConnectionProfile") ? { code: 0, stdout: "Private" } : { code: 1, stdout: "", missing: true }),
+    run: async (_cmd, args) => {
+      const a = args.join(" ");
+      if (a.includes("Start-Process")) { if (world.uac === 0 && a.includes("-EncodedCommand")) world.fw = 1; return { code: world.uac, stdout: "" }; }
+      return a.includes("Get-NetFirewallRule") ? { code: 0, stdout: String(world.fw) } : a.includes("NetConnectionProfile") ? { code: 0, stdout: "Private" } : { code: 1, stdout: "", missing: true };
+    },
     listen: async () => () => {}, issue: async () => { if (!world.reach) throw new Error("Verify error: Connection refused"); return { cert: "", key: "" }; },
     reachCooldownMs: 0,
   };

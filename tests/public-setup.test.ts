@@ -10,12 +10,12 @@ import { openDatabase } from "../server/db.js";
 import { createApp } from "../server/app.js";
 import { readPublicSettings, type PublicRuntime } from "../server/public-access.js";
 import { CloudflareError, type Cloudflare } from "../server/cloudflare-api.js";
-import type { PublicSetupDeps } from "../server/public-setup.js";
+import { ELEVATED, type PublicSetupDeps } from "../server/public-setup.js";
 // 외부 접속 마법사 API (specs/001-easy-domain-setup quickstart U1–U17). Router, Cloudflare, DNS, OS and ACME are fakes.
 const origin = "http://127.0.0.1:3000", secret = "synthetic-wizard-secret-".repeat(3);
 const GOOD = "synthetic_cf_api_token_GOOD", TUNNEL_TOKEN = "eyJ-synthetic-tunnel-token-WXYZ";
-type World = { ip: string; dns: string[]; fw: number; profile: string; cfd: boolean; reach: boolean; upnp: boolean; records: Map<string, { type: string; content: string }>; tunnels: string[]; upnpCalls: number[] };
-function world(): World { return { ip: "203.0.113.5", dns: [], fw: 0, profile: "Private", cfd: false, reach: false, upnp: false, records: new Map(), tunnels: [], upnpCalls: [] }; }
+type World = { ip: string; dns: string[]; fw: number; profile: string; cfd: boolean; reach: boolean; upnp: boolean; records: Map<string, { type: string; content: string }>; tunnels: string[]; upnpCalls: number[]; uac: number; elevated: string[] };
+function world(): World { return { ip: "203.0.113.5", dns: [], fw: 0, profile: "Private", cfd: false, reach: false, upnp: false, records: new Map(), tunnels: [], upnpCalls: [], uac: 1223, elevated: [] }; }
 function deps(w: World, dir: string): Partial<PublicSetupDeps> {
   const cf = (t: string) => ({
     verify: async () => { if (t !== GOOD) throw new CloudflareError("Cloudflare 응답: Invalid API Token"); },
@@ -38,6 +38,14 @@ function deps(w: World, dir: string): Partial<PublicSetupDeps> {
     cloudflare: cf, fetch: (async () => new Response(`ip=${w.ip}\n`)) as never, resolve: async () => w.dns, platform: "win32",
     run: async (_cmd, args) => {
       const a = args.join(" ");
+      // The UAC wrapper: decode the one command it would run elevated; a "yes" with code 0 makes that command take effect.
+      if (a.includes("Start-Process")) {
+        const cmd = Buffer.from(/'-EncodedCommand','([A-Za-z0-9+/=]+)'/.exec(a)![1], "base64").toString("utf16le");
+        w.elevated.push(cmd);
+        if (w.uac === 0 && cmd.startsWith("New-NetFirewallRule")) w.fw = 1;
+        if (w.uac === 0 && cmd.startsWith("winget install")) w.cfd = true;
+        return { code: w.uac, stdout: "" };
+      }
       if (a.includes("Get-NetFirewallRule")) return { code: 0, stdout: String(w.fw) };
       if (a.includes("NetConnectionProfile")) return { code: 0, stdout: w.profile };
       if (args[0] === "--version") return w.cfd ? { code: 0, stdout: "cloudflared version 2026.7.3" } : { code: 1, stdout: "", missing: true };
@@ -47,13 +55,13 @@ function deps(w: World, dir: string): Partial<PublicSetupDeps> {
     reachCooldownMs: 0, tlsDir: dir, port: 3000,
   };
 }
-async function fixture(runtime: PublicRuntime = { mode: "off", state: "꺼짐" }) {
+async function fixture(runtime: PublicRuntime = { mode: "off", state: "꺼짐" }, extra: Partial<PublicSetupDeps> = {}) {
   const db = openDatabase(":memory:"), password = randomUUID(), dir = mkdtempSync(join(tmpdir(), "yweb-setup-")), w = world();
   for (const [id, email, op] of [["op", "op@example.test", 1], ["w", "w@example.test", 0]] as const) {
     db.prepare("INSERT INTO users VALUES(?,?,?,?)").run(id, email, id, await argon2.hash(password));
     if (op) db.prepare("INSERT INTO account_grants(user_id,operator,issuer,granted_by,granted_at) VALUES(?,1,0,NULL,?)").run(id, new Date().toISOString());
   }
-  const app = await createApp(db, { origin, secret, publicRuntime: runtime, publicSetup: deps(w, dir) });
+  const app = await createApp(db, { origin, secret, publicRuntime: runtime, publicSetup: { ...deps(w, dir), ...extra } });
   let restarts = 0;
   app.locals.requestRestart = () => { restarts++; };
   async function login(email: string) {
@@ -172,7 +180,7 @@ test("wizard: tunnel — API token sealed, Cloudflare objects made once, DNS con
     assert.deepEqual(f.w.records.get("safety.example.test"), { type: "CNAME", content: "t1.cfargotunnel.com" });
     v = (await op.send("post", "/check", { step: "cloudflared" })).body;
     assert.equal(step(v, "cloudflared").check?.reason, "cloudflared가 설치되어 있지 않습니다.");
-    assert.match(String(step(v, "cloudflared").command), /^winget install --id Cloudflare\.cloudflared$/);
+    assert.equal(step(v, "cloudflared").command, ELEVATED.cloudflared);
     f.w.cfd = true;
     v = (await op.send("post", "/check", { step: "cloudflared" })).body;
     assert.equal(v.canApply, true);
@@ -181,7 +189,43 @@ test("wizard: tunnel — API token sealed, Cloudflare objects made once, DNS con
     assert.deepEqual([pub.mode, pub.domain, pub.tunnelToken], ["tunnel", "safety.example.test", TUNNEL_TOKEN]);
     const raw = JSON.stringify([f.db.prepare("SELECT * FROM public_setup").get(), f.db.prepare("SELECT * FROM public_access").get(), (await op.get()).body]);
     assert.ok(!raw.includes(GOOD) && !raw.includes(TUNNEL_TOKEN), "tokens are sealed and never sent back");
-    assert.equal((await op.send("post", "/run", { step: "firewall" })).status, 400, "only fixed actions run");
+    assert.equal((await op.send("post", "/run", { step: "rm" })).status, 400, "only fixed actions run");
     assert.equal((await op.send("post", "/check", { step: "rm -rf" })).status, 400);
   } finally { f.close(); }
+});
+test("wizard: firewall and cloudflared with one 'run as administrator' button (US2)", async () => {
+  const f = await fixture();
+  try {
+    const op = await f.login("op@example.test");
+    await op.send("put", "/answers", { hasDomain: true, canRouter: true });
+    let v = (await op.send("put", "/form", { domain: "safety.example.test" })).body;
+    assert.deepEqual([step(v, "firewall").action, step(v, "firewall").command], ["uac-firewall", ELEVATED.firewall], "the command is on screen before it runs");
+    // declined at the Windows prompt
+    v = (await op.send("post", "/run", { step: "firewall" })).body;
+    assert.deepEqual([step(v, "firewall").check?.status, step(v, "firewall").check?.reason], ["todo", "실행하지 않았습니다(권한 확인에서 취소)."]);
+    assert.deepEqual(f.w.elevated, [ELEVATED.firewall], "exactly the fixed command, nothing from the request");
+    // the command fails
+    f.w.uac = 5;
+    v = (await op.send("post", "/run", { step: "firewall" })).body;
+    assert.match(step(v, "firewall").check!.reason, /명령이 실패했습니다\(코드 5\)/);
+    // accepted: the rule exists afterwards and the step re-checks itself
+    f.w.uac = 0;
+    v = (await op.send("post", "/run", { step: "firewall" })).body;
+    assert.equal(step(v, "firewall").check?.status, "ok");
+    await op.send("put", "/form", { chosen: "tunnel" });
+    v = (await op.send("post", "/run", { step: "cloudflared" })).body;
+    assert.deepEqual([step(v, "cloudflared").action, step(v, "cloudflared").check?.status], ["uac-cloudflared", "ok"]);
+    assert.equal(f.w.elevated.at(-1), ELEVATED.cloudflared);
+  } finally { f.close(); }
+  const linux = await fixture(undefined, { platform: "linux" });
+  try {
+    const op = await linux.login("op@example.test");
+    await op.send("put", "/answers", { hasDomain: true, canRouter: true });
+    const v = (await op.send("put", "/form", { domain: "safety.example.test" })).body;
+    assert.equal(step(v, "firewall").action, null);
+    const r = await op.send("post", "/run", { step: "firewall" });
+    assert.equal(r.status, 400);
+    assert.match(r.body.error, /직접 실행/);
+    assert.deepEqual(linux.w.elevated, []);
+  } finally { linux.close(); }
 });

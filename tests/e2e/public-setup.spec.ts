@@ -37,8 +37,17 @@ test("domain wizard: questions, step checks with values to copy, apply only when
   await expect(step("router")).toContainText("아래 값으로 공유기에서 직접 설정하세요");
   await expect(step("router").getByLabel("포트")).toHaveValue("80 → 80, 443 → 443 (TCP)");
 
-  // The user fixes DNS, the firewall and the router by hand.
-  await world({ dns: ["203.0.113.5"], fw: 1, reach: true });
+  // 관리자 권한으로 실행 (US2): the command is on screen first; "no" at the Windows prompt leaves the step as it was.
+  await expect(step("firewall").getByRole("button", { name: "관리자 권한으로 실행" })).toBeVisible();
+  await expect(step("firewall")).toContainText("Windows 권한 확인 창이 뜨면 ‘예’를 누르세요");
+  await step("firewall").getByRole("button", { name: "관리자 권한으로 실행" }).click();
+  await expect(step("firewall")).toContainText("실행하지 않았습니다(권한 확인에서 취소).");
+  await world({ uac: 0 });
+  await step("firewall").getByRole("button", { name: "관리자 권한으로 실행" }).click();
+  await expect(step("firewall")).toContainText("Windows 방화벽이 80·443 수신을 허용합니다.");
+
+  // The user fixes DNS and the router by hand.
+  await world({ dns: ["203.0.113.5"], reach: true });
   await page.getByRole("button", { name: "모두 다시 확인" }).click();
   await expect(step("router")).toContainText("밖에서 80 포트로 이 PC에 닿습니다", { timeout: 10000 });
   await expect(step("dns")).toContainText("완료");

@@ -80,13 +80,13 @@ export function findCloudflared(env = process.env, exists = existsSync) {
 }
 type Spawn = (cmd: string, args: string[], opts: { env: NodeJS.ProcessEnv; stdio: ["ignore", "pipe", "pipe"]; windowsHide: boolean }) => ChildProcess;
 // The token goes through the TUNNEL_TOKEN environment variable, never argv (argv is visible to other local users).
-export function startTunnel(token: string, runtime: PublicRuntime, o: { bin?: string; spawnFn?: Spawn; retryMs?: number } = {}) {
+export function startTunnel(token: string, runtime: PublicRuntime, o: { bin?: string; spawnFn?: Spawn; retryMs?: number; onRunning?: () => void } = {}) {
   let child: ChildProcess | undefined, stopped = false, delay = o.retryMs ?? 5000;
   const run = () => {
     runtime.state = "터널 연결 중";
     const c = (o.spawnFn ?? (spawn as unknown as Spawn))(o.bin ?? findCloudflared(), ["tunnel", "--no-autoupdate", "run"], { env: { ...process.env, TUNNEL_TOKEN: token }, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
     child = c;
-    c.stderr?.on("data", (d: Buffer) => { if (/Registered tunnel connection/i.test(d.toString())) { runtime.state = "실행 중"; delay = o.retryMs ?? 5000; } });
+    c.stderr?.on("data", (d: Buffer) => { if (/Registered tunnel connection/i.test(d.toString())) { if (runtime.state !== "실행 중") o.onRunning?.(); runtime.state = "실행 중"; delay = o.retryMs ?? 5000; } });
     c.on("error", (e: NodeJS.ErrnoException) => {
       runtime.state = "중지";
       runtime.detail = e.code === "ENOENT" ? "cloudflared를 찾지 못했습니다. 설치 후 앱을 다시 시작하세요(docs/SELF_HOSTING.md)." : "cloudflared 실행 실패: " + e.message;

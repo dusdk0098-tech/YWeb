@@ -25,6 +25,7 @@ import { registerWorkPlanCalculations } from "./work-plan-calculations.js";
 import { registerSiteLibrary, isLibraryUpload } from "./site-library.js";
 import { registerAiSuggest, anthropicSuggest, type AiConfig, type AiSuggest } from "./ai-suggest.js";
 import { registerPublicAccess, type PublicRuntime } from "./public-access.js";
+import { defaultSetupDeps, registerPublicSetup, type PublicSetupDeps } from "./public-setup.js";
 import { rateLimit } from "express-rate-limit";
 import { registerCostBaselines } from "./cost-baseline-routes.js";
 import { registerPpeReturns } from "./ppe-return-routes.js";
@@ -122,6 +123,7 @@ export type AppConfig = {
   publicOrigin?: string;
   trustProxy?: boolean;
   publicRuntime?: PublicRuntime;
+  publicSetup?: Partial<PublicSetupDeps>; // 외부 접속 마법사: tests replace the router, Cloudflare and OS checks
 };
 export async function createApp(db: Db, config: AppConfig) {
   if (config.secret.length < 32 || config.secret.startsWith("replace-"))
@@ -199,7 +201,9 @@ export async function createApp(db: Db, config: AppConfig) {
   if (config.publicOrigin)
     app.post(["/api/login", "/api/join"], rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, skipSuccessfulRequests: true, standardHeaders: "draft-8", legacyHeaders: false,
       message: { error: "이 주소에서 시도가 많습니다. 15분 후 다시 시도해 주세요." } }));
-  registerPublicAccess(app, db, config.publicRuntime ?? { mode: "off", state: "꺼짐" }, config.secret);
+  const publicRuntime = config.publicRuntime ?? { mode: "off", state: "꺼짐" };
+  registerPublicAccess(app, db, publicRuntime, config.secret);
+  registerPublicSetup(app, db, publicRuntime, config.secret, { ...defaultSetupDeps(Number(new URL(config.origin).port) || 80), ...config.publicSetup });
   registerTbmJoinPublic(app, db);
   registerSetup(app, db); // anonymous first-operator route, before the sign-in gate
   await registerAuthentication(app, db, () => !!config.ads);

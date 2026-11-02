@@ -10,13 +10,13 @@ const TOKEN = "synthetic-cf-api-token-ABCD";
 test("public_setup: answers, sealed Cloudflare token, checks, reset", () => {
   const db = openDatabase(":memory:");
   try {
-    assert.equal((db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, 74);
+    assert.equal((db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version, 75);
     db.prepare("INSERT INTO users VALUES(?,?,?,?)").run("u1", "op@example.test", "op", "x");
     assert.equal(readSetup(db, secret), null);
     writeSetup(db, secret, "u1", { hasDomain: true, canRouter: false, recommended: "tunnel", chosen: "tunnel", cfToken: TOKEN });
-    writeSetup(db, secret, "u1", { cfZoneId: "z1", cfAccountId: "a1", cfTunnelId: "t1" });
+    writeSetup(db, secret, "u1", { cfZoneId: "z1", cfAccountId: "a1", cfTunnelId: "t1", domain: "safety.example.test", email: "o@example.test", agreeTos: true });
     let s = readSetup(db, secret)!;
-    assert.deepEqual([s.hasDomain, s.canRouter, s.chosen, s.cfToken, s.cfHint, s.cfZoneId], [true, false, "tunnel", TOKEN, "…ABCD", "z1"]);
+    assert.deepEqual([s.hasDomain, s.canRouter, s.chosen, s.cfToken, s.cfHint, s.cfZoneId, s.domain, s.email, s.agreeTos], [true, false, "tunnel", TOKEN, "…ABCD", "z1", "safety.example.test", "o@example.test", true]);
     const raw = JSON.stringify(db.prepare("SELECT * FROM public_setup").get());
     assert.ok(!raw.includes(TOKEN), "the token is stored sealed");
     assert.equal(readSetup(db, other)!.cfToken, undefined, "another SESSION_SECRET cannot open it");

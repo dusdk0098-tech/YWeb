@@ -1,0 +1,53 @@
+import { test, expect } from "@playwright/test";
+// 외부 접속 마법사 (specs/001-easy-domain-setup US1). The server runs with TEST_PUBLIC_FAKES: router, DNS, firewall and
+// the outside test are a synthetic world this spec changes through PUT /api/test/public-state.
+test("domain wizard: questions, step checks with values to copy, apply only when every step is done", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("이메일", { exact: true }).fill("test@example.test");
+  await page.getByLabel("비밀번호", { exact: true }).fill("synthetic-e2e-password");
+  await page.getByRole("button", { name: "로그인", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "오늘", exact: true })).toBeVisible();
+  const world = async (data: object) => expect((await page.request.put("/api/test/public-state", { data })).ok()).toBe(true);
+
+  await page.getByRole("button", { name: "외부 접속 설정", exact: true }).click();
+  await page.getByRole("button", { name: "도메인 연결 시작", exact: true }).click();
+  await page.getByLabel("도메인이 있어요").check();
+  await page.getByLabel("공유기 설정을 바꿀 수 있어요").check();
+  await page.getByRole("button", { name: "다음", exact: true }).click();
+  await expect(page.getByText("추천 방식: 직접 연결 + 자동 HTTPS")).toBeVisible();
+
+  const step = (id: string) => page.locator(`#setup-${id}`);
+  await step("domain").getByLabel("도메인").fill("safety.example.test");
+  await step("domain").getByRole("button", { name: "도메인 저장" }).click();
+  await expect(step("domain")).toContainText("완료");
+  await step("cert-info").getByLabel("인증서 알림 이메일").fill("owner@example.test");
+  await step("cert-info").getByLabel(/Let's Encrypt 이용약관/).check();
+  await step("cert-info").getByRole("button", { name: "인증서 정보 저장" }).click();
+  await expect(step("cert-info")).toContainText("완료");
+
+  await page.getByRole("button", { name: "모두 다시 확인" }).click();
+  await expect(step("dns")).toContainText("아직 안 됨");
+  await expect(step("dns").getByLabel("값(공인 IP)")).toHaveValue("203.0.113.5"); // nothing to type by hand
+  await expect(step("firewall").getByLabel("명령")).toHaveValue(/^New-NetFirewallRule/);
+  await expect(step("router")).toContainText("밖에서 80 포트로 접속이 거부됐습니다", { timeout: 10000 });
+  await expect(page.getByRole("button", { name: "설정 적용" })).toBeDisabled();
+
+  // The router has no UPnP: the step stays "아직 안 됨" and the manual values stay where they were.
+  await step("router").getByRole("button", { name: "공유기에 80·443 열기" }).click();
+  await expect(step("router")).toContainText("아래 값으로 공유기에서 직접 설정하세요");
+  await expect(step("router").getByLabel("포트")).toHaveValue("80 → 80, 443 → 443 (TCP)");
+
+  // The user fixes DNS, the firewall and the router by hand.
+  await world({ dns: ["203.0.113.5"], fw: 1, reach: true });
+  await page.getByRole("button", { name: "모두 다시 확인" }).click();
+  await expect(step("router")).toContainText("밖에서 80 포트로 이 PC에 닿습니다", { timeout: 10000 });
+  await expect(step("dns")).toContainText("완료");
+  await expect(page.getByRole("button", { name: "설정 적용" })).toBeEnabled();
+  await page.getByRole("button", { name: "설정 적용" }).click();
+  await expect(page.getByText("저장했습니다. 앱을 다시 시작하면 적용됩니다.")).toBeVisible();
+  await expect(page.getByText("저장한 설정이 아직 적용되지 않았습니다. 앱을 다시 시작하세요.")).toBeVisible();
+
+  page.once("dialog", (d) => void d.accept());
+  await page.getByRole("button", { name: "처음부터" }).click();
+  await expect(page.getByRole("button", { name: "도메인 연결 시작", exact: true })).toBeVisible();
+});

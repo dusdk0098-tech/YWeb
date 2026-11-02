@@ -8,6 +8,7 @@ test("외부 접속 설정: save tunnel settings on this PC, applied at next sta
   await expect(page.getByRole("heading", { name: "오늘", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "외부 접속 설정", exact: true }).click();
   await expect(page.getByRole("status").first()).toContainText("꺼짐 (이 PC에서만 접속)");
+  await page.getByText("고급: 직접 입력").click(); // the manual form sits under the wizard
   await page.getByLabel("방식").selectOption({ label: "Cloudflare Tunnel" });
   await page.getByLabel("도메인").fill("safety.example.test");
   const token = "eyJ-synthetic-e2e-tunnel-" + "x".repeat(30) + "QRST";

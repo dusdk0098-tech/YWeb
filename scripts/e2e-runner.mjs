@@ -87,7 +87,8 @@ for (const [index, spec] of files.entries()) {
   const result = spawnSync(
     process.execPath,
     [cli, "test", pattern, "--output", output, ...forwarded],
-    { cwd: root, env: process.env, stdio: "inherit", shell: false },
+    // The 외부 접속 마법사 spec runs against a synthetic router/DNS world (scripts/e2e-server.ts).
+    { cwd: root, env: spec.endsWith("public-setup.spec.ts") ? { ...process.env, TEST_PUBLIC_FAKES: "true" } : process.env, stdio: "inherit", shell: false },
   );
   if (result.error) {
     console.error(`Cannot start Playwright: ${result.error.message}`);

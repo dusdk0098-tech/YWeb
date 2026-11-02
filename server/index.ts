@@ -9,6 +9,7 @@ import { aiConfigFromEnv } from "./ai-suggest.js";
 import { DEFAULT_ADS_FEED } from "./ads.js";
 import { publicOrigin, readPublicSettings, type PublicRuntime } from "./public-access.js";
 import { startDirect, startTunnel } from "./public-serve.js";
+import { selfCheck } from "./public-checks.js";
 if (existsSync(".env")) process.loadEnvFile(".env");
 // SEC-LOCAL-01 B안: files this process creates (DB WAL/SHM) are owner-only on POSIX; Windows uses ACLs instead.
 if (process.platform !== "win32") process.umask(0o077);
@@ -45,13 +46,15 @@ app.get("/{*path}", (_req, res) => res.sendFile(resolve("dist/index.html")));
 const server = app.listen(port, "127.0.0.1", () =>
   console.log(`PEDIT local foundation: http://127.0.0.1:${port}`),
 );
+// 적용 확인 shown in the wizard: open our own public address once it is being served.
+async function verify(mode: "direct" | "tunnel") { if (runtime.origin) runtime.selfCheck = await selfCheck(runtime.origin, mode); }
 // A failure here leaves the local app running; the reason is shown on the 외부 접속 설정 screen and in this console.
 let publicServer: { close: () => void } | undefined;
 const fail = (e: Error) => { Object.assign(runtime, { state: "중지", detail: e.message }); console.error("외부 접속 시작 실패:", e.message); };
 if (runtime.mode === "direct")
   startDirect(app, pub, runtime, { dir: resolve(process.env.TLS_DIR || "./data/tls"), httpPort: Number(process.env.PUBLIC_HTTP_PORT || 80), httpsPort: Number(process.env.PUBLIC_HTTPS_PORT || 443) })
-    .then((s) => { publicServer = s; console.log("외부 접속:", runtime.detail); }).catch(fail);
-if (runtime.mode === "tunnel" && pub.tunnelToken) publicServer = startTunnel(pub.tunnelToken, runtime);
+    .then((s) => { publicServer = s; console.log("외부 접속:", runtime.detail); return verify("direct"); }).catch(fail);
+if (runtime.mode === "tunnel" && pub.tunnelToken) publicServer = startTunnel(pub.tunnelToken, runtime, { onRunning: () => void verify("tunnel") });
 const shutdown = (code: number) =>
   server.close(() => {
     publicServer?.close();

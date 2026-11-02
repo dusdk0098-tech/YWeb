@@ -11,7 +11,7 @@ import type { PublicRuntime, PublicSettings } from "./public-access.js";
 // sockets) is injectable so the logic is testable without a real domain.
 export const RENEW_DAYS = 30;
 type Cert = { cert: string; key: string; notAfter: Date };
-type Issue = (domain: string, email: string, dir: string, challenges: Map<string, string>) => Promise<{ cert: string; key: string }>;
+export type Issue = (domain: string, email: string, dir: string, challenges: Map<string, string>) => Promise<{ cert: string; key: string }>;
 // HTTP-01 challenge answers live only in memory, for the few seconds an order is validated.
 export function redirectApp(domain: string, challenges: Map<string, string>, httpsPort: number) {
   const app = express();
@@ -24,19 +24,22 @@ export function redirectApp(domain: string, challenges: Map<string, string>, htt
   app.use((req, res) => res.redirect(301, `https://${domain}${httpsPort === 443 ? "" : ":" + httpsPort}${req.originalUrl}`));
   return app;
 }
-// Let's Encrypt production, http-01. The account key is kept so renewals reuse the same account.
-export const letsEncryptIssue: Issue = async (domain, email, dir, challenges) => {
-  const accountPath = join(dir, "account.key");
+// http-01 against one ACME directory. The account key is kept (one file per directory) so renewals reuse the same account;
+// the wizard's reachability test uses the staging directory with its own key (public-checks.ts).
+export const acmeIssue = (directoryUrl: string, accountFile: string): Issue => async (domain, email, dir, challenges) => {
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const accountPath = join(dir, accountFile);
   if (!existsSync(accountPath)) writeFileSync(accountPath, await acme.crypto.createPrivateKey(), { mode: 0o600 });
-  const client = new acme.Client({ directoryUrl: acme.directory.letsencrypt.production, accountKey: readFileSync(accountPath) });
+  const client = new acme.Client({ directoryUrl, accountKey: readFileSync(accountPath) });
   const [key, csr] = await acme.crypto.createCsr({ commonName: domain });
   const cert = await client.auto({
-    csr, email, termsOfServiceAgreed: true, challengePriority: ["http-01"],
+    csr, email: email || undefined, termsOfServiceAgreed: true, challengePriority: ["http-01"],
     challengeCreateFn: async (_a, challenge, keyAuthorization) => { challenges.set(challenge.token, keyAuthorization); },
     challengeRemoveFn: async (_a, challenge) => { challenges.delete(challenge.token); },
   });
   return { cert, key: key.toString() };
 };
+export const letsEncryptIssue: Issue = acmeIssue(acme.directory.letsencrypt.production, "account.key");
 const notAfter = (pem: string) => acme.crypto.readCertificateInfo(pem).notAfter;
 // Reuse the stored certificate until RENEW_DAYS before expiry (or when it was issued for another domain), then issue a new one.
 export async function ensureCertificate(o: { domain: string; email: string; dir: string; challenges: Map<string, string>; issue?: Issue; readNotAfter?: (pem: string) => Date; now?: Date }): Promise<Cert & { renewed: boolean }> {

@@ -30,6 +30,13 @@ export function grantsOf(db: Db, user: string): Grants {
   const g = db.prepare("SELECT operator,issuer FROM account_grants WHERE user_id=?").get(user) as { operator: number; issuer: number } | undefined;
   return { operator: !!g?.operator, issuer: !!g?.issuer };
 }
+// Install-wide settings that reach outside this PC (외부 접속 마법사): an operator, in a browser on the install PC.
+export function requireLocalOperator(db: Db, req: Request) {
+  const user = req.session.userId;
+  if (!user) throw new HttpError(401, "로그인이 필요합니다.");
+  if (!isLocalRequest(req) || !grantsOf(db, user).operator) throw new HttpError(403, "외부 접속 설정은 이 앱이 설치된 PC에서 운영자만 바꿀 수 있습니다.");
+  return user;
+}
 const hasOperator = (db: Db) => !!db.prepare("SELECT 1 FROM account_grants WHERE operator=1 LIMIT 1").get();
 const NOT_LOCAL = "계정 발급·운영자 기능은 이 앱이 설치된 PC에서 직접 접속했을 때만 쓸 수 있습니다.";
 function event(db: Db, kind: string, user: string, actor: string | null, site: string | null) {

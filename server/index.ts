@@ -27,7 +27,7 @@ for (const w of localPermissionWarnings) console.warn("SEC-LOCAL-01 경고:", w)
 const secret = process.env.SESSION_SECRET || "";
 // Self-hosting settings are read once here; changing them on the settings screen takes effect at the next start.
 const pub = readPublicSettings(db, secret);
-const runtime: PublicRuntime = { mode: pub.mode, origin: publicOrigin(pub), state: pub.mode === "off" ? "꺼짐" : "시작 중" };
+const runtime: PublicRuntime = { mode: pub.mode, origin: publicOrigin(pub), state: pub.mode === "off" ? "꺼짐" : "시작 중", launcher: process.env.YWEB_LAUNCHER === "1" };
 if (pub.mode === "tunnel" && !pub.tunnelToken) Object.assign(runtime, { mode: "off", origin: undefined, state: "꺼짐", detail: "저장된 터널 토큰을 읽을 수 없습니다(SESSION_SECRET 변경). 토큰을 다시 입력하세요." });
 const app = await createApp(db, {
   secret,
@@ -52,11 +52,12 @@ if (runtime.mode === "direct")
   startDirect(app, pub, runtime, { dir: resolve(process.env.TLS_DIR || "./data/tls"), httpPort: Number(process.env.PUBLIC_HTTP_PORT || 80), httpsPort: Number(process.env.PUBLIC_HTTPS_PORT || 443) })
     .then((s) => { publicServer = s; console.log("외부 접속:", runtime.detail); }).catch(fail);
 if (runtime.mode === "tunnel" && pub.tunnelToken) publicServer = startTunnel(pub.tunnelToken, runtime);
-for (const signal of ["SIGINT", "SIGTERM"])
-  process.on(signal, () =>
-    server.close(() => {
-      publicServer?.close();
-      db.close();
-      process.exit(0);
-    }),
-  );
+const shutdown = (code: number) =>
+  server.close(() => {
+    publicServer?.close();
+    db.close();
+    process.exit(code);
+  });
+for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => shutdown(0));
+// 75 asks start.cmd (scripts/start-windows.ps1) to start the app again, so new 외부 접속 settings apply with one button.
+app.locals.requestRestart = () => shutdown(75);

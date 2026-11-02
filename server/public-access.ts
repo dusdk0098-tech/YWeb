@@ -1,9 +1,9 @@
 import type { Express, Request } from "express";
-import { promises as dns } from "node:dns";
 import { z } from "zod";
 import type { Db } from "./db.js";
 import { HttpError } from "./site-operations.js";
 import { isLocalRequest, openSecret, sealSecret } from "./local-admin.js";
+import { resolveHost } from "./public-checks.js";
 // Self-hosting (사용자 결정 2026-10-31): the installed PC serves the app to phones and other PCs under a domain the owner bought.
 // "direct" = this PC answers on 80/443 and gets/renews a Let's Encrypt certificate itself (owner points DNS + forwards ports);
 // "tunnel" = Cloudflare Tunnel (cloudflared, token from the Cloudflare dashboard; no port forwarding, DNS set by Cloudflare).
@@ -11,7 +11,8 @@ import { isLocalRequest, openSecret, sealSecret } from "./local-admin.js";
 export type PublicMode = "off" | "direct" | "tunnel";
 export type PublicSettings = { mode: PublicMode; domain: string; email: string; tosAgreedAt: string | null; tunnelToken?: string; tunnelHint: string | null };
 // What the running process actually did with the settings it started with (shown on the settings screen).
-export type PublicRuntime = { mode: PublicMode; origin?: string; state: string; detail?: string; certNotAfter?: string };
+// launcher: started by start.cmd, which restarts the app when it exits with code 75 (the wizard's "다시 시작해 적용").
+export type PublicRuntime = { mode: PublicMode; origin?: string; state: string; detail?: string; certNotAfter?: string; launcher?: boolean };
 export function migratePublicAccess(db: Db) {
   db.exec(`
  CREATE TABLE IF NOT EXISTS public_access(id INTEGER PRIMARY KEY CHECK(id=1),mode TEXT NOT NULL CHECK(mode IN ('off','direct','tunnel')),domain TEXT NOT NULL,acme_email TEXT NOT NULL,
@@ -45,10 +46,7 @@ export function registerPublicAccess(app: Express, db: Db, runtime: PublicRuntim
       signedIn(req);
       const s = readPublicSettings(db, secret), local = isLocalRequest(req);
       let resolved: string[] | null = null;
-      if (local && s.domain) resolved = await Promise.race([
-        Promise.allSettled([dns.resolve4(s.domain), dns.resolve6(s.domain)]).then((rs) => rs.flatMap((r) => (r.status === "fulfilled" ? r.value : []))),
-        new Promise<string[]>((ok) => setTimeout(() => ok([]), 3000)),
-      ]);
+      if (local && s.domain) resolved = await resolveHost(s.domain);
       res.json({
         canManage: local, runtime,
         settings: local ? { mode: s.mode, domain: s.domain, email: s.email, tosAgreed: !!s.tosAgreedAt, tunnelHint: s.tunnelHint } : null,

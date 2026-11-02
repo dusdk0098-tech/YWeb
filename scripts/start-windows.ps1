@@ -56,5 +56,11 @@ if ($users -eq '0') {
 $port = node --no-warnings -e "process.loadEnvFile('.env');console.log(process.env.PORT||3000)"
 Write-Host "[4/4] 서버를 시작합니다. 이 창을 닫으면 서버도 꺼집니다. 이 PC 주소: http://127.0.0.1:$port"
 Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile', '-Command', "Start-Sleep -Seconds 3; Start-Process 'http://127.0.0.1:$port'"
-npm start
-if ($LASTEXITCODE -ne 0) { Fail '서버가 오류로 종료되었습니다. 위 메시지를 확인하세요.' }
+# Exit code 75 = the app asked to be started again (외부 접속 설정의 "다시 시작해 적용"); the app shows that button only under this launcher.
+$env:YWEB_LAUNCHER = '1'
+do {
+  npm start
+  $code = $LASTEXITCODE
+  if ($code -eq 75) { Write-Host '새 설정을 적용하려고 서버를 다시 시작합니다...' }
+} while ($code -eq 75)
+if ($code -ne 0) { Fail '서버가 오류로 종료되었습니다. 위 메시지를 확인하세요.' }

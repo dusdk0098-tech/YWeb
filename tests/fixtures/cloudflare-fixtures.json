@@ -1,0 +1,99 @@
+{
+  "verify": {
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": {
+      "id": "ed17574386854bf78a67040be0a770b0",
+      "status": "active"
+    }
+  },
+  "zones": {
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": [
+      {
+        "id": "023e105f4ecef8ad9ca31a8372d0c353",
+        "name": "example.test",
+        "status": "active",
+        "account": {
+          "id": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          "name": "Synthetic"
+        }
+      }
+    ],
+    "result_info": {
+      "count": 1,
+      "page": 1,
+      "per_page": 20,
+      "total_count": 1
+    }
+  },
+  "tunnelList": {
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": []
+  },
+  "tunnelCreate": {
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": {
+      "id": "f70ff985-a4ef-4643-bbbc-4a0ed4fc8415",
+      "name": "yweb-safety.example.test",
+      "status": "inactive",
+      "config_src": "cloudflare"
+    }
+  },
+  "config": {
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": {
+      "tunnel_id": "f70ff985-a4ef-4643-bbbc-4a0ed4fc8415",
+      "version": 1,
+      "source": "cloudflare",
+      "config": {
+        "ingress": []
+      }
+    }
+  },
+  "token": {
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": "eyJhIjoiNWFiNGU5Z-synthetic"
+  },
+  "dnsList": {
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": []
+  },
+  "dnsCreate": {
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": {
+      "id": "372e67954025e0ba6aaa6d586b9e0b59",
+      "type": "CNAME",
+      "name": "safety.example.test",
+      "content": "f70ff985-a4ef-4643-bbbc-4a0ed4fc8415.cfargotunnel.com",
+      "proxied": true,
+      "ttl": 1
+    }
+  },
+  "invalidToken": {
+    "success": false,
+    "errors": [
+      {
+        "code": 1000,
+        "message": "Invalid API Token"
+      }
+    ],
+    "messages": [],
+    "result": null
+  }
+}

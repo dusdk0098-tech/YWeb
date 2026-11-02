@@ -36,6 +36,7 @@ export function SetupStep({ step, no, busy, onCheck, onRun, children }: { step: 
             {CHECKABLE.has(step.id) && <button type="button" className="secondary" disabled={busy || c?.status === "running"} onClick={() => onCheck(step.id)}>다시 확인</button>}
           </div>
         )}
+        {step.action?.startsWith("uac-") && <p className="muted">위 명령 하나만 실행합니다. Windows 권한 확인 창이 뜨면 ‘예’를 누르세요{step.id === "cloudflared" ? "(설치는 1~2분 걸릴 수 있습니다)" : ""}.</p>}
       </div>
     </section>
   );

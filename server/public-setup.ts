@@ -5,7 +5,7 @@ import type { Db } from "./db.js";
 import { HttpError } from "./site-operations.js";
 import { requireLocalOperator } from "./accounts.js";
 import { domainSchema, savePublicSettings, type PublicRuntime } from "./public-access.js";
-import { checkCloudflared, checkDns, checkFirewall, FIREWALL_RULE, networkProfile, PUBLIC_PROFILE_NOTE, publicIp, reachabilityTest, resolveHost, runCommand, type Listen, type Resolve, type Run } from "./public-checks.js";
+import { checkCloudflared, checkDns, checkFirewall, FIREWALL_RULE, networkProfile, PUBLIC_PROFILE_NOTE, publicIp, reachabilityTest, resolveHost, runCommand, runElevated, UAC_CANCELLED, type Listen, type Resolve, type Run } from "./public-checks.js";
 import type { Issue } from "./public-serve.js";
 import { CF_TOKEN_PERMISSIONS, CloudflareError, createCloudflare, type Cloudflare } from "./cloudflare-api.js";
 import { createUpnp, localAddressFor, type Upnp } from "./upnp.js";
@@ -62,7 +62,10 @@ function stepView(id: string, s: Setup, mode: SetupMode, deps: PublicSetupDeps):
       action: s.cfZoneId ? "cf-dns" : null, actionLabel: s.cfZoneId ? "A 레코드 만들기" : null,
       copy: [{ label: "이름", value: s.domain }, { label: "값(공인 IP)", value: s.checks.dns?.expected ?? "‘다시 확인’을 누르면 표시됩니다" }],
     };
-    case "firewall": return { ...base, title: "Windows 방화벽", help: win ? "80·443 수신을 허용합니다. 아래 명령을 관리자 PowerShell에서 실행하세요." : "이 PC의 방화벽에서 TCP 80·443 수신을 허용하세요.", command: win ? ELEVATED.firewall : null };
+    case "firewall": return {
+      ...base, title: "Windows 방화벽", command: win ? ELEVATED.firewall : null, action: win ? "uac-firewall" : null, actionLabel: win ? "관리자 권한으로 실행" : null,
+      help: win ? "80·443 수신을 허용합니다. ‘관리자 권한으로 실행’을 누르거나, 아래 명령을 관리자 PowerShell에서 직접 실행하세요." : "이 PC의 방화벽에서 TCP 80·443 수신을 허용하세요.",
+    };
     case "router": return {
       ...base, title: "공유기 포트포워딩", help: "공유기 관리 화면에서 외부 TCP 80·443을 이 PC의 같은 포트로 보내세요. 끝나면 ‘다시 확인’으로 밖에서 닿는지 시험합니다.",
       action: "upnp", actionLabel: "공유기에 80·443 열기",
@@ -70,7 +73,10 @@ function stepView(id: string, s: Setup, mode: SetupMode, deps: PublicSetupDeps):
     };
     case "cert-info": return { ...base, title: "인증서 정보", help: "인증서 만료 알림을 받을 이메일과 Let's Encrypt 이용약관 동의가 필요합니다." };
     case "cf-provision": return { ...base, title: "Cloudflare 터널·DNS", help: "앱이 Cloudflare에 터널을 만들고 이 도메인을 이 PC로 연결합니다. 접속 내용은 Cloudflare를 거치며 데이터는 이 PC에만 저장됩니다.", action: "cf-provision", actionLabel: "Cloudflare에 만들기", copy: [{ label: "서비스 주소", value: `http://127.0.0.1:${deps.port}` }] };
-    case "cloudflared": return { ...base, title: "cloudflared 설치", help: win ? "이 PC에 cloudflared를 설치합니다. 아래 명령을 PowerShell에서 실행하세요." : "이 PC에 cloudflared를 설치하세요.", command: win ? ELEVATED.cloudflared.split(" --accept")[0] : null };
+    case "cloudflared": return {
+      ...base, title: "cloudflared 설치", command: win ? ELEVATED.cloudflared : null, action: win ? "uac-cloudflared" : null, actionLabel: win ? "관리자 권한으로 실행" : null,
+      help: win ? "이 PC에 cloudflared를 설치합니다. ‘관리자 권한으로 실행’을 누르거나, 아래 명령을 PowerShell에서 직접 실행하세요." : "이 PC에 cloudflared를 설치하세요.",
+    };
   }
   throw new Error("unknown step " + id);
 }
@@ -163,8 +169,19 @@ export function registerPublicSetup(app: Express, db: Db, runtime: PublicRuntime
     res.json(view());
   }));
   app.post("/api/public-setup/run", route(async (req, res, user) => {
-    const { step, overwrite } = z.object({ step: z.enum(["router", "dns", "cf-provision"]), overwrite: z.boolean().optional() }).strict().parse(req.body);
+    const { step, overwrite } = z.object({ step: z.enum(["router", "dns", "cf-provision", "firewall", "cloudflared"]), overwrite: z.boolean().optional() }).strict().parse(req.body);
     const s = needDomain(setup());
+    if (step === "firewall" || step === "cloudflared") {
+      // Only the two fixed commands, shown on screen first; Windows asks the user before either runs.
+      if (deps.platform !== "win32") throw new HttpError(400, "이 OS에서는 명령을 복사해 직접 실행하세요.");
+      const code = await runElevated(ELEVATED[step], deps.run);
+      if (code === UAC_CANCELLED) mergeCheck(db, secret, user, step, todo("실행하지 않았습니다(권한 확인에서 취소)."));
+      else {
+        await check(step, s, user); // "already installed" also ends here as 완료
+        if (code !== 0 && setup()!.checks[step]?.status !== "ok") mergeCheck(db, secret, user, step, todo(`명령이 실패했습니다(코드 ${code}). 아래 명령을 관리자 PowerShell에서 직접 실행하세요.`));
+      }
+      return res.json(view());
+    }
     if (step === "router") {
       const results = [await deps.upnp.addPortMapping({ externalPort: 80, internalPort: 80 }), await deps.upnp.addPortMapping({ externalPort: 443, internalPort: 443 })];
       const failed = results.find((r) => !r.ok);

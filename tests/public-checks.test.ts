@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { checkCloudflared, checkDns, checkFirewall, networkProfile, publicIp, reachabilityTest, reachReason, resetReachCache, type Run } from "../server/public-checks.js";
+import { checkCloudflared, checkDns, checkFirewall, elevatedScript, runElevated, networkProfile, publicIp, reachabilityTest, reachReason, resetReachCache, type Run } from "../server/public-checks.js";
 // 외부 접속 마법사 점검 (specs/001-easy-domain-setup research R3·R4·R9): every outside effect is a fake.
 const now = () => new Date("2026-11-02T00:00:00Z");
 const run = (code: number, stdout = "", missing = false): Run => async () => ({ code, stdout, missing });
@@ -52,4 +52,15 @@ test("checks: reachability by a staging validation, with a temporary port-80 lis
   assert.equal(reachReason("DNS problem: NXDOMAIN looking up A for a.example.test").status, "todo");
   assert.match(reachReason("Timeout during connect (likely firewall problem)").reason, /닿지 않습니다/);
   assert.equal(reachReason("urn:ietf:params:acme:error:rateLimited: too many failed authorizations").status, "unknown");
+});
+test("checks: elevated command goes base64 into a UAC wrapper that turns a declined prompt into 1223", async () => {
+  const cmd = "New-NetFirewallRule -DisplayName 'Y웹 HTTP/HTTPS' -Direction Inbound -Protocol TCP -LocalPort 80,443 -Action Allow";
+  const script = elevatedScript(cmd), b64 = /'-EncodedCommand','([A-Za-z0-9+/=]+)'/.exec(script)![1];
+  assert.equal(Buffer.from(b64, "base64").toString("utf16le"), cmd);
+  assert.match(script, /^try \{ \$p = Start-Process powershell -Verb RunAs -Wait -PassThru /);
+  assert.match(script, /catch \{ exit 1223 \}$/);
+  assert.ok(!script.includes("Y웹"), "no quoting of the command itself");
+  const seen: { cmd: string; args: string[]; timeout?: number }[] = [];
+  assert.equal(await runElevated(cmd, async (c, args, timeout) => { seen.push({ cmd: c, args, timeout }); return { code: 1223, stdout: "" }; }), 1223);
+  assert.deepEqual([seen[0].cmd, seen[0].args.slice(0, 2), seen[0].timeout! >= 600_000], ["powershell", ["-NoProfile", "-Command"], true]);
 });

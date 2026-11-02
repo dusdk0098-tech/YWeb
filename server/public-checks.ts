@@ -8,9 +8,9 @@ import type { Upnp } from "./upnp.js";
 // 외부 접속 마법사의 점검 (specs/001-easy-domain-setup/research.md R3·R4·R9, contracts/external-fixtures.md §3·§4).
 // Each check returns a CheckResult with one Korean sentence; nothing here throws for an ordinary "not yet".
 // Everything that touches the outside world is passed in, so tests never need a router, admin rights or the internet.
-export type Run = (cmd: string, args: string[]) => Promise<{ code: number; stdout: string; missing?: boolean }>;
-export const runCommand: Run = (cmd, args) => new Promise((resolve) => {
-  execFile(cmd, args, { windowsHide: true, timeout: 20_000 }, (err, stdout) => {
+export type Run = (cmd: string, args: string[], timeoutMs?: number) => Promise<{ code: number; stdout: string; missing?: boolean }>;
+export const runCommand: Run = (cmd, args, timeoutMs = 20_000) => new Promise((resolve) => {
+  execFile(cmd, args, { windowsHide: true, timeout: timeoutMs }, (err, stdout) => {
     const e = err as (NodeJS.ErrnoException & { code?: number | string }) | null;
     resolve({ code: e ? (typeof e.code === "number" ? e.code : 1) : 0, stdout: String(stdout), missing: e?.code === "ENOENT" });
   });
@@ -116,4 +116,13 @@ export async function selfCheck(origin: string, mode: "direct" | "tunnel", o: { 
       ? { at, ok: null, detail: "이 PC에서 자기 도메인으로 접속하지 못했습니다. 공유기가 내부 접속을 막는 경우가 많으니 휴대폰(LTE)으로 확인하세요." }
       : { at, ok: false, detail: `${origin} 에 접속하지 못했습니다(${(e as Error).message}). 터널 상태를 확인하세요.` };
   }
+}
+// 관리자 권한으로 실행 (research R4, contracts/external-fixtures.md §3). Windows asks the user (UAC) before the one fixed
+// command runs; the command travels base64-encoded so nothing in it needs quoting. A declined prompt throws inside
+// Start-Process, which the wrapper turns into 1223 (ERROR_CANCELLED). Installing can take minutes, hence the long wait.
+export const UAC_CANCELLED = 1223;
+export const elevatedScript = (command: string) =>
+  `try { $p = Start-Process powershell -Verb RunAs -Wait -PassThru -ArgumentList '-NoProfile','-EncodedCommand','${Buffer.from(command, "utf16le").toString("base64")}'; exit $p.ExitCode } catch { exit ${UAC_CANCELLED} }`;
+export async function runElevated(command: string, run: Run = runCommand) {
+  return (await run("powershell", ["-NoProfile", "-Command", elevatedScript(command)], 15 * 60_000)).code;
 }

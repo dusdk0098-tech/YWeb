@@ -4,6 +4,7 @@ import type { Db } from "./db.js";
 import { HttpError } from "./site-operations.js";
 import { isLocalRequest, openSecret, sealSecret } from "./local-admin.js";
 import { resolveHost } from "./public-checks.js";
+import { grantsOf } from "./accounts.js";
 // Self-hosting (사용자 결정 2026-10-31): the installed PC serves the app to phones and other PCs under a domain the owner bought.
 // "direct" = this PC answers on 80/443 and gets/renews a Let's Encrypt certificate itself (owner points DNS + forwards ports);
 // "tunnel" = Cloudflare Tunnel (cloudflared, token from the Cloudflare dashboard; no port forwarding, DNS set by Cloudflare).
@@ -12,7 +13,8 @@ export type PublicMode = "off" | "direct" | "tunnel";
 export type PublicSettings = { mode: PublicMode; domain: string; email: string; tosAgreedAt: string | null; tunnelToken?: string; tunnelHint: string | null };
 // What the running process actually did with the settings it started with (shown on the settings screen).
 // launcher: started by start.cmd, which restarts the app when it exits with code 75 (the wizard's "다시 시작해 적용").
-export type PublicRuntime = { mode: PublicMode; origin?: string; state: string; detail?: string; certNotAfter?: string; launcher?: boolean };
+// selfCheck: once running, this PC opened its own public address (ok null = could not tell, e.g. the router blocks loopback).
+export type PublicRuntime = { mode: PublicMode; origin?: string; state: string; detail?: string; certNotAfter?: string; launcher?: boolean; selfCheck?: { at: string; ok: boolean | null; detail: string } };
 export function migratePublicAccess(db: Db) {
   db.exec(`
  CREATE TABLE IF NOT EXISTS public_access(id INTEGER PRIMARY KEY CHECK(id=1),mode TEXT NOT NULL CHECK(mode IN ('off','direct','tunnel')),domain TEXT NOT NULL,acme_email TEXT NOT NULL,
@@ -35,6 +37,19 @@ const input = z.object({
   mode: z.enum(["off", "direct", "tunnel"]), domain: z.union([z.literal(""), domainSchema]),
   email: z.union([z.literal(""), z.email().max(254)]), agreeTos: z.boolean(), tunnelToken: z.string().trim().max(4000),
 }).strict();
+// Validates and stores the settings applied at the next start (the 외부 접속 설정 form and the wizard's 적용 both use this).
+export function savePublicSettings(db: Db, secret: string, userId: string, body: unknown) {
+  const v = input.parse(body), old = readPublicSettings(db, secret);
+  if (v.mode !== "off" && !v.domain) throw new HttpError(400, "도메인을 입력하세요.");
+  if (v.mode === "direct" && (!v.email || !v.agreeTos)) throw new HttpError(400, "직접 연결은 인증서 발급용 이메일과 Let's Encrypt 이용약관 동의가 필요합니다.");
+  if (v.mode === "tunnel" && !v.tunnelToken && !old.tunnelToken) throw new HttpError(400, "Cloudflare 터널 토큰을 입력하세요.");
+  const token = v.tunnelToken ? sealSecret(secret, v.tunnelToken) : null;
+  db.prepare(`INSERT INTO public_access VALUES(1,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET mode=excluded.mode,domain=excluded.domain,acme_email=excluded.acme_email,
+    tos_agreed_at=excluded.tos_agreed_at,tunnel_iv=coalesce(excluded.tunnel_iv,tunnel_iv),tunnel_tag=coalesce(excluded.tunnel_tag,tunnel_tag),
+    tunnel_cipher=coalesce(excluded.tunnel_cipher,tunnel_cipher),tunnel_hint=coalesce(excluded.tunnel_hint,tunnel_hint),updated_by=excluded.updated_by,updated_at=excluded.updated_at`)
+    .run(v.mode, v.domain, v.email, v.agreeTos ? (old.tosAgreedAt ?? new Date().toISOString()) : null, token?.iv ?? null, token?.tag ?? null, token?.cipher ?? null,
+      v.tunnelToken ? "…" + v.tunnelToken.slice(-4) : null, userId, new Date().toISOString());
+}
 export function registerPublicAccess(app: Express, db: Db, runtime: PublicRuntime, secret: string) {
   const signedIn = (req: Request) => { if (!req.session.userId) throw new HttpError(401, "로그인이 필요합니다."); return req.session.userId; };
   // Any signed-in user: where phones should open links (TBM QR). Uses what is running now, not unsaved settings.
@@ -48,7 +63,7 @@ export function registerPublicAccess(app: Express, db: Db, runtime: PublicRuntim
       let resolved: string[] | null = null;
       if (local && s.domain) resolved = await resolveHost(s.domain);
       res.json({
-        canManage: local, runtime,
+        canManage: local, operator: local && grantsOf(db, req.session.userId!).operator, runtime,
         settings: local ? { mode: s.mode, domain: s.domain, email: s.email, tosAgreed: !!s.tosAgreedAt, tunnelHint: s.tunnelHint } : null,
         restartNeeded: (publicOrigin(s) ?? null) !== (runtime.origin ?? null) || s.mode !== runtime.mode,
         dns: resolved,
@@ -59,16 +74,7 @@ export function registerPublicAccess(app: Express, db: Db, runtime: PublicRuntim
     try {
       const userId = signedIn(req);
       if (!isLocalRequest(req)) throw new HttpError(403, "외부 접속 설정은 이 앱이 설치된 PC에서 직접 접속했을 때만 바꿀 수 있습니다.");
-      const v = input.parse(req.body), old = readPublicSettings(db, secret);
-      if (v.mode !== "off" && !v.domain) throw new HttpError(400, "도메인을 입력하세요.");
-      if (v.mode === "direct" && (!v.email || !v.agreeTos)) throw new HttpError(400, "직접 연결은 인증서 발급용 이메일과 Let's Encrypt 이용약관 동의가 필요합니다.");
-      if (v.mode === "tunnel" && !v.tunnelToken && !old.tunnelToken) throw new HttpError(400, "Cloudflare 터널 토큰을 입력하세요.");
-      const token = v.tunnelToken ? sealSecret(secret, v.tunnelToken) : null;
-      db.prepare(`INSERT INTO public_access VALUES(1,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET mode=excluded.mode,domain=excluded.domain,acme_email=excluded.acme_email,
-        tos_agreed_at=excluded.tos_agreed_at,tunnel_iv=coalesce(excluded.tunnel_iv,tunnel_iv),tunnel_tag=coalesce(excluded.tunnel_tag,tunnel_tag),
-        tunnel_cipher=coalesce(excluded.tunnel_cipher,tunnel_cipher),tunnel_hint=coalesce(excluded.tunnel_hint,tunnel_hint),updated_by=excluded.updated_by,updated_at=excluded.updated_at`)
-        .run(v.mode, v.domain, v.email, v.agreeTos ? (old.tosAgreedAt ?? new Date().toISOString()) : null, token?.iv ?? null, token?.tag ?? null, token?.cipher ?? null,
-          v.tunnelToken ? "…" + v.tunnelToken.slice(-4) : null, userId, new Date().toISOString());
+      savePublicSettings(db, secret, userId, req.body);
       res.json({ ok: true, restartNeeded: true });
     } catch (err) { next(err); }
   });

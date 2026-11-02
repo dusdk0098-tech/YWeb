@@ -84,9 +84,9 @@ export function reachReason(message: string): { status: CheckResult["status"]; r
   if (/Timeout|timed out|firewall/i.test(message)) return { status: "todo", reason: "밖에서 80 포트에 닿지 않습니다. 공유기 포트포워딩과 Windows 방화벽을 확인하세요." };
   return { status: "todo", reason: "외부 도달 시험에 실패했습니다: " + message.split("\n")[0].slice(0, 200) };
 }
-export async function reachabilityTest(o: { domain: string; dir: string; port?: number; issue?: Issue; listen?: Listen; now?: () => Date }): Promise<CheckResult> {
+export async function reachabilityTest(o: { domain: string; dir: string; port?: number; issue?: Issue; listen?: Listen; now?: () => Date; cooldownMs?: number }): Promise<CheckResult> {
   const now = o.now ?? (() => new Date()), t = now().getTime(), cached = lastReach.get(o.domain);
-  if (cached && t - cached.t < REACH_COOLDOWN_MS) return cached.result;
+  if (cached && t - cached.t < (o.cooldownMs ?? REACH_COOLDOWN_MS)) return cached.result;
   const challenges = new Map<string, string>();
   let close: (() => void) | undefined, r: CheckResult;
   try {
@@ -103,3 +103,17 @@ export async function reachabilityTest(o: { domain: string; dir: string; port?: 
   return r;
 }
 export const resetReachCache = () => lastReach.clear();
+// 적용 확인: after the app starts serving its domain, open it once from this PC. For a direct connection a failure is
+// "확인 불가" (many routers do not let a LAN PC reach its own public address); a tunnel always goes through Cloudflare.
+export async function selfCheck(origin: string, mode: "direct" | "tunnel", o: { fetch?: typeof fetch; now?: () => Date } = {}) {
+  const at = (o.now ?? (() => new Date()))().toISOString();
+  try {
+    const r = await (o.fetch ?? globalThis.fetch)(origin + "/api/session", { redirect: "manual", signal: AbortSignal.timeout(10_000) });
+    if (r.ok) return { at, ok: true, detail: `${origin} 에 접속됩니다.` };
+    throw new Error(`HTTP ${r.status}`);
+  } catch (e) {
+    return mode === "direct"
+      ? { at, ok: null, detail: "이 PC에서 자기 도메인으로 접속하지 못했습니다. 공유기가 내부 접속을 막는 경우가 많으니 휴대폰(LTE)으로 확인하세요." }
+      : { at, ok: false, detail: `${origin} 에 접속하지 못했습니다(${(e as Error).message}). 터널 상태를 확인하세요.` };
+  }
+}

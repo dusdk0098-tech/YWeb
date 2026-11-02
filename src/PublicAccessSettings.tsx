@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
+import { PublicSetupWizard } from "./PublicSetupWizard";
 type Mode = "off" | "direct" | "tunnel";
 type Status = {
-  canManage: boolean; restartNeeded: boolean; dns: string[] | null;
+  canManage: boolean; operator?: boolean; restartNeeded: boolean; dns: string[] | null;
   runtime: { mode: Mode; origin?: string; state: string; detail?: string; certNotAfter?: string };
   settings: { mode: Mode; domain: string; email: string; tosAgreed: boolean; tunnelHint: string | null } | null;
 };
@@ -28,12 +29,15 @@ export function PublicAccessSettings() {
   return (
     <section className="panel">
       <h2>외부 접속 설정</h2>
-      <p>이 PC를 서버로 써서 휴대폰·다른 PC에서 구매한 도메인(예: https://safety.example.com)으로 접속하게 합니다. 이 PC가 켜져 있고 앱이 실행 중일 때만 접속됩니다. 자세한 순서는 docs/SELF_HOSTING.md를 보세요.</p>
+      <p>이 PC를 서버로 써서 휴대폰·다른 PC에서 구매한 도메인(예: https://safety.example.com)으로 접속하게 합니다. 이 PC가 켜져 있고 앱이 실행 중일 때만 접속됩니다. 아래 마법사를 따라가면 됩니다. 자세한 순서는 docs/SELF_HOSTING.md를 보세요.</p>
       <p role="status">지금: <strong>{r.mode === "off" ? "꺼짐 (이 PC에서만 접속)" : `${MODE[r.mode]} · ${r.state}`}</strong>{r.origin && ` · ${r.origin}`}{r.certNotAfter && ` · 인증서 만료 ${new Date(r.certNotAfter).toLocaleDateString()} (30일 전 자동 갱신)`}{r.detail && <><br />{r.detail}</>}</p>
       {s.restartNeeded && <p className="notice">저장한 설정이 아직 적용되지 않았습니다. 앱을 다시 시작하세요.</p>}
       {error && <p className="error" role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
-      {!s.canManage ? <p>외부 접속 설정은 이 앱이 설치된 PC에서 직접 접속했을 때만 바꿀 수 있습니다.</p> : (
+      {!s.canManage ? <p>외부 접속 설정은 이 앱이 설치된 PC에서 직접 접속했을 때만 바꿀 수 있습니다.</p> : <>
+        {s.operator && <PublicSetupWizard onApplied={() => void load()} />}
+        <details className="advanced-tools">
+        <summary>고급: 직접 입력</summary>
         <fieldset disabled={busy}>
           <legend>설정 (이 PC에서 접속했을 때만 보입니다)</legend>
           <label>방식 <select value={mode} onChange={(e) => setMode(e.target.value as Mode)}>{(Object.keys(MODE) as Mode[]).map((k) => <option key={k} value={k}>{MODE[k]}</option>)}</select></label>
@@ -62,7 +66,8 @@ export function PublicAccessSettings() {
           <button type="button" onClick={() => void save()}>저장</button>
           <small> 외부에 열면 비밀번호가 약한 계정이 위험해집니다. 모든 계정이 12자 이상의 강한 비밀번호를 쓰게 하세요.</small>
         </fieldset>
-      )}
+        </details>
+      </>}
     </section>
   );
 }
